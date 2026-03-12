@@ -1,0 +1,86 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+  background: #f8fafc;
+  color: #222;
+}
+
+button {
+  font-family: inherit;
+}
+
+input, select, textarea {
+  font-family: inherit;
+}
+
+ul {
+  list-style: disc;
+}
+
+.desktop-nav {
+  display: flex;
+}
+
+.btn-hover:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.card-hover {
+  transition: all 0.2s;
+}
+
+.card-hover:hover {
+  box-shadow: 0 8px 28px rgba(30, 74, 138, 0.14) !important;
+  transform: translateY(-2px);
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .desktop-nav {
+    display: none !important;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-4 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .search-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sidebar {
+    display: none;
+  }
+}
