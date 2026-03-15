@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 export default function RegisterPage({ navigate }) {
   const { register } = useAuth();
@@ -37,93 +39,108 @@ export default function RegisterPage({ navigate }) {
   });
 
   return (
-    <div>
-      <div style={{ background: "linear-gradient(135deg, #1e3a6e, #2a5298, #4a9edd)", padding: "40px 20px 60px" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto" }}>
-          <h1 style={{ color: "rgba(255,255,255,0.9)", fontSize: 36, fontWeight: 800, margin: 0 }}>
-            Encontre sua próxima <span style={{ color: "white" }}>oportunidade</span>
-          </h1>
-          <p style={{ color: "rgba(255,255,255,0.7)", marginTop: 8 }}>Explore centenas de vagas nas melhores redes de varejo do Brasil</p>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+
+      <Navbar navigate={navigate} page="register" />
+
+      <div style={{ flex: 1 }}>
+        <div style={{ background: "linear-gradient(135deg, #1e3a6e, #2a5298, #4a9edd)", padding: "40px 20px 60px" }}>
+          <div style={{ maxWidth: 800, margin: "0 auto" }}>
+            <h1 style={{ color: "rgba(255,255,255,0.9)", fontSize: 36, fontWeight: 800, margin: 0 }}>
+              Encontre sua próxima <span style={{ color: "white" }}>oportunidade</span>
+            </h1>
+            <p style={{ color: "rgba(255,255,255,0.7)", marginTop: 8 }}>Explore centenas de vagas nas melhores redes de varejo do Brasil</p>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: 820, margin: "40px auto", padding: "0 20px" }}>
+          {success ? (
+            <div style={{ background: "#e8fdf0", border: "2px solid #38a169", borderRadius: 16, padding: 40, textAlign: "center" }}>
+              <div style={{ fontSize: 56 }}>✅</div>
+              <h2 style={{ color: "#38a169" }}>Cadastro realizado com sucesso!</h2>
+              <p style={{ color: "#555" }}>Redirecionando para a home...</p>
+            </div>
+          ) : (
+            <div style={{ background: "#f0f4f8", borderRadius: 16, padding: 40 }}>
+              <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, color: "#1e3a6e", marginTop: 0, marginBottom: 32 }}>
+                Inscreva-se no <span style={{ color: "#4a9edd" }}>EASY</span><span style={{ color: "#1e3a6e" }}>4</span><span style={{ color: "#4a9edd" }}>RH</span>
+              </h2>
+              <div style={{ background: "white", borderRadius: 12, padding: 28 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#333", marginTop: 0, marginBottom: 20 }}>Registre-se</h3>
+
+                <div style={{ marginBottom: 14 }}>
+                  <input type="email" placeholder="Endereço de email" value={form.email} onChange={e => update("email", e.target.value)} style={inputStyle("email")} />
+                  {errors.email && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.email}</div>}
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                  <div>
+                    <input placeholder="Primeiro nome" value={form.firstName} onChange={e => update("firstName", e.target.value)} style={inputStyle("firstName")} />
+                    {errors.firstName && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.firstName}</div>}
+                  </div>
+                  <input placeholder="Sobrenome" value={form.lastName} onChange={e => update("lastName", e.target.value)} style={inputStyle("lastName")} />
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <input type="password" placeholder="Criar senha (precisa ter 5 caracteres)" value={form.password} onChange={e => update("password", e.target.value)} style={inputStyle("password")} />
+                  {errors.password && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.password}</div>}
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <input placeholder="Número de celular" value={form.phone} onChange={e => update("phone", e.target.value)} style={inputStyle("phone")} />
+                  {errors.phone && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.phone}</div>}
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <input placeholder="Localização" value={form.location} onChange={e => update("location", e.target.value)} style={inputStyle("location")} />
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <input placeholder="Cargo atual/recente" value={form.currentRole} onChange={e => update("currentRole", e.target.value)} style={inputStyle("currentRole")} />
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{
+                    display: "inline-block", border: "1px solid #d0d8e4",
+                    borderRadius: 8, padding: "10px 20px", cursor: "pointer",
+                    background: "white", fontSize: 13.5, color: "#555", fontWeight: 500
+                  }}>
+                    📎 Carregue seu CV
+                    <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => update("cv", e.target.files[0])} />
+                  </label>
+                  {form.cv && <span style={{ fontSize: 12.5, color: "#38a169", marginLeft: 10 }}>✅ {form.cv.name}</span>}
+                </div>
+
+                <button onClick={handleSubmit} disabled={loading} style={{
+                  background: loading ? "#aaa" : "linear-gradient(135deg, #1e4a8a, #4a9edd)",
+                  color: "white", border: "none", borderRadius: 10,
+                  padding: "14px 32px", cursor: loading ? "default" : "pointer",
+                  fontWeight: 700, fontSize: 14, transition: "all 0.2s"
+                }}>
+                  {loading ? "Registrando..." : "Criar conta"}
+                </button>
+
+                <p style={{ fontSize: 12.5, color: "#888", marginTop: 14 }}>
+                  Já tem conta?{" "}
+                  <button onClick={() => navigate("consultoria-login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontWeight: 600, fontSize: 12.5 }}>
+                    Faça login
+                  </button>
+                </p>
+
+                <p style={{ fontSize: 11.5, color: "#aabbcc", marginTop: 16 }}>
+                  Ao continuar, você concorda com os{" "}
+                  <span style={{ color: "#4a9edd", cursor: "pointer" }}>Termos de Serviço</span>
+                  {" "}e a{" "}
+                  <span style={{ color: "#4a9edd", cursor: "pointer" }}>Política de Privacidade.</span>
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div style={{ maxWidth: 820, margin: "40px auto", padding: "0 20px" }}>
-        {success ? (
-          <div style={{ background: "#e8fdf0", border: "2px solid #38a169", borderRadius: 16, padding: 40, textAlign: "center" }}>
-            <div style={{ fontSize: 56 }}>✅</div>
-            <h2 style={{ color: "#38a169" }}>Cadastro realizado com sucesso!</h2>
-            <p style={{ color: "#555" }}>Redirecionando para a home...</p>
-          </div>
-        ) : (
-          <div style={{ background: "#f0f4f8", borderRadius: 16, padding: 40 }}>
-            <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, color: "#1e3a6e", marginTop: 0, marginBottom: 32 }}>
-              Inscreva-se no <span style={{ color: "#4a9edd" }}>EASY</span><span style={{ color: "#1e3a6e" }}>4</span><span style={{ color: "#4a9edd" }}>RH</span>
-            </h2>
-            <div style={{ background: "white", borderRadius: 12, padding: 28 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#333", marginTop: 0, marginBottom: 20 }}>Registre-se</h3>
+      <Footer navigate={navigate} />
 
-              <div style={{ marginBottom: 14 }}>
-                <input type="email" placeholder="Endereço de email" value={form.email} onChange={e => update("email", e.target.value)} style={inputStyle("email")} />
-                {errors.email && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.email}</div>}
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-                <div>
-                  <input placeholder="Primeiro nome" value={form.firstName} onChange={e => update("firstName", e.target.value)} style={inputStyle("firstName")} />
-                  {errors.firstName && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.firstName}</div>}
-                </div>
-                <input placeholder="Sobrenome" value={form.lastName} onChange={e => update("lastName", e.target.value)} style={inputStyle("lastName")} />
-              </div>
-
-              <div style={{ marginBottom: 14 }}>
-                <input type="password" placeholder="Criar senha (precisa ter 5 caracteres)" value={form.password} onChange={e => update("password", e.target.value)} style={inputStyle("password")} />
-                {errors.password && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.password}</div>}
-              </div>
-
-              <div style={{ marginBottom: 14 }}>
-                <input placeholder="Número de celular" value={form.phone} onChange={e => update("phone", e.target.value)} style={inputStyle("phone")} />
-                {errors.phone && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.phone}</div>}
-              </div>
-
-              <div style={{ marginBottom: 14 }}>
-                <input placeholder="Localização" value={form.location} onChange={e => update("location", e.target.value)} style={inputStyle("location")} />
-              </div>
-
-              <div style={{ marginBottom: 20 }}>
-                <input placeholder="Cargo atual/recente" value={form.currentRole} onChange={e => update("currentRole", e.target.value)} style={inputStyle("currentRole")} />
-              </div>
-
-              <div style={{ marginBottom: 24 }}>
-                <label style={{
-                  display: "inline-block", border: "1px solid #d0d8e4",
-                  borderRadius: 8, padding: "10px 20px", cursor: "pointer",
-                  background: "white", fontSize: 13.5, color: "#555", fontWeight: 500
-                }}>
-                  📎 Carregue seu CV
-                  <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => update("cv", e.target.files[0])} />
-                </label>
-                {form.cv && <span style={{ fontSize: 12.5, color: "#38a169", marginLeft: 10 }}>✅ {form.cv.name}</span>}
-              </div>
-
-              <button onClick={handleSubmit} disabled={loading} style={{
-                background: loading ? "#aaa" : "linear-gradient(135deg, #1e4a8a, #4a9edd)",
-                color: "white", border: "none", borderRadius: 10,
-                padding: "14px 32px", cursor: loading ? "default" : "pointer",
-                fontWeight: 700, fontSize: 14, transition: "all 0.2s"
-              }}>
-                {loading ? "Registrando..." : "Criar conta"}
-              </button>
-
-              <p style={{ fontSize: 12.5, color: "#888", marginTop: 14 }}>
-                Já tem conta?{" "}
-                <button onClick={() => navigate("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontWeight: 600, fontSize: 12.5 }}>
-                  Faça login
-                </button>
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

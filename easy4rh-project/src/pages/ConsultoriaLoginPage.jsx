@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import illustration from '../assets/login-illustration.png'
-import logoImg from '../assets/logo.png'
+import Navbar from '../components/Navbar'
+import Footer from '../components/Footer'
 
 export default function ConsultoriaLoginPage({ navigate }) {
   const { login, register } = useAuth()
   const { isMobile } = useBreakpoint()
-  const [tab, setTab] = useState('login') // 'login' | 'register'
+  const [tab, setTab] = useState('login')
 
   // Login state
   const [email, setEmail] = useState('')
@@ -57,10 +58,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
   return (
     <div style={{ minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
 
-      {/* Header com logo */}
-      <div style={{ padding: isMobile ? '16px 20px' : '20px 40px', borderBottom: '1px solid #e0e8f0' }}>
-        <img src={logoImg} alt="Easy4RH" style={{ height: 48, objectFit: 'contain' }} />
-      </div>
+      <Navbar navigate={navigate} page="login" />
 
       {/* Content */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '40px 20px' : '60px 40px' }}>
@@ -90,15 +88,15 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 </button>
 
                 <p style={{ textAlign: 'center', fontSize: 13, color: '#778899', marginBottom: 0 }}>
-                  Já criou?{' '}
-                  <span onClick={() => setTab('register')} style={{ color: '#1e4a8a', fontWeight: 700, cursor: 'pointer' }}>Entre aqui.</span>
+                  Não tem conta?{' '}
+                  <span onClick={() => setTab('register')} style={{ color: '#1e4a8a', fontWeight: 700, cursor: 'pointer' }}>Crie aqui.</span>
                 </p>
 
                 <p style={{ textAlign: 'center', fontSize: 11.5, color: '#aabbcc', marginTop: 32 }}>
-                  By continuing, you agree to the{' '}
-                  <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Terms of Service</span>
-                  {' '}and{' '}
-                  <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Privacy Policy</span>
+                  Ao continuar, você concorda com os{' '}
+                  <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Termos de Serviço</span>
+                  {' '}e a{' '}
+                  <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Política de Privacidade</span>
                 </p>
               </>
             ) : (
@@ -120,16 +118,11 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 </button>
 
                 <p style={{ textAlign: 'center', fontSize: 13, color: '#778899', marginBottom: 0 }}>
-                  Já criou?{' '}
+                  Já tem conta?{' '}
                   <span onClick={() => setTab('login')} style={{ color: '#1e4a8a', fontWeight: 700, cursor: 'pointer' }}>Entre aqui.</span>
                 </p>
 
-                {/* Apple sign in */}
-                <div style={{ textAlign: 'center', margin: '20px 0 8px' }}>
-                  <span style={{ fontSize: 20 }}>🍎</span>
-                </div>
-
-                <p style={{ textAlign: 'center', fontSize: 11.5, color: '#aabbcc', marginTop: 8 }}>
+                <p style={{ textAlign: 'center', fontSize: 11.5, color: '#aabbcc', marginTop: 24 }}>
                   Ao continuar, você concorda com os{' '}
                   <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Termos de Serviço</span>
                   {' '}e a{' '}
@@ -148,6 +141,8 @@ export default function ConsultoriaLoginPage({ navigate }) {
 
         </div>
       </div>
+
+      <Footer navigate={navigate} />
 
     </div>
   )
