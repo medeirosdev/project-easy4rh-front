@@ -20,7 +20,7 @@ export default function FaleConoscoSection() {
     width: '100%',
     padding: '11px 14px',
     borderRadius: 10,
-    border: '1.5px solid #d0dcea',
+    border: '1.5px solid #8AAEC2',
     fontSize: 13.5,
     background: 'white',
     outline: 'none',
@@ -38,10 +38,10 @@ export default function FaleConoscoSection() {
   }
 
   return (
-    <div style={{
-      background: 'linear-gradient(135deg, #3a6ab0 0%, #5a8fd0 40%, #7aaed8 70%, #9ac8e0 100%)',
-      padding: '72px 20px',
-    }}>
+  <div id="fale-conosco" style={{
+    background: 'linear-gradient(135deg, #3a6ab0 0%, #5a8fd0 40%, #7aaed8 70%, #9ac8e0 100%)',
+    padding: '72px 20px',
+  }}>
       <div style={{
         maxWidth: 1050,
         margin: '0 auto',
@@ -227,6 +227,7 @@ export default function FaleConoscoSection() {
               </button>
             </div>
           )}
+          
         </div>
       </div>
     </div>

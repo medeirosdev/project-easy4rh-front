@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useJobs } from "../context/JobsContext";
+import { useBreakpoint } from "../hooks/useBreakpoint";
 
 const typeColors = {
   Presencial: { bg: "#e8f4fd", color: "#1e6eab" },
@@ -11,6 +12,7 @@ const typeColors = {
 export default function JobDetailPage({ job, navigate }) {
   const { user, savedJobs, toggleSaveJob } = useAuth();
   const { appliedJobs, applyToJob } = useJobs();
+  const { isMobile } = useBreakpoint();
   const [showModal, setShowModal] = useState(false);
   const [applied, setApplied] = useState(false);
 
@@ -29,59 +31,66 @@ export default function JobDetailPage({ job, navigate }) {
 
   return (
     <div>
+      {/* Hero */}
       <div style={{ background: "linear-gradient(135deg, #1e3a6e, #2a5298, #4a9edd)", padding: "30px 20px 50px" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 4, background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: 4, maxWidth: 700 }}>
-            <input placeholder="Palavras-chave/cargo" style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }} />
-            <input placeholder="Localidade" style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }} />
-            <input placeholder="Distância" style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }} />
-            <button onClick={() => navigate("vagas")} style={{ background: "#1e3a6e", color: "white", border: "none", borderRadius: 8, padding: "10px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>Procurar</button>
-          </div>
-          <h1 style={{ color: "rgba(255,255,255,0.9)", fontSize: 36, fontWeight: 800, marginTop: 16 }}>
+          {!isMobile && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 4, background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: 4, maxWidth: 700, marginBottom: 16 }}>
+              <input placeholder="Palavras-chave/cargo" style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }} />
+              <input placeholder="Localidade" style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }} />
+              <input placeholder="Distância" style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }} />
+              <button onClick={() => navigate("vagas")} style={{ background: "#1e3a6e", color: "white", border: "none", borderRadius: 8, padding: "10px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>Procurar</button>
+            </div>
+          )}
+          <h1 style={{ color: "rgba(255,255,255,0.9)", fontSize: isMobile ? 24 : 36, fontWeight: 800, marginTop: 16 }}>
             Encontre sua próxima <span style={{ color: "white" }}>oportunidade</span>
           </h1>
         </div>
       </div>
 
+      {/* Quick nav */}
       <div style={{ background: "white", borderBottom: "1px solid #e8edf2" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "10px 20px", display: "flex", gap: 20 }}>
-          {["🔐 Login", "📝 Registre seu CV", "🔍 Recrutamento", "🏢 Empresas"].map((item, i) => (
-            <button key={i} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>{item}</button>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "10px 20px", display: "flex", gap: isMobile ? 12 : 20, justifyContent: "center", flexWrap: "wrap" }}>
+          {[
+            { label: "🔐 Login", action: () => navigate("login") },
+            { label: "📝 Registre seu CV", action: () => navigate("register") },
+            { label: "🔍 Recrutamento", action: () => navigate("login") },
+          ].map((item) => (
+            <button key={item.label} onClick={item.action} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>{item.label}</button>
           ))}
         </div>
       </div>
 
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 20px" }}>
-        <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, color: "#1e3a6e", marginBottom: 24 }}>Detalhes da vaga</h2>
+        <h2 style={{ textAlign: "center", fontSize: isMobile ? 20 : 26, fontWeight: 800, color: "#1e3a6e", marginBottom: 24 }}>Detalhes da vaga</h2>
 
-        <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 28 }}>
-          {/* Sidebar */}
-          <div>
-            {[
-              { title: "TIPO DE VAGA", options: ["Remoto", "Presencial", "Híbrido"] },
-              { title: "NÍVEL", options: ["Estágio", "Júnior", "Pleno", "Sênior"] },
-              {
-                title: "LOCALIZAÇÃO",
-                options: ["São Paulo, SP", "Rio de Janeiro, RJ", "Belo Horizonte, MG", "Curitiba, PR", "Florianópolis, SC", "Porto Alegre, RS", "Campinas, SP", "Recife, PE", "Salvador, BA", "Manaus, AM", "Brasília, DF", "Goiânia, GO"]
-              }
-            ].map(section => (
-              <div key={section.title} style={{ background: "white", border: "1px solid #e8edf2", borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h4 style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: 1, margin: "0 0 10px", textTransform: "uppercase" }}>{section.title}</h4>
-                {section.options.map(opt => (
-                  <label key={opt} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 8, fontSize: 13 }}>
-                    <input type="checkbox" style={{ cursor: "pointer" }} readOnly />
-                    <span style={{ color: "#444" }}>{opt}</span>
-                  </label>
-                ))}
-              </div>
-            ))}
-          </div>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "220px 1fr", gap: 28 }}>
+          {/* Sidebar — hidden on mobile */}
+          {!isMobile && (
+            <div>
+              {[
+                { title: "TIPO DE VAGA", options: ["Remoto", "Presencial", "Híbrido"] },
+                { title: "NÍVEL", options: ["Estágio", "Júnior", "Pleno", "Sênior"] },
+                { title: "LOCALIZAÇÃO", options: ["São Paulo, SP", "Rio de Janeiro, RJ", "Belo Horizonte, MG", "Curitiba, PR", "Florianópolis, SC", "Porto Alegre, RS", "Campinas, SP", "Recife, PE", "Salvador, BA", "Manaus, AM", "Brasília, DF", "Goiânia, GO"] }
+              ].map(section => (
+                <div key={section.title} style={{ background: "white", border: "1px solid #e8edf2", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                  <h4 style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: 1, margin: "0 0 10px", textTransform: "uppercase" }}>{section.title}</h4>
+                  {section.options.map(opt => (
+                    <label key={opt} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 8, fontSize: 13 }}>
+                      <input type="checkbox" style={{ cursor: "pointer" }} readOnly />
+                      <span style={{ color: "#444" }}>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Main content */}
           <div>
-            <div style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", padding: 28 }}>
+            <div style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", padding: isMobile ? 20 : 28 }}>
               {/* Header bar */}
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, gap: 8, flexWrap: "wrap" }}>
                 <button style={{ background: "none", border: "1px solid #d0d8e4", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#555" }}>
                   🔗 Compartilhar
                 </button>
@@ -92,24 +101,21 @@ export default function JobDetailPage({ job, navigate }) {
               </div>
 
               {/* Job header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                <div style={{ flex: 1 }}>
-                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "#1e4a8a", margin: "0 0 8px" }}>{job.title}</h2>
-                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, color: "#1e4a8a", margin: "0 0 8px" }}>{job.title}</h2>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
                     <span style={{ fontSize: 13, color: "#555" }}>📍 {job.location}</span>
                     <span style={{ fontSize: 13, color: "#555" }}>🎓 {job.level}</span>
                     <span style={{ fontSize: 13, color: "#2e7d32", fontWeight: 600 }}>💰 {job.salary}</span>
                   </div>
                   <p style={{ fontSize: 13.5, color: "#555", lineHeight: 1.6, margin: 0 }}>{job.description}</p>
                 </div>
-                <div style={{
-                  width: 72, height: 72, borderRadius: 12,
-                  background: job.logoColor, display: "flex", alignItems: "center",
-                  justifyContent: "center", fontWeight: 800, color: "white", fontSize: 14,
-                  marginLeft: 20, flexShrink: 0
-                }}>
-                  {job.logo}
-                </div>
+                {!isMobile && (
+                  <div style={{ width: 72, height: 72, borderRadius: 12, background: job.logoColor, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "white", fontSize: 14, flexShrink: 0 }}>
+                    {job.logo}
+                  </div>
+                )}
               </div>
 
               <hr style={{ border: "none", borderTop: "1px solid #e8edf2", margin: "20px 0" }} />
@@ -138,16 +144,16 @@ export default function JobDetailPage({ job, navigate }) {
                 </div>
               ))}
 
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, fontSize: 13 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, fontSize: 13, flexWrap: "wrap" }}>
                 <span style={{ color: "#555" }}>📍 Local de trabalho: {job.company}</span>
-                <span style={{ color: "#555", marginLeft: 16 }}>📄 Regime: CLT</span>
+                <span style={{ color: "#555" }}>📄 Regime: CLT</span>
               </div>
 
               <button onClick={handleApply} disabled={isApplied} style={{
                 background: isApplied ? "#38a169" : "linear-gradient(135deg, #1e4a8a, #4a9edd)",
                 color: "white", border: "none", borderRadius: 10,
                 padding: "14px 28px", cursor: isApplied ? "default" : "pointer",
-                fontWeight: 700, fontSize: 14
+                fontWeight: 700, fontSize: 14, width: isMobile ? "100%" : "auto"
               }}>
                 {isApplied ? "✅ Candidatura enviada!" : "Aplicar para a Vaga"}
               </button>
@@ -162,15 +168,12 @@ export default function JobDetailPage({ job, navigate }) {
 
       {/* Success Modal */}
       {showModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 }}>
-          <div style={{ background: "white", borderRadius: 20, padding: 40, maxWidth: 420, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "20px" }}>
+          <div style={{ background: "white", borderRadius: 20, padding: isMobile ? 28 : 40, maxWidth: 420, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
             <div style={{ fontSize: 60 }}>🎉</div>
             <h2 style={{ color: "#1e3a6e", marginBottom: 8 }}>Candidatura enviada!</h2>
             <p style={{ color: "#555", marginBottom: 24 }}>Boa sorte! A empresa entrará em contato em breve.</p>
-            <button onClick={() => setShowModal(false)} style={{
-              background: "linear-gradient(135deg, #1e4a8a, #4a9edd)", color: "white",
-              border: "none", borderRadius: 10, padding: "12px 28px", cursor: "pointer", fontWeight: 700
-            }}>
+            <button onClick={() => setShowModal(false)} style={{ background: "linear-gradient(135deg, #1e4a8a, #4a9edd)", color: "white", border: "none", borderRadius: 10, padding: "12px 28px", cursor: "pointer", fontWeight: 700 }}>
               Entendido!
             </button>
           </div>
@@ -179,3 +182,4 @@ export default function JobDetailPage({ job, navigate }) {
     </div>
   );
 }
+  

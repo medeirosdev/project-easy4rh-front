@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import logoImg from '../assets/logo.png'
 import illustration from '../assets/login-illustration.png'
+import logoImg from '../assets/logo.png'
 
 export default function ConsultoriaLoginPage({ navigate }) {
-  const { login } = useAuth()
+  const { login, register } = useAuth()
   const { isMobile } = useBreakpoint()
   const [tab, setTab] = useState('login') // 'login' | 'register'
 
@@ -29,9 +29,9 @@ export default function ConsultoriaLoginPage({ navigate }) {
     if (!email || !password) { setError('Preencha todos os campos.'); return }
     setLoading(true)
     await new Promise(r => setTimeout(r, 800))
-    const result = login(email, password)
+    const result = await login(email, password)
     setLoading(false)
-    if (result.success) navigate('dashboard-candidato')
+    if (result.success) navigate('plataforma')
     else setError('Email ou senha inválidos.')
   }
 
@@ -39,10 +39,12 @@ export default function ConsultoriaLoginPage({ navigate }) {
     setRegError('')
     if (!regName || !regEmail || !regPassword || !regConfirm) { setRegError('Preencha todos os campos.'); return }
     if (regPassword !== regConfirm) { setRegError('As senhas não coincidem.'); return }
+    if (regPassword.length < 8) { setRegError('A senha deve ter pelo menos 8 caracteres.'); return }
     setRegLoading(true)
-    await new Promise(r => setTimeout(r, 800))
+    const result = await register({ name: regName, email: regEmail, password: regPassword })
     setRegLoading(false)
-    navigate('dashboard-candidato')
+    if (result.success) navigate('dashboard-candidato')
+    else setRegError(result.message || 'Erro ao criar conta.')
   }
 
   const inputStyle = {
@@ -54,6 +56,11 @@ export default function ConsultoriaLoginPage({ navigate }) {
 
   return (
     <div style={{ minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Header com logo */}
+      <div style={{ padding: isMobile ? '16px 20px' : '20px 40px', borderBottom: '1px solid #e0e8f0' }}>
+        <img src={logoImg} alt="Easy4RH" style={{ height: 48, objectFit: 'contain' }} />
+      </div>
 
       {/* Content */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '40px 20px' : '60px 40px' }}>

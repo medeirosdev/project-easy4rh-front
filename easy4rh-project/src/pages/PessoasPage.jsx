@@ -65,7 +65,7 @@ export default function PessoasPage({ navigate }) {
 
       {/* ── Hero ── */}
       <div style={{
-        background: 'linear-gradient(135deg, #1a3a6e 0%, #2a5a9e 50%, #4a8fd0 100%)',
+        background: 'linear-gradient(135deg, #5590B2)',
         padding: isMobile ? '52px 24px 48px' : '72px 40px 64px',
         position: 'relative',
         overflow: 'hidden',

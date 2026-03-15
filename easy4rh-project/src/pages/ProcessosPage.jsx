@@ -31,7 +31,7 @@ export default function ProcessosPage({ navigate }) {
     <div className="fade-in">
 
       {/* ── Hero ── */}
-      <div style={{ background: 'linear-gradient(135deg, #1a4a2e 0%, #2a7a4e 50%, #3a9a6e 100%)', padding: isMobile ? '52px 24px 48px' : '72px 40px 64px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ background: '#5590B2', padding: isMobile ? '52px 24px 48px' : '72px 40px 64px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -80, right: -80, width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: 900, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>

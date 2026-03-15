@@ -8,6 +8,7 @@ const jobTypes = ['Remoto', 'Presencial', 'Híbrido']
 const levels = ['Estágio', 'Júnior', 'Pleno', 'Sênior']
 const locations = ['São Paulo, SP', 'Rio de Janeiro, RJ', 'Belo Horizonte, MG', 'Curitiba, PR', 'Florianópolis, SC', 'Porto Alegre, RS', 'Campinas, SP', 'Recife, PE', 'Salvador, BA', 'Manaus, AM', 'Brasília, DF', 'Goiânia, GO']
 const distances = ['Até 10 km', 'Até 25 km', 'Até 50 km', 'Qualquer distância']
+const sortOptions = ['Mais recentes', 'Maior salário', 'Menor salário', 'Mais relevantes']
 
 export default function VagasPage({ navigate }) {
   const { jobs } = useJobs()
@@ -19,6 +20,7 @@ export default function VagasPage({ navigate }) {
   const [keywordInput, setKeywordInput] = useState('')
   const [locationInput, setLocationInput] = useState('')
   const [distanceInput, setDistanceInput] = useState('')
+  const [sortBy, setSortBy] = useState('Mais recentes')
 
   const toggleFilter = (key, val) => {
     setFilters(prev => ({
@@ -181,13 +183,12 @@ export default function VagasPage({ navigate }) {
 
       {/* ── Secondary nav bar ── */}
       <div style={{ background: 'white', borderBottom: '1px solid #e8edf2' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-          <div style={{ display: 'flex', gap: isMobile ? 12 : 24, flexWrap: 'wrap' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '10px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 10, position: 'relative' }}>
+          <div style={{ display: 'flex', gap: isMobile ? 12 : 32, flexWrap: 'wrap', justifyContent: 'center' }}>
             {[
-              { label: '🔐 Login', action: () => navigate('login') },
+              { label: '🔐 Login',          action: () => navigate('login') },
               { label: '📝 Registre seu CV', action: () => navigate('register') },
-              { label: '🔍 Recrutamento', action: () => {} },
-              { label: '🏢 Empresas', action: () => {} },
+              { label: '🔍 Recrutamento',    action: () => navigate('login') },
             ].map((item) => (
               <button key={item.label} onClick={item.action}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
@@ -196,7 +197,7 @@ export default function VagasPage({ navigate }) {
             ))}
           </div>
           {user?.role === 'recruiter' && (
-            <button onClick={() => navigate('login')} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 10, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+            <button onClick={() => navigate('login')} style={{ position: 'absolute', right: 20, background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 10, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
               + Publicar vaga
             </button>
           )}
@@ -205,9 +206,38 @@ export default function VagasPage({ navigate }) {
 
       {/* ── Job listings ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px' }}>
-        <p style={{ color: '#555', fontSize: 13.5, marginBottom: 20, fontWeight: 500 }}>
-          <strong>{filtered.length}</strong> vagas encontradas
-        </p>
+
+        {/* Count + Sort row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+          <p style={{ color: '#555', fontSize: 13.5, margin: 0, fontWeight: 500 }}>
+            <strong>{filtered.length}</strong> vagas encontradas
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 13, color: '#778899', fontWeight: 500 }}>Ordenar por:</span>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {sortOptions.map(opt => (
+                <button
+                  key={opt}
+                  onClick={() => setSortBy(opt)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    border: sortBy === opt ? '1.5px solid #1e4a8a' : '1.5px solid #d0dcea',
+                    background: sortBy === opt ? '#1e4a8a' : 'white',
+                    color: sortBy === opt ? 'white' : '#556677',
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr', gap: 28 }}>
 
           {/* Sidebar */}

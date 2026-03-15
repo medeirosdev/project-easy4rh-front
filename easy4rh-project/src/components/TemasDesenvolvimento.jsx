@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useBreakpoint } from '../hooks/useBreakpoint'
 
 const temas = [
   {
@@ -47,17 +48,10 @@ function Card({ tema, entering, exiting, direction }) {
       animation,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div style={{
-          width: 46, height: 46, borderRadius: 12,
-          background: 'rgba(255,255,255,0.15)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 22, flexShrink: 0,
-        }}>
+        <div style={{ width: 46, height: 46, borderRadius: 12, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
           {tema.emoji}
         </div>
-        <h3 style={{ fontSize: 16, fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>
-          {tema.title}
-        </h3>
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: 'white', margin: 0, lineHeight: 1.2 }}>{tema.title}</h3>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {tema.items.map((item, j) => (
@@ -72,18 +66,20 @@ function Card({ tema, entering, exiting, direction }) {
 }
 
 export default function TemasDesenvolvimento() {
+  const { isMobile } = useBreakpoint()
   const [current, setCurrent] = useState(0)
   const [prev2, setPrev2] = useState(null)
   const [direction, setDirection] = useState('next')
   const [autoplay, setAutoplay] = useState(true)
 
-  const maxIndex = temas.length - 2
+  const visibleCount = isMobile ? 1 : 2
+  const maxIndex = temas.length - visibleCount
 
   useEffect(() => {
     if (!autoplay) return
     const timer = setInterval(() => go(current + 1, 'next'), 4500)
     return () => clearInterval(timer)
-  }, [current, autoplay])
+  }, [current, autoplay, isMobile])
 
   const go = (index, dir) => {
     const next = Math.max(0, Math.min(index, maxIndex))
@@ -98,110 +94,82 @@ export default function TemasDesenvolvimento() {
   const goPrev = () => { setAutoplay(false); go(current - 1, 'prev') }
 
   return (
-    <div style={{
-      background: 'linear-gradient(160deg, #1a2a40 0%, #2a3a55 50%, #1e3060 100%)',
-      padding: '72px 20px',
-      overflow: 'hidden',
-    }}>
+    <div style={{ background: 'linear-gradient(160deg, #e8f0f8 0%, #f0f5fa 50%, #e0eaf4 100%)', padding: '72px 20px', overflow: 'hidden' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 48 }}>
 
-          {/* Left title */}
-          <div style={{ minWidth: 160, flexShrink: 0 }}>
-            <h2 style={{ fontSize: 'clamp(20px, 2.2vw, 30px)', fontWeight: 800, color: 'white', lineHeight: 1.25 }}>
-              Temas de{' '}
-              <span style={{ color: '#7ac0e8', display: 'block' }}>Desenvolvimento</span>
-            </h2>
-          </div>
+        {/* Title */}
+        <h2 style={{ textAlign: isMobile ? 'center' : 'left', fontSize: 'clamp(28px, 3vw, 42px)', fontWeight: 900, color: '#1e3a6e', lineHeight: 1.2, marginBottom: 36 }}>
+          <span style={{ fontWeight: 600, display: 'block', fontSize: '0.7em' }}>Temas de</span>
+          <span style={{ fontWeight: 1000, color: '#5590B2', display: 'block' }}>Desenvolvimento</span>
+        </h2>
+
+        <div style={{ display: isMobile ? 'block' : 'flex', alignItems: 'center', gap: 48 }}>
 
           {/* Cards + controls */}
           <div style={{ flex: 1 }}>
-
-            {/* 2-card grid with individual card transitions */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, overflow: 'hidden' }}>
-
-              {/* Left card slot */}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, overflow: 'hidden' }}>
+              {/* Left/only card slot */}
               <div style={{ position: 'relative', minHeight: 200 }}>
-                {/* Exiting card (left slot) */}
                 {prev2 !== null && (
                   <div style={{ position: 'absolute', inset: 0 }}>
                     <Card tema={temas[prev2]} exiting direction={direction} />
                   </div>
                 )}
-                {/* Entering card (left slot) */}
                 <Card tema={temas[current]} entering={prev2 !== null} direction={direction} />
               </div>
 
-              {/* Right card slot */}
-              <div style={{ position: 'relative', minHeight: 200 }}>
-                {/* Exiting card (right slot) */}
-                {prev2 !== null && temas[prev2 + 1] && (
-                  <div style={{ position: 'absolute', inset: 0 }}>
-                    <Card tema={temas[prev2 + 1]} exiting direction={direction} />
-                  </div>
-                )}
-                {/* Entering card (right slot) */}
-                {temas[current + 1] && (
-                  <Card tema={temas[current + 1]} entering={prev2 !== null} direction={direction} />
-                )}
-              </div>
+              {/* Right card slot — desktop only */}
+              {!isMobile && (
+                <div style={{ position: 'relative', minHeight: 200 }}>
+                  {prev2 !== null && temas[prev2 + 1] && (
+                    <div style={{ position: 'absolute', inset: 0 }}>
+                      <Card tema={temas[prev2 + 1]} exiting direction={direction} />
+                    </div>
+                  )}
+                  {temas[current + 1] && (
+                    <Card tema={temas[current + 1]} entering={prev2 !== null} direction={direction} />
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 28, zIndex: 2, position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 28 }}>
               <button onClick={goPrev} disabled={current === 0} style={{
                 width: 40, height: 40, borderRadius: '50%',
-                background: current === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: current === 0 ? 'rgba(255,255,255,0.3)' : 'white',
+                color: current === 0 ? 'rgba(30,58,110,0.25)' : '#1e3a6e',
+                background: current === 0 ? 'rgba(30,58,110,0.04)' : 'rgba(30,58,110,0.1)',
+                border: '1px solid rgba(30,58,110,0.15)',
                 fontSize: 20, cursor: current === 0 ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
               }}>‹</button>
 
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 {Array.from({ length: maxIndex + 1 }).map((_, i) => (
-                  <div key={i}
-                    onClick={() => { setAutoplay(false); go(i) }}
-                    style={{
-                      width: i === current ? 24 : 8, height: 8, borderRadius: 4,
-                      background: i === current ? '#4a9edd' : 'rgba(255,255,255,0.25)',
-                      cursor: 'pointer', transition: 'all 0.35s ease',
-                    }}
+                  <div key={i} onClick={() => { setAutoplay(false); go(i) }}
+                    style={{ width: i === current ? 24 : 8, height: 8, borderRadius: 4, background: i === current ? '#1e3a6e' : 'rgba(30,58,110,0.25)', cursor: 'pointer', transition: 'all 0.35s ease' }}
                   />
                 ))}
               </div>
 
               <button onClick={goNext} disabled={current >= maxIndex} style={{
                 width: 40, height: 40, borderRadius: '50%',
-                background: current >= maxIndex ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: current >= maxIndex ? 'rgba(255,255,255,0.3)' : 'white',
+                background: current >= maxIndex ? 'rgba(30,58,110,0.04)' : 'rgba(30,58,110,0.12)',
+                border: '1px solid rgba(30,58,110,0.2)',
+                color: current >= maxIndex ? 'rgba(30,58,110,0.3)' : '#1e3a6e',
                 fontSize: 20, cursor: current >= maxIndex ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s',
               }}>›</button>
             </div>
-
           </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes cardEnterRight {
-          from { opacity: 0; transform: translateX(40px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes cardEnterLeft {
-          from { opacity: 0; transform: translateX(-40px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes cardExitLeft {
-          from { opacity: 1; transform: translateX(0); }
-          to   { opacity: 0; transform: translateX(-40px); }
-        }
-        @keyframes cardExitRight {
-          from { opacity: 1; transform: translateX(0); }
-          to   { opacity: 0; transform: translateX(40px); }
-        }
+        @keyframes cardEnterRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes cardEnterLeft  { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes cardExitLeft   { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-40px); } }
+        @keyframes cardExitRight  { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(40px); } }
       `}</style>
     </div>
   )

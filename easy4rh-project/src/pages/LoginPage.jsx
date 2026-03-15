@@ -1,29 +1,29 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
-export default function LoginPage({ navigate }) {
+export default function LoginPage({ navigate, initialTab }) {
   const { login, loginRecruiter } = useAuth();
-  const [tab, setTab] = useState("candidate");
+  const [tab, setTab] = useState(initialTab || "candidate");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-  setError("");
-  if (!email || !password) { setError("Preencha todos os campos."); return; }
-  setLoading(true);
-  await new Promise(r => setTimeout(r, 800));
-  const fn = tab === "candidate" ? login : loginRecruiter;
-  const result = fn(email, password);
-  setLoading(false);
-  if (result.success) {
-    if (result.user?.role === 'recruiter') navigate('dashboard-recrutador')
-    else navigate('dashboard-candidato')
-  } else {
-    setError(result.message);
-  }
-};
+    setError("");
+    if (!email || !password) { setError("Preencha todos os campos."); return; }
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 800));
+    const fn = tab === "candidate" ? login : loginRecruiter;
+    const result = await fn(email, password);
+    setLoading(false);
+    if (result.success) {
+      if (result.user?.role === 'RECRUITER') navigate('dashboard-recrutador')
+      else navigate('dashboard-candidato')
+    } else {
+      setError(result.message);
+    }
+  };
 
   return (
     <div>
@@ -45,8 +45,14 @@ export default function LoginPage({ navigate }) {
 
       {/* Quick nav */}
       <div style={{ background: "white", borderBottom: "1px solid #e8edf2", textAlign: "center", padding: "12px 20px" }}>
-        {["🔐 Login", "📝 Registre seu CV", "🔍 Recrutamento", "🏢 Empresas"].map((item, i) => (
-          <button key={i} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13.5, fontWeight: 600, margin: "0 16px" }}>{item}</button>
+        {[
+          { label: "🔐 Login",          action: () => { setTab("candidate"); } },
+          { label: "📝 Registre seu CV", action: () => navigate("register") },
+          { label: "🔍 Recrutamento",    action: () => { setTab("recruiter"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
+        ].map((item) => (
+          <button key={item.label} onClick={item.action} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13.5, fontWeight: 600, margin: "0 16px" }}>
+            {item.label}
+          </button>
         ))}
       </div>
 
@@ -102,24 +108,53 @@ export default function LoginPage({ navigate }) {
 
           {/* Right side */}
           <div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1e4a8a", marginTop: 0, marginBottom: 20 }}>Ainda não registrado?</h3>
-            <p style={{ color: "#555", fontSize: 13.5, marginBottom: 24 }}>Crie sua conta e encontre oportunidades que combinam com você.</p>
-            {[
-              { icon: "🔍", title: "Busque vagas com facilidade", desc: "Encontre oportunidades de acordo com seu perfil." },
-              { icon: "📄", title: "Cadastre seu currículo uma única vez", desc: "Candidate-se a várias vagas em poucos cliques." },
-              { icon: "🔔", title: "Receba alertas de vagas", desc: "Seja avisado quando surgirem novas oportunidades." },
-            ].map(item => (
-              <div key={item.title} style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#333", marginBottom: 2 }}>{item.icon} {item.title}</div>
-                <div style={{ fontSize: 12.5, color: "#666" }}>{item.desc}</div>
-              </div>
-            ))}
-            <button onClick={() => navigate("register")} style={{
-              background: "#1e3a6e", color: "white", border: "none",
-              borderRadius: 10, padding: "13px 28px", cursor: "pointer", fontWeight: 700, fontSize: 14, marginTop: 8
-            }}>
-              Se cadastre
-            </button>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1e4a8a", marginTop: 0, marginBottom: 20 }}>
+              {tab === "candidate" ? "Ainda não registrado?" : "Quer anunciar vagas?"}
+            </h3>
+            <p style={{ color: "#555", fontSize: 13.5, marginBottom: 24 }}>
+              {tab === "candidate"
+                ? "Crie sua conta e encontre oportunidades que combinam com você."
+                : "Cadastre sua empresa e publique vagas para os melhores candidatos do varejo."}
+            </p>
+            {tab === "candidate" ? (
+              <>
+                {[
+                  { icon: "🔍", title: "Busque vagas com facilidade", desc: "Encontre oportunidades de acordo com seu perfil." },
+                  { icon: "📄", title: "Cadastre seu currículo uma única vez", desc: "Candidate-se a várias vagas em poucos cliques." },
+                  { icon: "🔔", title: "Receba alertas de vagas", desc: "Seja avisado quando surgirem novas oportunidades." },
+                ].map(item => (
+                  <div key={item.title} style={{ marginBottom: 18 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#333", marginBottom: 2 }}>{item.icon} {item.title}</div>
+                    <div style={{ fontSize: 12.5, color: "#666" }}>{item.desc}</div>
+                  </div>
+                ))}
+                <button onClick={() => navigate("register")} style={{
+                  background: "#1e3a6e", color: "white", border: "none",
+                  borderRadius: 10, padding: "13px 28px", cursor: "pointer", fontWeight: 700, fontSize: 14, marginTop: 8
+                }}>
+                  Se cadastre
+                </button>
+              </>
+            ) : (
+              <>
+                {[
+                  { icon: "📢", title: "Publique vagas gratuitamente", desc: "Alcance candidatos qualificados do setor varejista." },
+                  { icon: "👥", title: "Gerencie candidaturas", desc: "Acompanhe todos os candidatos em um só lugar." },
+                  { icon: "⚡", title: "Contrate mais rápido", desc: "Filtros inteligentes para encontrar o perfil certo." },
+                ].map(item => (
+                  <div key={item.title} style={{ marginBottom: 18 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#333", marginBottom: 2 }}>{item.icon} {item.title}</div>
+                    <div style={{ fontSize: 12.5, color: "#666" }}>{item.desc}</div>
+                  </div>
+                ))}
+                <button onClick={() => navigate("register")} style={{
+                  background: "#1e3a6e", color: "white", border: "none",
+                  borderRadius: 10, padding: "13px 28px", cursor: "pointer", fontWeight: 700, fontSize: 14, marginTop: 8
+                }}>
+                  Cadastrar empresa
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

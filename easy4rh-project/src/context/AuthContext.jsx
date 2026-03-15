@@ -1,38 +1,74 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import { authApi, saveToken, clearToken, saveUser, loadUser } from '../services/api'
 
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(loadUser) // carrega do localStorage se existir
   const [savedJobs, setSavedJobs] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  // Substitua estas funções por chamadas reais à sua API
-  const login = (email, password) => {
-  if (email && password) {
-    const mockUser = { id: 1, name: 'João Silva', email, role: 'candidate' }
-    setUser(mockUser)
-    return { success: true, user: mockUser }  // ← adicione user: mockUser
-  }
-  return { success: false, message: 'Email ou senha inválidos' }
-}
+  // ── Login (candidato ou recrutador — o backend decide pelo role) ──
+  const login = async (email, password) => {
+    setLoading(true)
+    try {
+      const data = await authApi.login(email, password)
+      // data = { access_token: '...', user: { id, name, email, role, ... } }
+      saveToken(data.access_token)
 
-const loginRecruiter = (email, password) => {
-  if (email && password) {
-    const mockUser = { id: 2, name: 'Ana Recrutadora', email, role: 'recruiter' }
-    setUser(mockUser)
-    return { success: true, user: mockUser }  // ← adicione user: mockUser
-  }
-  return { success: false, message: 'Email ou senha inválidos' }
-}
-
-  const register = (data) => {
-    const newUser = { id: Date.now(), ...data, role: 'candidate' }
-    setUser(newUser)
-    return { success: true }
+      // Se o backend retornar o user junto do token, usa direto.
+      // Caso contrário, faz GET /users/:id
+      const loggedUser = data.user || await authApi.getUser(data.userId)
+      saveUser(loggedUser)
+      setUser(loggedUser)
+      return { success: true, user: loggedUser }
+    } catch (err) {
+      return { success: false, message: err.message || 'Email ou senha inválidos.' }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const logout = () => setUser(null)
+  // ── loginRecruiter reutiliza o mesmo endpoint — o role vem do backend ──
+  const loginRecruiter = async (email, password) => {
+    const result = await login(email, password)
+    if (result.success && result.user?.role !== 'RECRUITER') {
+      // Se logou mas não é recrutador, desloga e retorna erro
+      logout()
+      return { success: false, message: 'Essa conta não é de recrutador.' }
+    }
+    return result
+  }
 
+  // ── Registro ──
+  const register = async (data) => {
+    setLoading(true)
+    try {
+      // POST /users — cria o usuário
+      await authApi.register({
+        email: data.email,
+        password: data.password,
+        name: data.name || `${data.firstName} ${data.lastName}`,
+        phone: data.phone,
+        role: data.role || 'CANDIDATE',
+      })
+      // Após registrar, faz login automaticamente
+      return await login(data.email, data.password)
+    } catch (err) {
+      return { success: false, message: err.message || 'Erro ao criar conta.' }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Logout ──
+  const logout = () => {
+    clearToken()
+    setUser(null)
+    setSavedJobs([])
+  }
+
+  // ── Salvar/remover vagas ──
   const toggleSaveJob = (jobId) => {
     setSavedJobs((prev) =>
       prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]
@@ -40,9 +76,16 @@ const loginRecruiter = (email, password) => {
   }
 
   return (
-    <AuthContext.Provider
-      value={{ user, login, loginRecruiter, register, logout, savedJobs, toggleSaveJob }}
-    >
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      loginRecruiter,
+      register,
+      logout,
+      savedJobs,
+      toggleSaveJob,
+    }}>
       {children}
     </AuthContext.Provider>
   )

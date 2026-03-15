@@ -19,12 +19,15 @@ export default function SobreNosPage({ navigate }) {
     <div className="fade-in">
 
       {/* ── Hero ── */}
-      <div style={{ background: 'linear-gradient(135deg, #f0f4f8 0%, #e8eef6 100%)', minHeight: isMobile ? 'auto' : 560, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+      <div style={{ background: 'linear-gradient(135deg, #f0f4f8 0%, #e8eef6 100%)', minHeight: isMobile ? 'auto' : 640, display: 'flex', alignItems: 'center', overflow: isMobile ? 'hidden' : 'visible' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '52px 24px 40px' : '64px 40px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 64, alignItems: 'center', width: '100%' }}>
           <div style={{ order: isMobile ? 2 : 1 }}>
             <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, color: '#1e4a8a', textTransform: 'uppercase', marginBottom: 20 }}>Sobre Nós</p>
-            <h1 style={{ fontSize: isMobile ? 32 : 'clamp(32px, 3.8vw, 52px)', fontWeight: 800, color: '#0d2a4e', lineHeight: 1.15, marginBottom: 24 }}>
-              Especialistas em desenvolver líderes e fortalecer o varejo.
+            <h1 style={{ fontSize: isMobile ? 32 : 'clamp(38px, 4.2vw, 58px)', fontWeight: 800, color: '#0d2a4e', lineHeight: 1.15, marginBottom: 24 }}>
+              Especialistas em<br />
+              desenvolver<br />
+              líderes e fortalecer<br />
+              o varejo.
             </h1>
             <p style={{ fontSize: isMobile ? 15 : 17, color: '#445566', lineHeight: 1.8, maxWidth: 420, marginBottom: 36 }}>
               Transformando a forma como o varejo desenvolve, engaja e potencializa seus talentos.
@@ -38,9 +41,9 @@ export default function SobreNosPage({ navigate }) {
               </button>
             </div>
           </div>
-          <div style={{ order: isMobile ? 1 : 2, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', position: 'relative', minHeight: isMobile ? 300 : 460 }}>
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: isMobile ? 260 : 400, height: isMobile ? 260 : 400, borderRadius: '50%', background: 'radial-gradient(circle at 40% 35%, #c8daea, #8ab4d0)' }} />
-            <img src={sobreHero} alt="Sobre nós" style={{ height: isMobile ? 300 : 480, objectFit: 'contain', objectPosition: 'bottom', position: 'relative', zIndex: 2, filter: 'drop-shadow(0 8px 24px rgba(30,74,138,0.12))' }} />
+          <div style={{ order: isMobile ? 1 : 2, display: 'flex', justifyContent: 'center', alignItems: 'flex-end', position: 'relative', minHeight: isMobile ? 300 : 640 }}>
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: isMobile ? 260 : 500, height: isMobile ? 260 : 500, borderRadius: '50%', background: 'radial-gradient(circle at 40% 35%, #c8daea, #8ab4d0)' }} />
+            <img src={sobreHero} alt="Sobre nós" style={{ height: isMobile ? 300 : 550, objectFit: 'contain', objectPosition: 'bottom', position: 'relative', zIndex: 2, filter: 'drop-shadow(0 8px 24px rgba(30,74,138,0.12))' }} />
           </div>
         </div>
       </div>
@@ -49,9 +52,7 @@ export default function SobreNosPage({ navigate }) {
       <div style={{ background: '#f2f4f7', padding: isMobile ? '56px 24px' : '80px 40px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 80, alignItems: 'center' }}>
           <div style={{ order: isMobile ? 2 : 1 }}>
-            <div style={{ background: '#e2e6ed', borderRadius: '60px 24px 60px 24px', padding: 28, boxShadow: '0 4px 24px rgba(30,74,138,0.07)' }}>
-              <img src={sobreParceira} alt="Parceira estratégica" style={{ width: '100%', borderRadius: '40px 12px 40px 12px', objectFit: 'cover', display: 'block', maxHeight: 340 }} />
-            </div>
+           <img src={sobreParceira} alt="Parceira estratégica" style={{ width: '100%', borderRadius: 16, objectFit: 'cover', display: 'block', maxHeight: 340 }} />
           </div>
           <div style={{ order: isMobile ? 1 : 2 }}>
             <h2 style={{ fontSize: isMobile ? 28 : 'clamp(26px, 3vw, 40px)', fontWeight: 800, color: '#0d2a4e', lineHeight: 1.2, marginBottom: 28 }}>
@@ -109,11 +110,11 @@ export default function SobreNosPage({ navigate }) {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
 
           {/* Top phrase */}
-          <p style={{ textAlign: 'center', fontSize: isMobile ? 26 : 40, color: '#334', lineHeight: 1.7, marginBottom: 56 }}>
+          <p style={{ textAlign: 'center', fontSize: isMobile ? 24 : 48, color: '#334', lineHeight: 1.5, marginBottom: 96 }}>
             Pessoas bem geridas,{' '}
-            <strong style={{ color: '#2a7ec8' }}>varejo mais forte</strong>
+            <strong style={{ color: '#4390BC' }}>varejo mais forte</strong>
             {' '}e{' '}
-            <strong style={{ color: '#1e4a8a' }}>resultados sustentáveis.</strong>
+            <strong style={{ color: '#4390BC' }}>resultados sustentáveis.</strong>
           </p>
 
           <h2 style={{ textAlign: 'center', fontSize: isMobile ? 28 : 38, fontWeight: 800, color: '#0d2a4e', marginBottom: 56 }}>

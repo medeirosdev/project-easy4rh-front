@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useJobs } from '../context/JobsContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { profileApi } from '../services/api'
 
 const menuItems = [
   { id: 'resumo',     icon: '🏠', label: 'Resumo' },
@@ -9,7 +10,6 @@ const menuItems = [
   { id: 'cv',         icon: '📄', label: 'Meu CV' },
   { id: 'vagas',      icon: '🔍', label: 'Pesquisar Vagas' },
   { id: 'salvas',     icon: '🔖', label: 'Vagas Salvas' },
-  { id: 'candidaturas', icon: '📋', label: 'Candidaturas' },
 ]
 
 const mockCandidaturas = [
@@ -32,6 +32,68 @@ export default function CandidatoDashboard({ navigate }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [cvUploaded, setCvUploaded] = useState(false)
+  const [profile, setProfile] = useState(null)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileSaved, setProfileSaved] = useState(false)
+
+  // campos do formulário
+const [phone, setPhone] = useState('')
+const [city, setCity] = useState('')
+const [desiredRole, setDesiredRole] = useState('')
+const [linkedin, setLinkedin] = useState('')
+const [bio, setBio] = useState('')
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await profileApi.get()
+        setProfile(data)
+        setPhone(data.phone || '')
+        setCity(data.city || '')
+        setDesiredRole(data.desiredRole || '')
+        setLinkedin(data.linkedin || '')
+        setBio(data.bio || '')
+      } catch {
+        // perfil ainda não existe — ok
+      }
+    }
+    loadProfile()
+  }, [])
+
+    const handleSaveProfile = async () => {
+    setProfileLoading(true)
+    setProfileSaved(false)
+    try {
+      const formatUrl = (url) => {
+        if (!url) return undefined
+        if (url.startsWith('http://') || url.startsWith('https://')) return url
+        return `https://${url}`
+      }
+
+      const payload = {
+        fullName: user?.name || '',
+        phone: phone || undefined,
+        city: city || undefined,
+        headline: desiredRole || undefined,
+        about: bio || undefined,
+        linkedinUrl: formatUrl(linkedin),
+      }
+
+      if (profile) {
+        await profileApi.update(payload)
+      } else {
+        await profileApi.create(payload)
+      }
+      setProfileSaved(true)
+      setTimeout(() => setProfileSaved(false), 3000)
+    } catch (err) {
+      console.error('Erro ao salvar perfil:', err)
+      console.error('Detalhe do erro:', err.response?.data)
+    } finally {
+      setProfileLoading(false)
+    }
+  }
+
 
   const filteredJobs = jobs.filter(j =>
     !keyword || j.title.toLowerCase().includes(keyword.toLowerCase()) || j.company.toLowerCase().includes(keyword.toLowerCase())
@@ -64,20 +126,6 @@ export default function CandidatoDashboard({ navigate }) {
             ))}
           </div>
 
-          {/* Recent applications */}
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 16 }}>Candidaturas recentes</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
-            {mockCandidaturas.map(c => (
-              <div key={c.id} style={{ background: 'white', borderRadius: 12, padding: '16px 20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e' }}>{c.title}</div>
-                  <div style={{ fontSize: 12, color: '#778899' }}>{c.company} · {c.date}</div>
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: `${c.color}18`, color: c.color }}>{c.status}</span>
-              </div>
-            ))}
-          </div>
-
           {/* CTA complete profile */}
           <div style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', borderRadius: 16, padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
@@ -91,42 +139,61 @@ export default function CandidatoDashboard({ navigate }) {
         </div>
       )
 
-      case 'perfil': return (
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Meu Perfil</h2>
-          <div style={{ background: 'white', borderRadius: 16, padding: '28px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', marginBottom: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28, flexWrap: 'wrap' }}>
-              <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: 'white', fontWeight: 800, flexShrink: 0 }}>
-                {user?.name?.[0]}
-              </div>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: '#1e3a6e' }}>{user?.name}</div>
-                <div style={{ fontSize: 13, color: '#778899' }}>{user?.email}</div>
-              </div>
-            </div>
-            {[
-              { label: 'Nome completo', value: user?.name, placeholder: 'Seu nome' },
-              { label: 'E-mail', value: user?.email, placeholder: 'seu@email.com' },
-              { label: 'Telefone', value: '', placeholder: '(11) 99999-9999' },
-              { label: 'Cidade', value: '', placeholder: 'São Paulo, SP' },
-              { label: 'Cargo desejado', value: '', placeholder: 'Ex: Gerente de Loja' },
-              { label: 'LinkedIn', value: '', placeholder: 'linkedin.com/in/seuperfil' },
-            ].map((f) => (
-              <div key={f.label} style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>{f.label}</label>
-                <input defaultValue={f.value} placeholder={f.placeholder} style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box', color: '#334' }} />
-              </div>
-            ))}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>Sobre mim</label>
-              <textarea placeholder="Fale um pouco sobre você, sua experiência e objetivos..." rows={4} style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', resize: 'vertical', boxSizing: 'border-box', color: '#334' }} />
-            </div>
-            <button style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '12px 28px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
-              Salvar alterações
-            </button>
+        case 'perfil': return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Meu Perfil</h2>
+      <div style={{ background: 'white', borderRadius: 16, padding: '28px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28, flexWrap: 'wrap' }}>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: 'white', fontWeight: 800, flexShrink: 0 }}>
+            {user?.name?.[0] || user?.email?.[0]?.toUpperCase()}
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e3a6e' }}>{user?.name || user?.email?.split('@')[0]}</div>
+            <div style={{ fontSize: 13, color: '#778899' }}>{user?.email}</div>
           </div>
         </div>
-      )
+
+        {/* Campos fixos (somente leitura) */}
+        {[
+          { label: 'Nome completo', value: user?.name || '—' },
+          { label: 'E-mail', value: user?.email },
+        ].map(f => (
+          <div key={f.label} style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>{f.label}</label>
+            <input readOnly value={f.value || ''} style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box', color: '#334', background: '#f8fafc' }} />
+          </div>
+        ))}
+
+        {/* Campos editáveis */}
+        {[
+          { label: 'Telefone', value: phone, set: setPhone, placeholder: '(11) 99999-9999' },
+          { label: 'Cidade', value: city, set: setCity, placeholder: 'São Paulo, SP' },
+          { label: 'Cargo desejado', value: desiredRole, set: setDesiredRole, placeholder: 'Ex: Gerente de Loja' },
+          { label: 'LinkedIn', value: linkedin, set: setLinkedin, placeholder: 'linkedin.com/in/seuperfil' },
+        ].map(f => (
+          <div key={f.label} style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>{f.label}</label>
+            <input value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.placeholder} style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box', color: '#334' }} />
+          </div>
+        ))}
+
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>Sobre mim</label>
+          <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Fale um pouco sobre você..." rows={4} style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', resize: 'vertical', boxSizing: 'border-box', color: '#334' }} />
+        </div>
+
+        {profileSaved && (
+          <div style={{ background: '#dcfce7', border: '1px solid #b2e4c8', borderRadius: 8, padding: '10px 14px', color: '#16a34a', fontSize: 13, marginBottom: 16 }}>
+            ✅ Perfil salvo com sucesso!
+          </div>
+        )}
+
+        <button onClick={handleSaveProfile} disabled={profileLoading} style={{ background: profileLoading ? '#aaa' : 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '12px 28px', cursor: profileLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 14 }}>
+          {profileLoading ? 'Salvando...' : 'Salvar alterações'}
+        </button>
+      </div>
+    </div>
+  )
 
       case 'cv': return (
         <div>

@@ -14,12 +14,12 @@ const services = [
 ]
 
 const w2h = [
-  { tag: 'O QUÊ', color: '#8a3a1a', title: 'Proteção jurídica e compliance de RH', desc: 'Estruturamos políticas, processos e treinamentos para blindar sua empresa de riscos trabalhistas, conflitos internos e passivos que podem custar caro.' },
-  { tag: 'POR QUÊ', color: '#9a4a2a', title: 'Prevenir é muito mais barato que remediar', desc: 'Uma ação trabalhista pode custar dezenas de vezes mais do que a estruturação preventiva. Empresas sem políticas claras estão sempre vulneráveis.' },
-  { tag: 'PARA QUEM', color: '#aa5a3a', title: 'Varejistas que querem segurança jurídica', desc: 'Empresas que cresceram rápido e nunca formalizaram processos, ou que já sofreram com passivos trabalhistas e querem evitar que isso se repita.' },
-  { tag: 'COMO', color: '#ba6a4a', title: 'Auditoria → Políticas → Treinamento', desc: 'Auditamos os processos atuais, identificamos vulnerabilidades, criamos políticas e documentos adequados e treinamos gestores nos pontos críticos.' },
-  { tag: 'QUANDO', color: '#ca7a5a', title: 'Proteção básica em 30 dias', desc: 'As políticas e documentos essenciais ficam prontos no primeiro mês. O compliance completo é implementado ao longo de 60 a 90 dias.' },
-  { tag: 'QUANTO', color: '#9a4a2a', title: 'Investimento que se paga sozinho', desc: 'O custo de uma única ação trabalhista supera em muito o investimento em prevenção. Solicite uma conversa e veja o quanto você pode estar em risco.' },
+  { tag: 'O QUÊ',      color: '#5590B2', title: 'Proteção jurídica e compliance de RH', desc: 'Estruturamos políticas, processos e treinamentos para blindar sua empresa de riscos trabalhistas, conflitos internos e passivos que podem custar caro.' },
+  { tag: 'POR QUÊ',    color: '#5590B2', title: 'Prevenir é muito mais barato que remediar', desc: 'Uma ação trabalhista pode custar dezenas de vezes mais do que a estruturação preventiva. Empresas sem políticas claras estão sempre vulneráveis.' },
+  { tag: 'PARA QUEM',  color: '#5590B2', title: 'Varejistas que querem segurança jurídica', desc: 'Empresas que cresceram rápido e nunca formalizaram processos, ou que já sofreram com passivos trabalhistas e querem evitar que isso se repita.' },
+  { tag: 'COMO',       color: '#5590B2', title: 'Auditoria → Políticas → Treinamento', desc: 'Auditamos os processos atuais, identificamos vulnerabilidades, criamos políticas e documentos adequados e treinamos gestores nos pontos críticos.' },
+  { tag: 'QUANDO',     color: '#5590B2', title: 'Proteção básica em 30 dias', desc: 'As políticas e documentos essenciais ficam prontos no primeiro mês. O compliance completo é implementado ao longo de 60 a 90 dias.' },
+  { tag: 'QUANTO',     color: '#5590B2', title: 'Investimento que se paga sozinho', desc: 'O custo de uma única ação trabalhista supera em muito o investimento em prevenção. Solicite uma conversa e veja o quanto você pode estar em risco.' },
 ]
 
 export default function PrevencaoPage({ navigate }) {
@@ -30,7 +30,7 @@ export default function PrevencaoPage({ navigate }) {
     <div className="fade-in">
 
       {/* ── Hero ── */}
-      <div style={{ background: 'linear-gradient(135deg, #6e2a0a 0%, #a04a1a 50%, #c06a2a 100%)', padding: isMobile ? '52px 24px 48px' : '72px 40px 64px', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ background: '#5590B2', padding: isMobile ? '52px 24px 48px' : '72px 40px 64px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -80, right: -80, width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: 900, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
@@ -51,7 +51,7 @@ export default function PrevencaoPage({ navigate }) {
             Compliance, políticas e proteção jurídica para que sua empresa cresça sem tropeçar em riscos evitáveis.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('home')} style={{ background: 'white', color: '#6e2a0a', border: 'none', borderRadius: 32, padding: '13px 28px', cursor: 'pointer', fontWeight: 700, fontSize: 15, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>Solicitar proposta</button>
+            <button onClick={() => navigate('home')} style={{ background: 'white', color: '#5590B2', border: 'none', borderRadius: 32, padding: '13px 28px', cursor: 'pointer', fontWeight: 700, fontSize: 15, boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>Solicitar proposta</button>
             <button onClick={() => document.getElementById('servicos-lista')?.scrollIntoView({ behavior: 'smooth' })} style={{ background: 'transparent', color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: 32, padding: '13px 28px', cursor: 'pointer', fontWeight: 700, fontSize: 15 }}>Ver serviços ↓</button>
           </div>
         </div>
@@ -60,12 +60,12 @@ export default function PrevencaoPage({ navigate }) {
       {/* ── 5W2H ── */}
       <div style={{ background: '#f4f7fb', padding: isMobile ? '48px 20px' : '64px 20px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: '#a04a1a', textTransform: 'uppercase', textAlign: 'center', marginBottom: 8 }}>Entenda o serviço</p>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: '#5590B2', textTransform: 'uppercase', textAlign: 'center', marginBottom: 8 }}>Entenda o serviço</p>
           <h2 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: '#1e3a6e', textAlign: 'center', marginBottom: 40 }}>Tudo que você precisa saber antes de contratar</h2>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 20 }}>
             {w2h.map((item, i) => (
               <div key={i} style={{ background: 'white', borderRadius: 18, padding: '28px 24px', boxShadow: '0 4px 20px rgba(30,74,138,0.07)', borderTop: `4px solid ${item.color}`, transition: 'transform 0.2s, box-shadow 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(110,42,10,0.12)' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(85,144,178,0.12)' }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(30,74,138,0.07)' }}
               >
                 <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 2, color: item.color, textTransform: 'uppercase', display: 'block', marginBottom: 10 }}>{item.tag}</span>
@@ -80,13 +80,13 @@ export default function PrevencaoPage({ navigate }) {
       {/* ── Services list ── */}
       <div id="servicos-lista" style={{ background: 'white', padding: isMobile ? '48px 20px' : '64px 20px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: '#a04a1a', textTransform: 'uppercase', textAlign: 'center', marginBottom: 8 }}>O que está incluído</p>
-          <h2 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: '#1e3a6e', textAlign: 'center', marginBottom: 40 }}>Serviços do Pilar <span style={{ color: '#a04a1a' }}>Prevenção</span></h2>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: '#5590B2', textTransform: 'uppercase', textAlign: 'center', marginBottom: 8 }}>O que está incluído</p>
+          <h2 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: '#1e3a6e', textAlign: 'center', marginBottom: 40 }}>Serviços do Pilar <span style={{ color: '#5590B2' }}>Prevenção</span></h2>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16 }}>
             {services.map((s, i) => (
               <div key={i} onClick={() => setActiveService(activeService === i ? null : i)}
-                style={{ background: activeService === i ? 'linear-gradient(135deg, #fdf0e8, #f8dcc8)' : '#f8fafc', borderRadius: 14, padding: '20px', border: activeService === i ? '1.5px solid #a04a1a' : '1.5px solid #e8edf4', cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={e => { if (activeService !== i) e.currentTarget.style.borderColor = '#d09070' }}
+                style={{ background: activeService === i ? 'linear-gradient(135deg, #e8f2f8, #d4e8f4)' : '#f8fafc', borderRadius: 14, padding: '20px', border: activeService === i ? '1.5px solid #5590B2' : '1.5px solid #e8edf4', cursor: 'pointer', transition: 'all 0.2s' }}
+                onMouseEnter={e => { if (activeService !== i) e.currentTarget.style.borderColor = '#8AAEC2' }}
                 onMouseLeave={e => { if (activeService !== i) e.currentTarget.style.borderColor = '#e8edf4' }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: activeService === i ? 12 : 0 }}>
@@ -101,11 +101,11 @@ export default function PrevencaoPage({ navigate }) {
       </div>
 
       {/* ── CTA ── */}
-      <div style={{ background: 'linear-gradient(135deg, #6e2a0a, #a04a1a)', padding: isMobile ? '48px 24px' : '64px 40px', textAlign: 'center' }}>
+      <div style={{ background: '#5590B2', padding: isMobile ? '48px 24px' : '64px 40px', textAlign: 'center' }}>
         <h2 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 800, color: 'white', marginBottom: 16 }}>Sua empresa está protegida?</h2>
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', marginBottom: 32, maxWidth: 500, margin: '0 auto 32px' }}>Fale com nossos especialistas e descubra os riscos que você pode estar correndo agora.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={() => navigate('home')} style={{ background: 'white', color: '#6e2a0a', border: 'none', borderRadius: 32, padding: '14px 32px', cursor: 'pointer', fontWeight: 700, fontSize: 15 }}>Solicitar diagnóstico gratuito</button>
+          <button onClick={() => navigate('home')} style={{ background: 'white', color: '#5590B2', border: 'none', borderRadius: 32, padding: '14px 32px', cursor: 'pointer', fontWeight: 700, fontSize: 15 }}>Solicitar diagnóstico gratuito</button>
           <button onClick={() => navigate('sobre')} style={{ background: 'transparent', color: 'white', border: '2px solid rgba(255,255,255,0.5)', borderRadius: 32, padding: '14px 32px', cursor: 'pointer', fontWeight: 700, fontSize: 15 }}>Conhecer a Easy4RH</button>
         </div>
       </div>
