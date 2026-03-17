@@ -1,14 +1,65 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { jobsApi, applicationsApi } from '../services/api'
-import { mockJobs, mockCourses } from '../data/mockData'
+import { jobsApi, applicationsApi, coursesApi } from '../services/api'
 
 const JobsContext = createContext()
 
+// Mapeia enums do backend para labels do frontend
+export const locationTypeMap = { ON_SITE: 'Presencial', REMOTE: 'Remoto', HYBRID: 'Híbrido' }
+export const experienceLevelMap = { INTERN: 'Estágio', JUNIOR: 'Júnior', MID: 'Pleno', SENIOR: 'Sênior', LEAD: 'Sênior', MANAGER: 'Sênior' }
+
+const logoColors = ['#0066FF', '#CC0000', '#004B9B', '#E31E26', '#333333', '#009944', '#E60000', '#8B5CF6']
+
+export function normalizeJob(job, index = 0) {
+  const companyName = typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')
+  const companyLogo = typeof job.company === 'object' && job.company && job.company.logoUrl
+    ? job.company.logoUrl
+    : companyName.slice(0, 2).toUpperCase()
+
+  return {
+    ...job,
+    company: job.company,
+    logo: job.logo || companyLogo,
+    logoColor: job.logoColor || logoColors[index % logoColors.length],
+    type: locationTypeMap[job.locationType] || job.type || 'Presencial',
+    level: experienceLevelMap[job.experienceLevel] || job.level || 'Pleno',
+    location: job.city && job.state ? `${job.city}, ${job.state}` : (job.location || ''),
+    salary: job.salaryMin != null
+      ? `R$ ${job.salaryMin.toLocaleString('pt-BR')}${job.salaryMax ? ` – R$ ${job.salaryMax.toLocaleString('pt-BR')}` : ''}`
+      : (job.salary || 'A combinar'),
+    posted: job.createdAt
+      ? `${Math.max(1, Math.floor((Date.now() - new Date(job.createdAt).getTime()) / 86400000))} dias`
+      : (job.posted || 'Recente'),
+    description: job.description || '',
+    responsibilities: job.responsibilities ? (typeof job.responsibilities === 'string' ? job.responsibilities.split('\n') : job.responsibilities) : [],
+    requirements: job.requirements ? (typeof job.requirements === 'string' ? job.requirements.split('\n') : job.requirements) : [],
+    benefits: job.benefits || [],
+    category: job.area || job.category || '',
+  }
+}
+
+const courseLevelMap = { BEGINNER: 'Básico', INTERMEDIATE: 'Intermediário', ADVANCED: 'Avançado' }
+
+function normalizeCourse(course) {
+  return {
+    ...course,
+    level: courseLevelMap[course.level] || course.level || 'Básico',
+    students: course.enrollmentCount ?? course.students ?? 0,
+    rating: course.rating ?? 0,
+    instructor: course.instructor?.fullName || course.instructor?.email || course.instructorName || course.instructor || '',
+    duration: course.totalDuration
+      ? `${Math.round(course.totalDuration / 3600)}h`
+      : (course.duration || '—'),
+    description: course.description || '',
+    category: course.category || '',
+  }
+}
+
 export function JobsProvider({ children }) {
   const [jobs, setJobs] = useState([])
-  const [courses] = useState(mockCourses) // LMS ainda não integrado
+  const [courses, setCourses] = useState([])
   const [appliedJobs, setAppliedJobs] = useState([])
   const [loading, setLoading] = useState(false)
+  const [coursesLoading, setCoursesLoading] = useState(false)
   const [error, setError] = useState(null)
 
   // ── Carregar vagas ao montar ──
@@ -17,27 +68,41 @@ export function JobsProvider({ children }) {
     setError(null)
     try {
       const data = await jobsApi.list(filters)
-      // A API retorna { data: [...], total, page, limit } ou um array direto
       const list = Array.isArray(data) ? data : (data.data || data.jobs || [])
-      setJobs(list)
+      setJobs(list.map(normalizeJob))
     } catch (err) {
       console.error('Erro ao carregar vagas:', err)
       setError(err.message)
-      // Fallback para mocks enquanto o backend não estiver disponível
-      setJobs(mockJobs)
+      setJobs([])
     } finally {
       setLoading(false)
     }
   }, [])
 
+  // ── Carregar cursos ao montar ──
+  const fetchCourses = useCallback(async () => {
+    setCoursesLoading(true)
+    try {
+      const data = await coursesApi.list()
+      const list = Array.isArray(data) ? data : (data.data || data.courses || [])
+      setCourses(list.map(normalizeCourse))
+    } catch (err) {
+      console.error('Erro ao carregar cursos:', err)
+      setCourses([])
+    } finally {
+      setCoursesLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchJobs()
-  }, [fetchJobs])
+    fetchCourses()
+  }, [fetchJobs, fetchCourses])
 
   // ── Candidatar-se ──
-  const applyToJob = async (jobId) => {
+  const applyToJob = async (jobId, data = {}) => {
     try {
-      await applicationsApi.apply(jobId)
+      await applicationsApi.apply(jobId, data)
       setAppliedJobs((prev) => (prev.includes(jobId) ? prev : [...prev, jobId]))
       return { success: true }
     } catch (err) {
@@ -52,9 +117,11 @@ export function JobsProvider({ children }) {
       courses,
       appliedJobs,
       loading,
+      coursesLoading,
       error,
       applyToJob,
-      fetchJobs, // expõe para VagasPage usar com filtros
+      fetchJobs,
+      fetchCourses,
     }}>
       {children}
     </JobsContext.Provider>

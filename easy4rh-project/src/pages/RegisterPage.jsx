@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 
 export default function RegisterPage({ navigate }) {
   const { register } = useAuth();
+  const [role, setRole] = useState("CANDIDATE");
   const [form, setForm] = useState({ email: "", firstName: "", lastName: "", password: "", phone: "", location: "", currentRole: "", cv: null });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -16,8 +17,8 @@ export default function RegisterPage({ navigate }) {
     const e = {};
     if (!form.email) e.email = "Email obrigatório";
     if (!form.firstName) e.firstName = "Nome obrigatório";
-    if (!form.password || form.password.length < 5) e.password = "Senha precisa ter pelo menos 5 caracteres";
-    if (!form.phone) e.phone = "Celular obrigatório";
+    if (!form.password || form.password.length < 8) e.password = "Senha precisa ter pelo menos 8 caracteres";
+    if (role === "CANDIDATE" && !form.phone) e.phone = "Celular obrigatório";
     return e;
   };
 
@@ -26,10 +27,15 @@ export default function RegisterPage({ navigate }) {
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     setLoading(true);
     await new Promise(r => setTimeout(r, 1000));
-    register({ email: form.email, name: `${form.firstName} ${form.lastName}`, phone: form.phone });
+    const result = await register({ email: form.email, password: form.password, role, name: `${form.firstName} ${form.lastName}`.trim(), phone: form.phone });
+    if (!result.success) { setErrors({ general: result.message }); setLoading(false); return; }
     setLoading(false);
     setSuccess(true);
-    setTimeout(() => navigate("home"), 1500);
+    setTimeout(() => {
+      const r = result.user?.role
+      if (r === 'RECRUITER' || r === 'INSTRUCTOR') navigate('dashboard-recrutador')
+      else navigate('dashboard-candidato')
+    }, 1500);
   };
 
   const inputStyle = (field) => ({
@@ -58,7 +64,7 @@ export default function RegisterPage({ navigate }) {
             <div style={{ background: "#e8fdf0", border: "2px solid #38a169", borderRadius: 16, padding: 40, textAlign: "center" }}>
               <div style={{ fontSize: 56 }}>✅</div>
               <h2 style={{ color: "#38a169" }}>Cadastro realizado com sucesso!</h2>
-              <p style={{ color: "#555" }}>Redirecionando para a home...</p>
+              <p style={{ color: "#555" }}>Redirecionando para o painel...</p>
             </div>
           ) : (
             <div style={{ background: "#f0f4f8", borderRadius: 16, padding: 40 }}>
@@ -67,6 +73,32 @@ export default function RegisterPage({ navigate }) {
               </h2>
               <div style={{ background: "white", borderRadius: 12, padding: 28 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 700, color: "#333", marginTop: 0, marginBottom: 20 }}>Registre-se</h3>
+
+                {/* Role toggle */}
+                <div style={{ display: "flex", background: "#f0f4f8", borderRadius: 10, padding: 4, marginBottom: 20 }}>
+                  {[
+                    { value: "CANDIDATE", label: "Candidato", icon: "👤" },
+                    { value: "RECRUITER", label: "Recrutador", icon: "🏢" },
+                    { value: "INSTRUCTOR", label: "Instrutor", icon: "🎓" },
+                  ].map(opt => (
+                    <button key={opt.value} onClick={() => { setRole(opt.value); setErrors({}); }}
+                      style={{
+                        flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", cursor: "pointer",
+                        fontSize: 13.5, fontWeight: role === opt.value ? 700 : 500, transition: "all 0.2s",
+                        background: role === opt.value ? "white" : "transparent",
+                        color: role === opt.value ? "#1e4a8a" : "#778899",
+                        boxShadow: role === opt.value ? "0 2px 8px rgba(30,74,138,0.1)" : "none",
+                      }}>
+                      {opt.icon} {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {errors.general && (
+                  <div style={{ background: "#fee", border: "1px solid #fcc", borderRadius: 8, padding: "10px 14px", color: "#c00", fontSize: 13, marginBottom: 16 }}>
+                    {errors.general}
+                  </div>
+                )}
 
                 <div style={{ marginBottom: 14 }}>
                   <input type="email" placeholder="Endereço de email" value={form.email} onChange={e => update("email", e.target.value)} style={inputStyle("email")} />
@@ -82,34 +114,54 @@ export default function RegisterPage({ navigate }) {
                 </div>
 
                 <div style={{ marginBottom: 14 }}>
-                  <input type="password" placeholder="Criar senha (precisa ter 5 caracteres)" value={form.password} onChange={e => update("password", e.target.value)} style={inputStyle("password")} />
+                  <input type="password" placeholder="Criar senha (mínimo 8 caracteres)" value={form.password} onChange={e => update("password", e.target.value)} style={inputStyle("password")} />
                   {errors.password && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.password}</div>}
                 </div>
 
-                <div style={{ marginBottom: 14 }}>
-                  <input placeholder="Número de celular" value={form.phone} onChange={e => update("phone", e.target.value)} style={inputStyle("phone")} />
-                  {errors.phone && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.phone}</div>}
-                </div>
+                {role === "CANDIDATE" && (
+                  <>
+                    <div style={{ marginBottom: 14 }}>
+                      <input placeholder="Número de celular" value={form.phone} onChange={e => update("phone", e.target.value)} style={inputStyle("phone")} />
+                      {errors.phone && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.phone}</div>}
+                    </div>
 
-                <div style={{ marginBottom: 14 }}>
-                  <input placeholder="Localização" value={form.location} onChange={e => update("location", e.target.value)} style={inputStyle("location")} />
-                </div>
+                    <div style={{ marginBottom: 14 }}>
+                      <input placeholder="Localização" value={form.location} onChange={e => update("location", e.target.value)} style={inputStyle("location")} />
+                    </div>
 
-                <div style={{ marginBottom: 20 }}>
-                  <input placeholder="Cargo atual/recente" value={form.currentRole} onChange={e => update("currentRole", e.target.value)} style={inputStyle("currentRole")} />
-                </div>
+                    <div style={{ marginBottom: 20 }}>
+                      <input placeholder="Cargo atual/recente" value={form.currentRole} onChange={e => update("currentRole", e.target.value)} style={inputStyle("currentRole")} />
+                    </div>
 
-                <div style={{ marginBottom: 24 }}>
-                  <label style={{
-                    display: "inline-block", border: "1px solid #d0d8e4",
-                    borderRadius: 8, padding: "10px 20px", cursor: "pointer",
-                    background: "white", fontSize: 13.5, color: "#555", fontWeight: 500
-                  }}>
-                    📎 Carregue seu CV
-                    <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => update("cv", e.target.files[0])} />
-                  </label>
-                  {form.cv && <span style={{ fontSize: 12.5, color: "#38a169", marginLeft: 10 }}>✅ {form.cv.name}</span>}
-                </div>
+                    <div style={{ marginBottom: 24 }}>
+                      <label style={{
+                        display: "inline-block", border: "1px solid #d0d8e4",
+                        borderRadius: 8, padding: "10px 20px", cursor: "pointer",
+                        background: "white", fontSize: 13.5, color: "#555", fontWeight: 500
+                      }}>
+                        📎 Carregue seu CV
+                        <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => update("cv", e.target.files[0])} />
+                      </label>
+                      {form.cv && <span style={{ fontSize: 12.5, color: "#38a169", marginLeft: 10 }}>✅ {form.cv.name}</span>}
+                    </div>
+                  </>
+                )}
+
+                {role === "RECRUITER" && (
+                  <div style={{ background: "#f0f8ff", borderRadius: 10, padding: "16px", marginBottom: 20, border: "1px solid #d0e4f4" }}>
+                    <p style={{ fontSize: 13, color: "#1e4a8a", margin: 0, fontWeight: 600 }}>
+                      🏢 Após o cadastro, você poderá vincular ou criar sua empresa no painel do recrutador.
+                    </p>
+                  </div>
+                )}
+
+                {role === "INSTRUCTOR" && (
+                  <div style={{ background: "#f0fff4", borderRadius: 10, padding: "16px", marginBottom: 20, border: "1px solid #b2e4c8" }}>
+                    <p style={{ fontSize: 13, color: "#276749", margin: 0, fontWeight: 600 }}>
+                      🎓 Como instrutor, você poderá criar cursos, adicionar aulas com vídeos e acompanhar o progresso dos alunos.
+                    </p>
+                  </div>
+                )}
 
                 <button onClick={handleSubmit} disabled={loading} style={{
                   background: loading ? "#aaa" : "linear-gradient(135deg, #1e4a8a, #4a9edd)",
@@ -117,7 +169,7 @@ export default function RegisterPage({ navigate }) {
                   padding: "14px 32px", cursor: loading ? "default" : "pointer",
                   fontWeight: 700, fontSize: 14, transition: "all 0.2s"
                 }}>
-                  {loading ? "Registrando..." : "Criar conta"}
+                  {loading ? "Registrando..." : role === "RECRUITER" ? "Criar conta de recrutador" : role === "INSTRUCTOR" ? "Criar conta de instrutor" : "Criar conta"}
                 </button>
 
                 <p style={{ fontSize: 12.5, color: "#888", marginTop: 14 }}>

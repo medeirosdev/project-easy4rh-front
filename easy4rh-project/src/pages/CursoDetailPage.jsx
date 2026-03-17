@@ -13,6 +13,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
   const [lessonData, setLessonData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [lessonLoading, setLessonLoading] = useState(false)
+  const [enrolling, setEnrolling] = useState(false)
   const [openSections, setOpenSections] = useState({})
 
   useEffect(() => {
@@ -63,6 +64,20 @@ export default function CursoDetailPage({ navigate, courseId }) {
       await lessonsApi.updateProgress(activeLesson.id, { completed, watchedSeconds: 0 })
     } catch (err) {
       console.error('Erro ao atualizar progresso:', err)
+    }
+  }
+
+  const handleEnroll = async () => {
+    if (!user) { navigate('login'); return }
+    setEnrolling(true)
+    try {
+      const enr = await coursesApi.enroll(courseId)
+      setEnrollment(enr)
+    } catch (err) {
+      console.error('Erro ao matricular:', err)
+      alert(err.message || 'Erro ao matricular')
+    } finally {
+      setEnrolling(false)
     }
   }
 
@@ -168,12 +183,11 @@ export default function CursoDetailPage({ navigate, courseId }) {
               {!enrollment ? (
                 <div style={{ background: '#f0f6ff', borderRadius: 12, padding: '20px', border: '1px solid #d0e4f8' }}>
                   <p style={{ fontSize: 14, color: '#334', marginBottom: 16 }}>
-                    Você ainda não está matriculado neste curso. Adquira o acesso para assistir todas as aulas.
+                    Você ainda não está matriculado neste curso. Inscreva-se para assistir todas as aulas.
                   </p>
-                  <button style={{ background: 'linear-gradient(135deg, #1e3a6e, #2a5298)', color: 'white', border: 'none', borderRadius: 10, padding: '13px 28px', cursor: 'pointer', fontWeight: 700, fontSize: 15 }}>
-                    Adquirir acesso
+                  <button onClick={handleEnroll} disabled={enrolling} style={{ background: enrolling ? '#aaa' : 'linear-gradient(135deg, #1e3a6e, #2a5298)', color: 'white', border: 'none', borderRadius: 10, padding: '13px 28px', cursor: enrolling ? 'default' : 'pointer', fontWeight: 700, fontSize: 15 }}>
+                    {enrolling ? 'Matriculando...' : 'Matricular-se gratuitamente'}
                   </button>
-                  <p style={{ fontSize: 12, color: '#aab', marginTop: 10 }}>Pagamento será implementado em breve.</p>
                 </div>
               ) : (
                 <div style={{ background: '#f0fff4', borderRadius: 12, padding: '16px 20px', border: '1px solid #b2e4c8', display: 'flex', alignItems: 'center', gap: 12 }}>

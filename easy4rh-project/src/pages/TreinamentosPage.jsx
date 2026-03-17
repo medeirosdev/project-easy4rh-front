@@ -1,4 +1,5 @@
 import { useJobs } from "../context/JobsContext";
+import { useAuth } from "../context/AuthContext";
 
 const categoryColors = {
   Gestão: "#1e4a8a", Marketing: "#9b2c8a", Operações: "#c05621", Vendas: "#276749",
@@ -6,7 +7,8 @@ const categoryColors = {
 };
 
 export default function TreinamentosPage({ navigate }) {
-  const { courses } = useJobs();
+  const { courses, coursesLoading } = useJobs();
+  const { user } = useAuth();
 
   return (
     <div>
@@ -71,6 +73,11 @@ export default function TreinamentosPage({ navigate }) {
 
           {/* Courses grid */}
           <h2 style={{ fontSize: 24, fontWeight: 800, color: "#1e3a6e", marginBottom: 24 }}>Cursos Disponíveis</h2>
+          {coursesLoading ? (
+            <div style={{ textAlign: "center", padding: "48px 20px", color: "#778899", fontSize: 14 }}>Carregando cursos...</div>
+          ) : courses.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 20px", color: "#778899", fontSize: 14 }}>Nenhum curso disponível no momento.</div>
+          ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
             {courses.map(course => (
               <div key={course.id} style={{
@@ -97,22 +104,22 @@ export default function TreinamentosPage({ navigate }) {
                   <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12, color: "#555" }}>⏱️ {course.duration}</span>
                     <span style={{ fontSize: 12, color: "#555" }}>📊 {course.level}</span>
-                    <span style={{ fontSize: 12, color: "#555" }}>👥 {course.students.toLocaleString()} alunos</span>
-                    <span style={{ fontSize: 12, color: "#f59e0b" }}>{"⭐".repeat(Math.floor(course.rating))} {course.rating}</span>
+                    <span style={{ fontSize: 12, color: "#555" }}>👥 {(course.students || 0).toLocaleString()} alunos</span>
+                    {course.rating > 0 && <span style={{ fontSize: 12, color: "#f59e0b" }}>{"⭐".repeat(Math.floor(course.rating))} {course.rating}</span>}
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: "#2e7d32" }}>{course.price}</span>
-                    <button onClick={() => navigate("login")} style={{
+                  <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+                    <button onClick={() => navigate(user ? `curso-${course.id}` : "login")} style={{
                       background: "linear-gradient(135deg, #1e4a8a, #4a9edd)", color: "white",
                       border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: 12.5
                     }}>
-                      Inscrever-se
+                      {user ? "Ver curso" : "Inscrever-se"}
                     </button>
                   </div>
                 </div>
               </div>
             ))}
           </div>
+          )}
         </div>
       </div>
     </div>

@@ -70,7 +70,7 @@ const navItems = [
   { label: 'Sobre Nós',    page: 'sobre',         icon: Icons.sobre },
   { label: 'Serviços',     page: null,            icon: Icons.servicos, hasDropdown: true },
   { label: 'Vagas',        page: 'vagas',         icon: Icons.vagas },
-  { label: 'Treinamentos', page: 'em-construcao', icon: Icons.treinamentos },
+  { label: 'Treinamentos', page: 'treinamentos', icon: Icons.treinamentos },
   { label: 'FAQ',          page: 'faq',           icon: Icons.faq },
   { label: 'Fale Conosco', page: null,            icon: Icons.faleConosco, scrollTo: 'fale-conosco' },
 ]
@@ -189,9 +189,12 @@ export default function Navbar({ navigate, page }) {
                 {userMenu && (
                   <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', background: 'white', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #e8edf2', minWidth: 170, overflow: 'hidden', zIndex: 100 }}>
                     {[
-                      { icon: '👤', label: 'Meu Perfil',   page: user?.role === 'RECRUITER' ? 'dashboard-recrutador' : 'dashboard-candidato' },
-                      { icon: '🔖', label: 'Vagas Salvas', page: 'dashboard-candidato' },
-                      { icon: '📋', label: 'Candidaturas', page: 'dashboard-candidato' },
+                      { icon: '👤', label: 'Meu Painel',   page: (user?.role === 'RECRUITER' || user?.role === 'INSTRUCTOR') ? 'dashboard-recrutador' : 'dashboard-candidato' },
+                      { icon: '🎓', label: 'Treinamentos', page: 'treinamentos' },
+                      ...(user?.role === 'CANDIDATE' ? [
+                        { icon: '🔖', label: 'Vagas Salvas', page: 'dashboard-candidato' },
+                        { icon: '📋', label: 'Candidaturas', page: 'dashboard-candidato' },
+                      ] : []),
                     ].map(({ icon, label, page: dest }) => (
                       <button key={label} onClick={() => { navigate(dest); setUserMenu(false) }}
                         style={{ display: 'flex', width: '100%', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', gap: 8, fontSize: 13.5, color: '#333', alignItems: 'center' }}

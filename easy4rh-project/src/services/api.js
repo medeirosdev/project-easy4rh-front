@@ -38,6 +38,21 @@ async function request(method, path, body = null) {
   return res.json()
 }
 
+async function requestFormData(method, path, formData) {
+  const token = getToken()
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: 'Erro desconhecido' }))
+    throw new Error(error.message || `Erro ${res.status}`)
+  }
+  if (res.status === 204) return null
+  return res.json()
+}
+
 // Auth
 
 export const authApi = {
@@ -46,7 +61,7 @@ export const authApi = {
    * POST /users
    */
   register: (data) => request('POST', '/users', data),
-  // data: { email, password, name, phone?, role?: 'CANDIDATE' | 'RECRUITER' }
+  // data: { email, password, role?: 'CANDIDATE' | 'RECRUITER' }
 
   /**
    * Login — retorna { access_token }
@@ -142,6 +157,16 @@ export const jobsApi = {
   myJobs: () => request('GET', '/jobs/recruiter/my-jobs'),
 }
 
+// ── Job Questions (Perguntas de triagem) ──────────────────────
+
+export const jobQuestionsApi = {
+  list: (jobId) => request('GET', `/jobs/${jobId}/questions`),
+  create: (jobId, data) => request('POST', `/jobs/${jobId}/questions`, data),
+  update: (jobId, questionId, data) => request('PATCH', `/jobs/${jobId}/questions/${questionId}`, data),
+  remove: (jobId, questionId) => request('DELETE', `/jobs/${jobId}/questions/${questionId}`),
+  reorder: (jobId, questionIds) => request('PATCH', `/jobs/${jobId}/questions/reorder`, { questionIds }),
+}
+
 // ── Applications (Candidaturas) ───────────────────────────────
 
 export const applicationsApi = {
@@ -149,7 +174,7 @@ export const applicationsApi = {
    * Candidatar-se a uma vaga
    * POST /jobs/:id/apply
    */
-  apply: (jobId) => request('POST', `/jobs/${jobId}/apply`),
+  apply: (jobId, data = {}) => request('POST', `/jobs/${jobId}/apply`, data),
 
   /**
    * Minhas candidaturas (Candidato)
@@ -167,8 +192,8 @@ export const applicationsApi = {
    * Atualizar status de candidatura (Recrutador)
    * PATCH /applications/:id
    */
-  updateStatus: (id, status) => request('PATCH', `/applications/${id}`, { status }),
-  // status: 'PENDING' | 'REVIEWING' | 'APPROVED' | 'REJECTED'
+  updateStatus: (id, stage) => request('PATCH', `/applications/${id}`, { stage }),
+  // stage: 'APPLIED' | 'SCREENING' | 'INTERVIEW_1' | 'INTERVIEW_2' | 'TECHNICAL' | 'OFFER' | 'HIRED' | 'REJECTED'
 
   /**
    * Desistir de candidatura (Candidato)
@@ -202,52 +227,45 @@ export const companiesApi = {
 // ── Courses / LMS ─────────────────────────────────────────────
 
 export const coursesApi = {
-  /**
-   * Listar cursos públicos
-   * GET /courses
-   */
   list: () => request('GET', '/courses'),
-
-  /**
-   * Detalhes de um curso
-   * GET /courses/:id
-   */
   get: (id) => request('GET', `/courses/${id}`),
-
-  /**
-   * Matricular-se em um curso
-   * POST /courses/:id/enroll
-   */
+  create: (data) => request('POST', '/courses', data),
+  update: (id, data) => request('PATCH', `/courses/${id}`, data),
+  delete: (id) => request('DELETE', `/courses/${id}`),
+  publish: (id) => request('POST', `/courses/${id}/publish`),
+  archive: (id) => request('POST', `/courses/${id}/archive`),
+  myCourses: () => request('GET', '/courses/instructor/my-courses'),
   enroll: (id) => request('POST', `/courses/${id}/enroll`),
-
-  /**
-   * Meus cursos matriculados
-   * GET /me/enrollments
-   */
   myEnrollments: () => request('GET', '/me/enrollments'),
-
-  /**
-   * Grade curricular (seções e aulas)
-   * GET /courses/:id/sections
-   */
   sections: (id) => request('GET', `/courses/${id}/sections`),
+  students: (id) => request('GET', `/courses/${id}/students`),
+  stats: (id) => request('GET', `/courses/${id}/stats`),
+}
+
+// ── Sections ─────────────────────────────────────────────────
+
+export const sectionsApi = {
+  list: (courseId) => request('GET', `/courses/${courseId}/sections`),
+  create: (courseId, data) => request('POST', `/courses/${courseId}/sections`, data),
+  update: (id, data) => request('PATCH', `/sections/${id}`, data),
+  delete: (id) => request('DELETE', `/sections/${id}`),
+  reorder: (courseId, sectionIds) => request('POST', `/courses/${courseId}/sections/reorder`, { sectionIds }),
 }
 
 // ── Lessons ───────────────────────────────────────────────────
 
 export const lessonsApi = {
-  /**
-   * Ver aula
-   * GET /lessons/:id
-   */
   get: (id) => request('GET', `/lessons/${id}`),
-
-  /**
-   * Atualizar progresso
-   * POST /lessons/:id/progress
-   */
+  create: (sectionId, data) => request('POST', `/sections/${sectionId}/lessons`, data),
+  update: (id, data) => request('PATCH', `/lessons/${id}`, data),
+  delete: (id) => request('DELETE', `/lessons/${id}`),
+  reorder: (sectionId, lessonIds) => request('POST', `/sections/${sectionId}/lessons/reorder`, { lessonIds }),
+  uploadVideo: (id, file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return requestFormData('POST', `/lessons/${id}/upload-video`, fd)
+  },
   updateProgress: (id, data) => request('POST', `/lessons/${id}/progress`, data),
-  // data: { completed: true }
 }
 
 // ── Candidate Profile ─────────────────────────────────────────

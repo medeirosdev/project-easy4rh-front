@@ -23,7 +23,7 @@ export default function JobCard({ job, navigate }) {
           </div>
           <div>
             <div style={{ fontSize: 15.5, fontWeight: 700, color: '#1e3a6e', marginBottom: 2 }}>{job.title}</div>
-            <div style={{ fontSize: 13, color: '#666' }}>{job.company}</div>
+            <div style={{ fontSize: 13, color: '#666' }}>{typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')}</div>
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage({ navigate, initialTab }) {
-  const { login, loginRecruiter } = useAuth();
+  const { login, loginRecruiter, loginInstructor } = useAuth();
   const [tab, setTab] = useState(initialTab || "candidate");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,11 +14,12 @@ export default function LoginPage({ navigate, initialTab }) {
     if (!email || !password) { setError("Preencha todos os campos."); return; }
     setLoading(true);
     await new Promise(r => setTimeout(r, 800));
-    const fn = tab === "candidate" ? login : loginRecruiter;
+    const fn = tab === "candidate" ? login : tab === "instructor" ? loginInstructor : loginRecruiter;
     const result = await fn(email, password);
     setLoading(false);
     if (result.success) {
-      if (result.user?.role === 'RECRUITER') navigate('dashboard-recrutador')
+      const r = result.user?.role
+      if (r === 'RECRUITER' || r === 'INSTRUCTOR') navigate('dashboard-recrutador')
       else navigate('dashboard-candidato')
     } else {
       setError(result.message);
@@ -49,6 +50,7 @@ export default function LoginPage({ navigate, initialTab }) {
           { label: "🔐 Login",          action: () => { setTab("candidate"); } },
           { label: "📝 Registre seu CV", action: () => navigate("register") },
           { label: "🔍 Recrutamento",    action: () => { setTab("recruiter"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
+          { label: "🎓 Instrutor",       action: () => { setTab("instructor"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
         ].map((item) => (
           <button key={item.label} onClick={item.action} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13.5, fontWeight: 600, margin: "0 16px" }}>
             {item.label}
@@ -60,15 +62,19 @@ export default function LoginPage({ navigate, initialTab }) {
       <div style={{ maxWidth: 880, margin: "40px auto", padding: "0 20px" }}>
         {/* Tabs */}
         <div style={{ display: "flex", marginBottom: 0, borderBottom: "2px solid #e8edf2" }}>
-          {["candidate", "recruiter"].map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{
+          {[
+            { key: "candidate", label: "Login" },
+            { key: "recruiter", label: "Recrutador" },
+            { key: "instructor", label: "Instrutor" },
+          ].map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
               background: "none", border: "none", cursor: "pointer",
               padding: "12px 28px", fontSize: 15, fontWeight: 600,
-              color: tab === t ? "#1e4a8a" : "#888",
-              borderBottom: tab === t ? "2px solid #1e4a8a" : "2px solid transparent",
+              color: tab === t.key ? "#1e4a8a" : "#888",
+              borderBottom: tab === t.key ? "2px solid #1e4a8a" : "2px solid transparent",
               marginBottom: -2, transition: "all 0.2s"
             }}>
-              {t === "candidate" ? "Login" : "Login do recrutador"}
+              {t.label}
             </button>
           ))}
         </div>
@@ -109,11 +115,13 @@ export default function LoginPage({ navigate, initialTab }) {
           {/* Right side */}
           <div>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1e4a8a", marginTop: 0, marginBottom: 20 }}>
-              {tab === "candidate" ? "Ainda não registrado?" : "Quer anunciar vagas?"}
+              {tab === "candidate" ? "Ainda não registrado?" : tab === "instructor" ? "Quer criar cursos?" : "Quer anunciar vagas?"}
             </h3>
             <p style={{ color: "#555", fontSize: 13.5, marginBottom: 24 }}>
               {tab === "candidate"
                 ? "Crie sua conta e encontre oportunidades que combinam com você."
+                : tab === "instructor"
+                ? "Compartilhe seu conhecimento criando cursos para profissionais do varejo."
                 : "Cadastre sua empresa e publique vagas para os melhores candidatos do varejo."}
             </p>
             {tab === "candidate" ? (
@@ -133,6 +141,25 @@ export default function LoginPage({ navigate, initialTab }) {
                   borderRadius: 10, padding: "13px 28px", cursor: "pointer", fontWeight: 700, fontSize: 14, marginTop: 8
                 }}>
                   Se cadastre
+                </button>
+              </>
+            ) : tab === "instructor" ? (
+              <>
+                {[
+                  { icon: "🎓", title: "Crie cursos completos", desc: "Monte seções, aulas e faça upload de vídeos." },
+                  { icon: "📊", title: "Acompanhe seus alunos", desc: "Veja progresso, taxas de conclusão e matrículas." },
+                  { icon: "🏆", title: "Emita certificados", desc: "Alunos recebem certificado digital ao concluir." },
+                ].map(item => (
+                  <div key={item.title} style={{ marginBottom: 18 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#333", marginBottom: 2 }}>{item.icon} {item.title}</div>
+                    <div style={{ fontSize: 12.5, color: "#666" }}>{item.desc}</div>
+                  </div>
+                ))}
+                <button onClick={() => navigate("register")} style={{
+                  background: "#1e3a6e", color: "white", border: "none",
+                  borderRadius: 10, padding: "13px 28px", cursor: "pointer", fontWeight: 700, fontSize: 14, marginTop: 8
+                }}>
+                  Criar conta de instrutor
                 </button>
               </>
             ) : (

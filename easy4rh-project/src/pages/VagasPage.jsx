@@ -37,7 +37,7 @@ export default function VagasPage({ navigate }) {
     if (filters.types.length && !filters.types.includes(job.type)) return false
     if (filters.levels.length && !filters.levels.includes(job.level)) return false
     if (filters.locations.length && !filters.locations.some(l => job.location.includes(l.split(',')[0]))) return false
-    if (filters.keyword && !job.title.toLowerCase().includes(filters.keyword.toLowerCase()) && !job.company.toLowerCase().includes(filters.keyword.toLowerCase())) return false
+    if (filters.keyword && !job.title.toLowerCase().includes(filters.keyword.toLowerCase()) && !(typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')).toLowerCase().includes(filters.keyword.toLowerCase())) return false
     return true
   })
 
@@ -196,7 +196,7 @@ export default function VagasPage({ navigate }) {
               </button>
             ))}
           </div>
-          {user?.role === 'recruiter' && (
+          {user?.role === 'RECRUITER' && (
             <button onClick={() => navigate('login')} style={{ position: 'absolute', right: 20, background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 10, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
               + Publicar vaga
             </button>

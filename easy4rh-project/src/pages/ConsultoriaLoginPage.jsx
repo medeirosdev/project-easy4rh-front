@@ -18,6 +18,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
   const [loading, setLoading] = useState(false)
 
   // Register state
+  const [regRole, setRegRole] = useState('CANDIDATE')
   const [regName, setRegName] = useState('')
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
@@ -32,8 +33,10 @@ export default function ConsultoriaLoginPage({ navigate }) {
     await new Promise(r => setTimeout(r, 800))
     const result = await login(email, password)
     setLoading(false)
-    if (result.success) navigate('plataforma')
-    else setError('Email ou senha inválidos.')
+    if (result.success) {
+      const r = result.user?.role
+      navigate((r === 'RECRUITER' || r === 'INSTRUCTOR') ? 'dashboard-recrutador' : 'dashboard-candidato')
+    } else setError('Email ou senha inválidos.')
   }
 
   const handleRegister = async () => {
@@ -42,10 +45,12 @@ export default function ConsultoriaLoginPage({ navigate }) {
     if (regPassword !== regConfirm) { setRegError('As senhas não coincidem.'); return }
     if (regPassword.length < 8) { setRegError('A senha deve ter pelo menos 8 caracteres.'); return }
     setRegLoading(true)
-    const result = await register({ name: regName, email: regEmail, password: regPassword })
+    const result = await register({ name: regName, email: regEmail, password: regPassword, role: regRole })
     setRegLoading(false)
-    if (result.success) navigate('dashboard-candidato')
-    else setRegError(result.message || 'Erro ao criar conta.')
+    if (result.success) {
+      const r = result.user?.role
+      navigate((r === 'RECRUITER' || r === 'INSTRUCTOR') ? 'dashboard-recrutador' : 'dashboard-candidato')
+    } else setRegError(result.message || 'Erro ao criar conta.')
   }
 
   const inputStyle = {
@@ -103,10 +108,46 @@ export default function ConsultoriaLoginPage({ navigate }) {
               <>
                 {regError && <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '9px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>⚠️ {regError}</div>}
 
+                {/* Role toggle */}
+                <div style={{ display: 'flex', background: '#e4e9f0', borderRadius: 8, padding: 3, marginBottom: 22 }}>
+                  {[
+                    { value: 'CANDIDATE', label: 'Candidato' },
+                    { value: 'RECRUITER', label: 'Recrutador' },
+                    { value: 'INSTRUCTOR', label: 'Instrutor' },
+                  ].map(opt => (
+                    <button key={opt.value} onClick={() => { setRegRole(opt.value); setRegError(''); }}
+                      style={{
+                        flex: 1, padding: '9px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                        fontSize: 13, fontWeight: regRole === opt.value ? 700 : 500, transition: 'all 0.2s',
+                        background: regRole === opt.value ? 'white' : 'transparent',
+                        color: regRole === opt.value ? '#1e4a8a' : '#778899',
+                        boxShadow: regRole === opt.value ? '0 1px 4px rgba(30,74,138,0.12)' : 'none',
+                      }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
                 <input type="text" placeholder="Nome completo" value={regName} onChange={e => setRegName(e.target.value)} style={inputStyle} />
                 <input type="email" placeholder="Email" value={regEmail} onChange={e => setRegEmail(e.target.value)} style={inputStyle} />
-                <input type="password" placeholder="Senha" value={regPassword} onChange={e => setRegPassword(e.target.value)} style={inputStyle} />
-                <input type="password" placeholder="Confirmar senha" value={regConfirm} onChange={e => setRegConfirm(e.target.value)} style={inputStyle} />
+                <input type="password" placeholder="Senha (mínimo 8 caracteres)" value={regPassword} onChange={e => setRegPassword(e.target.value)} style={inputStyle} />
+                <input type="password" placeholder="Confirmar senha" value={regConfirm} onChange={e => setRegConfirm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRegister()} style={inputStyle} />
+
+                {regRole === 'RECRUITER' && (
+                  <div style={{ background: '#f0f8ff', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #d0e4f4' }}>
+                    <p style={{ fontSize: 12.5, color: '#1e4a8a', margin: 0, fontWeight: 600 }}>
+                      Após o cadastro, você poderá vincular ou criar sua empresa no painel do recrutador.
+                    </p>
+                  </div>
+                )}
+
+                {regRole === 'INSTRUCTOR' && (
+                  <div style={{ background: '#f0fff4', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #b2e4c8' }}>
+                    <p style={{ fontSize: 12.5, color: '#276749', margin: 0, fontWeight: 600 }}>
+                      Como instrutor, você poderá criar cursos, adicionar aulas com vídeos e acompanhar o progresso dos alunos.
+                    </p>
+                  </div>
+                )}
 
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#556677', marginBottom: 28, cursor: 'pointer' }}>
                   <input type="checkbox" style={{ cursor: 'pointer', accentColor: '#1e4a8a' }} />
@@ -114,7 +155,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 </label>
 
                 <button onClick={handleRegister} disabled={regLoading} style={{ width: '100%', background: regLoading ? '#aaa' : 'linear-gradient(135deg, #1e3a6e, #2a5298)', color: 'white', border: 'none', borderRadius: 10, padding: '13px', cursor: regLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
-                  {regLoading ? 'Criando conta...' : 'Criar conta'}
+                  {regLoading ? 'Criando conta...' : regRole === 'RECRUITER' ? 'Criar conta de recrutador' : regRole === 'INSTRUCTOR' ? 'Criar conta de instrutor' : 'Criar conta'}
                 </button>
 
                 <p style={{ textAlign: 'center', fontSize: 13, color: '#778899', marginBottom: 0 }}>
