@@ -13,7 +13,6 @@ export default function ConsultoriaLoginPage({ navigate }) {
   // Login state
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -30,12 +29,12 @@ export default function ConsultoriaLoginPage({ navigate }) {
     setError('')
     if (!email || !password) { setError('Preencha todos os campos.'); return }
     setLoading(true)
-    await new Promise(r => setTimeout(r, 800))
     const result = await login(email, password)
     setLoading(false)
     if (result.success) {
       const r = result.user?.role
-      navigate((r === 'RECRUITER' || r === 'INSTRUCTOR') ? 'dashboard-recrutador' : 'dashboard-candidato')
+      const isDashRecrutador = ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(r)
+      navigate(isDashRecrutador ? 'dashboard-recrutador' : 'dashboard-candidato')
     } else setError('Email ou senha inválidos.')
   }
 
@@ -49,7 +48,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
     setRegLoading(false)
     if (result.success) {
       const r = result.user?.role
-      navigate((r === 'RECRUITER' || r === 'INSTRUCTOR') ? 'dashboard-recrutador' : 'dashboard-candidato')
+      navigate((r === 'RECRUITER' || r === 'INSTRUCTOR' || r === 'RECRUITER_INSTRUCTOR') ? 'dashboard-recrutador' : 'dashboard-candidato')
     } else setRegError(result.message || 'Erro ao criar conta.')
   }
 
@@ -83,11 +82,6 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
                 <input type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={inputStyle} />
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#556677', marginBottom: 28, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ cursor: 'pointer', accentColor: '#1e4a8a' }} />
-                  Me lembrar
-                </label>
-
                 <button onClick={handleLogin} disabled={loading} style={{ width: '100%', background: loading ? '#aaa' : 'linear-gradient(135deg, #1e3a6e, #2a5298)', color: 'white', border: 'none', borderRadius: 10, padding: '13px', cursor: loading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
                   {loading ? 'Entrando...' : 'Login'}
                 </button>
@@ -114,6 +108,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                     { value: 'CANDIDATE', label: 'Candidato' },
                     { value: 'RECRUITER', label: 'Recrutador' },
                     { value: 'INSTRUCTOR', label: 'Instrutor' },
+                    { value: 'RECRUITER_INSTRUCTOR', label: 'Empresa Completa' },
                   ].map(opt => (
                     <button key={opt.value} onClick={() => { setRegRole(opt.value); setRegError(''); }}
                       style={{
@@ -144,7 +139,15 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 {regRole === 'INSTRUCTOR' && (
                   <div style={{ background: '#f0fff4', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #b2e4c8' }}>
                     <p style={{ fontSize: 12.5, color: '#276749', margin: 0, fontWeight: 600 }}>
-                      Como instrutor, você poderá criar cursos, adicionar aulas com vídeos e acompanhar o progresso dos alunos.
+                      Como instrutor, você poderá criar cursos, adicionar aulas com videos e acompanhar o progresso dos alunos.
+                    </p>
+                  </div>
+                )}
+
+                {regRole === 'RECRUITER_INSTRUCTOR' && (
+                  <div style={{ background: '#f5f0ff', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #c4b2e4' }}>
+                    <p style={{ fontSize: 12.5, color: '#4a1e8a', margin: 0, fontWeight: 600 }}>
+                      Acesso completo: publique vagas, gerencie candidaturas e crie cursos — tudo em um unico painel.
                     </p>
                   </div>
                 )}
@@ -155,7 +158,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 </label>
 
                 <button onClick={handleRegister} disabled={regLoading} style={{ width: '100%', background: regLoading ? '#aaa' : 'linear-gradient(135deg, #1e3a6e, #2a5298)', color: 'white', border: 'none', borderRadius: 10, padding: '13px', cursor: regLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
-                  {regLoading ? 'Criando conta...' : regRole === 'RECRUITER' ? 'Criar conta de recrutador' : regRole === 'INSTRUCTOR' ? 'Criar conta de instrutor' : 'Criar conta'}
+                  {regLoading ? 'Criando conta...' : regRole === 'RECRUITER' ? 'Criar conta de recrutador' : regRole === 'INSTRUCTOR' ? 'Criar conta de instrutor' : regRole === 'RECRUITER_INSTRUCTOR' ? 'Criar conta empresa completa' : 'Criar conta'}
                 </button>
 
                 <p style={{ textAlign: 'center', fontSize: 13, color: '#778899', marginBottom: 0 }}>

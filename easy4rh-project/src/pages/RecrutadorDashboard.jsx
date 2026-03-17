@@ -1,15 +1,18 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { jobsApi, companiesApi, applicationsApi, jobQuestionsApi, coursesApi, sectionsApi, lessonsApi } from '../services/api'
+import { jobsApi, companiesApi, applicationsApi, jobQuestionsApi, coursesApi, sectionsApi, lessonsApi, documentsApi } from '../services/api'
 import { locationTypeMap } from '../context/JobsContext'
-import { getStageLabel, getStageColor } from '../utils/applicationStages'
+import { getStageLabel, getStageColor, getStageBackground, PIPELINE_STAGES, normalizeStage } from '../utils/applicationStages'
+import JobPosterModal from '../components/JobPosterModal'
 
 const recruiterMenuItems = [
   { id: 'resumo',      icon: '🏠', label: 'Resumo' },
+  { id: 'empresa',     icon: '🏢', label: 'Minha Empresa' },
   { id: 'publicar',    icon: '➕', label: 'Publicar Vaga' },
   { id: 'vagas',       icon: '📢', label: 'Vagas Publicadas' },
   { id: 'aplicacoes',  icon: '📋', label: 'Aplicações' },
+  { id: 'documentos',  icon: '📄', label: 'Documentos' },
   { id: 'talentos',    icon: '🌟', label: 'Banco de Talentos' },
   { id: 'cursos',      icon: '🎓', label: 'Cursos' },
 ]
@@ -26,10 +29,17 @@ const jobTypes = [
 ]
 const levels = [
   { label: 'Estágio', value: 'INTERN' },
+  { label: 'Sem experiência', value: 'NO_EXPERIENCE' },
+  { label: 'Até 1 ano', value: 'UP_TO_1_YEAR' },
+  { label: '2 anos ou mais', value: 'TWO_YEARS_PLUS' },
   { label: 'Júnior', value: 'JUNIOR' },
   { label: 'Pleno', value: 'MID' },
   { label: 'Sênior', value: 'SENIOR' },
   { label: 'Gerente', value: 'MANAGER' },
+]
+const openingReasons = [
+  { label: 'Substituição', value: 'REPLACEMENT' },
+  { label: 'Aumento de equipe', value: 'TEAM_GROWTH' },
 ]
 const contractTypes = [
   { label: 'CLT', value: 'CLT' },
@@ -44,7 +54,7 @@ const questionTypes = [
   { label: 'Sim / Não', value: 'YES_NO' },
   { label: 'Texto livre', value: 'TEXT' },
 ]
-const emptyVaga = { title: '', companyId: '', city: '', state: '', locationType: '', experienceLevel: '', contractType: '', description: '', requirements: '', responsibilities: '', area: '', salaryMin: '', salaryMax: '', hideSalary: false, expiresAt: '' }
+const emptyVaga = { title: '', companyId: '', city: '', state: '', locationType: '', experienceLevel: '', contractType: '', description: '', requirements: '', responsibilities: '', area: '', salaryMin: '', salaryMax: '', hideSalary: false, expiresAt: '', isConfidential: false, openingReason: '' }
 const emptyQuestion = { question: '', type: 'SINGLE_CHOICE', required: true, options: [{ label: '', score: 0 }, { label: '', score: 0 }] }
 const courseLevels = [
   { label: 'Iniciante', value: 'BEGINNER' },
@@ -57,11 +67,11 @@ export default function RecrutadorDashboard({ navigate }) {
   const { user, logout } = useAuth()
   const { isMobile } = useBreakpoint()
   const isInstructor = user?.role === 'INSTRUCTOR'
+  // RECRUITER_INSTRUCTOR usa o mesmo menu completo do RECRUITER (já tem cursos)
   const menuItems = isInstructor ? instructorMenuItems : recruiterMenuItems
   const [activeSection, setActiveSection] = useState(isInstructor ? 'cursos' : 'resumo')
   const [novaVaga, setNovaVaga] = useState({ ...emptyVaga })
   const [vagaPublicada, setVagaPublicada] = useState(false)
-  const [companies, setCompanies] = useState([])
   const [publishError, setPublishError] = useState('')
   const [pubStep, setPubStep] = useState(1) // 1=dados, 2=perguntas, 3=publicar
   const [createdJobId, setCreatedJobId] = useState(null)
@@ -73,6 +83,38 @@ export default function RecrutadorDashboard({ navigate }) {
   const [myJobsLoading, setMyJobsLoading] = useState(false)
   const [allApplications, setAllApplications] = useState([])
   const [applicationsLoading, setApplicationsLoading] = useState(false)
+  const [applicationsJobFilter, setApplicationsJobFilter] = useState(null) // jobId | null
+  const [posterJob, setPosterJob] = useState(null) // job object | null — drives JobPosterModal visibility
+
+  // Documents module
+  const [docLibrary, setDocLibrary] = useState([])
+  const [docLibraryLoading, setDocLibraryLoading] = useState(false)
+  const [sentDocs, setSentDocs] = useState([])
+  const [sentDocsLoading, setSentDocsLoading] = useState(false)
+  const [docView, setDocView] = useState('library') // 'library' | 'sent' | 'add'
+  const [docForm, setDocForm] = useState({ title: '', description: '', category: 'OTHER', fileUrl: '', fileName: '' })
+  const [docSaving, setDocSaving] = useState(false)
+  const [docError, setDocError] = useState('')
+  const [docSuccess, setDocSuccess] = useState('')
+  const [sendDocModal, setSendDocModal] = useState(null) // { doc, search } | null
+  const [sendDocCandidateId, setSendDocCandidateId] = useState('')
+  const [sendDocMessage, setSendDocMessage] = useState('')
+  const [sendDocSaving, setSendDocSaving] = useState(false)
+  const [sendDocError, setSendDocError] = useState('')
+
+  // Company management
+  const [myCompany, setMyCompany] = useState(null)
+  const [companySaving, setCompanySaving] = useState(false)
+  const [companyError, setCompanyError] = useState('')
+  const [companySuccess, setCompanySuccess] = useState('')
+  const [companyForm, setCompanyForm] = useState({
+    name: '', razaoSocial: '', cnpj: '', description: '', website: '',
+    address: '', addressNumber: '', addressComplement: '', neighborhood: '', zipCode: '', city: '', state: '',
+    size: '', industry: '', legalNature: '',
+    mission: '', values: '',
+    linkedinUrl: '', instagramUrl: '', glassdoorUrl: '',
+    logoUrl: '', aboutVideoUrl: '',
+  })
 
   // Course management
   const [myCourses, setMyCourses] = useState([])
@@ -88,11 +130,65 @@ export default function RecrutadorDashboard({ navigate }) {
   const [courseStudents, setCourseStudents] = useState([])
   const [courseStatsLoading, setCourseStatsLoading] = useState(false)
 
+  // Track pending timers to cancel on unmount (avoids setState on unmounted component)
+  const timersRef = useRef([])
+  const safeTimeout = useCallback((fn, ms) => {
+    const id = setTimeout(fn, ms)
+    timersRef.current.push(id)
+    return id
+  }, [])
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), [])
+
+  const populateCompanyForm = (company) => {
+    setMyCompany(company)
+    setCompanyForm({
+      name: company.name || '', razaoSocial: company.razaoSocial || '', cnpj: company.cnpj || '',
+      description: company.description || '', website: company.website || '',
+      address: company.address || '', addressNumber: company.addressNumber || '',
+      addressComplement: company.addressComplement || '', neighborhood: company.neighborhood || '',
+      zipCode: company.zipCode || '', city: company.city || '', state: company.state || '',
+      size: company.size || '', industry: company.industry || '', legalNature: company.legalNature || '',
+      mission: company.mission || '', values: company.values || '',
+      linkedinUrl: company.linkedinUrl || '', instagramUrl: company.instagramUrl || '',
+      glassdoorUrl: company.glassdoorUrl || '',
+      logoUrl: company.logoUrl || '', aboutVideoUrl: company.aboutVideoUrl || '',
+    })
+  }
+
+  // Auto-fill companyId in job form when company is loaded
   useEffect(() => {
-    companiesApi.list().then(data => {
-      const list = Array.isArray(data) ? data : (data.data || [])
-      setCompanies(list)
-    }).catch(() => {})
+    if (myCompany?.id) {
+      setNovaVaga(prev => prev.companyId === myCompany.id ? prev : { ...prev, companyId: myCompany.id })
+    }
+  }, [myCompany?.id])
+
+  // Reset job creation flow when navigating away from 'publicar' section
+  useEffect(() => {
+    if (activeSection !== 'publicar' && pubStep > 1 && !vagaPublicada) {
+      setPubStep(1)
+      setNovaVaga(prev => ({ ...emptyVaga, companyId: prev.companyId }))
+      setQuestions([])
+      setCreatedJobId(null)
+      setPublishError('')
+    }
+  }, [activeSection])
+
+  useEffect(() => {
+    // Load recruiter's own company via dedicated endpoint
+    companiesApi.mine().then(company => {
+      if (company) {
+        populateCompanyForm(company)
+        localStorage.setItem('my_company_id', company.id)
+      }
+    }).catch(() => {
+      // Fallback: try localStorage saved id
+      const savedCompanyId = localStorage.getItem('my_company_id')
+      if (savedCompanyId) {
+        companiesApi.get(savedCompanyId).then(c => {
+          if (c) populateCompanyForm(c)
+        }).catch(() => {})
+      }
+    })
   }, [])
 
   // Fetch recruiter's jobs
@@ -107,9 +203,14 @@ export default function RecrutadorDashboard({ navigate }) {
         location: job.city && job.state ? `${job.city}, ${job.state}` : (job.city || job.state || ''),
         type: locationTypeMap[job.locationType] || 'Presencial',
         aplicacoes: job._count?.applications ?? 0,
-        status: job.status === 'PUBLISHED' ? 'Ativa' : job.status === 'CLOSED' ? 'Encerrada' : (job.status || 'Rascunho'),
+        status: { PUBLISHED: 'Aberta', PAUSED: 'Pausada', CLOSED: 'Encerrada', DRAFT: 'Rascunho', FILLED: 'Preenchida' }[job.status] || job.status,
         rawStatus: job.status,
         date: job.createdAt ? new Date(job.createdAt).toLocaleDateString('pt-BR') : '',
+        publishedAt: job.publishedAt || null,
+        closedAt: job.closedAt || null,
+        expiresAt: job.expiresAt || null,
+        isConfidential: job.isConfidential || false,
+        openingReason: job.openingReason || null,
       })))
     } catch (err) {
       console.error('Erro ao carregar vagas:', err)
@@ -129,17 +230,22 @@ export default function RecrutadorDashboard({ navigate }) {
           try {
             const apps = await applicationsApi.jobApplications(job.id)
             const list = Array.isArray(apps) ? apps : (apps.data || [])
-            return list.map(app => ({
-              id: app.id,
-              name: app.candidate?.fullName || app.candidate?.email || app.user?.email || 'Candidato',
-              role: job.title,
-              jobId: job.id,
-              date: app.createdAt ? new Date(app.createdAt).toLocaleDateString('pt-BR') : '',
-              stage: app.stage || 'APPLIED',
-              status: getStageLabel(app.stage || 'APPLIED'),
-              color: getStageColor(app.stage || 'APPLIED'),
-              resumeUrl: app.candidate?.resumeUrl || null,
-            }))
+            return list.map(app => {
+              const stage = app.stage || 'APPLIED'
+              return {
+                id: app.id,
+                candidateId: app.candidate?.id || app.candidateId || null,
+                name: app.candidate?.candidateProfile?.fullName || app.candidate?.email || 'Candidato',
+                role: job.title,
+                jobId: job.id,
+                date: app.createdAt ? new Date(app.createdAt).toLocaleDateString('pt-BR') : '',
+                stage,
+                status: getStageLabel(stage),
+                color: getStageColor(stage),
+                resumeUrl: app.candidate?.candidateProfile?.resumeUrl || null,
+                adherencePercent: app.adherencePercent ?? null,
+              }
+            })
           } catch {
             return []
           }
@@ -164,12 +270,109 @@ export default function RecrutadorDashboard({ navigate }) {
     }
   }, [myJobs, fetchAllApplications])
 
+  const fetchDocLibrary = useCallback(async () => {
+    setDocLibraryLoading(true)
+    try {
+      const data = await documentsApi.listLibrary()
+      setDocLibrary(Array.isArray(data) ? data : [])
+    } catch {
+      setDocLibrary([])
+    } finally {
+      setDocLibraryLoading(false)
+    }
+  }, [])
+
+  const fetchSentDocs = useCallback(async () => {
+    setSentDocsLoading(true)
+    try {
+      const data = await documentsApi.listSent()
+      setSentDocs(Array.isArray(data) ? data : [])
+    } catch {
+      setSentDocs([])
+    } finally {
+      setSentDocsLoading(false)
+    }
+  }, [])
+
+  // Load documents when navigating to documents section
+  useEffect(() => {
+    if (activeSection === 'documentos') {
+      fetchDocLibrary()
+      fetchSentDocs()
+    }
+  }, [activeSection, fetchDocLibrary, fetchSentDocs])
+
+  const handleAddDocument = async (e) => {
+    e.preventDefault()
+    setDocError('')
+    if (!docForm.title || !docForm.fileUrl || !docForm.fileName) {
+      setDocError('Preencha título, URL do arquivo e nome do arquivo.')
+      return
+    }
+    setDocSaving(true)
+    try {
+      const created = await documentsApi.addToLibrary(docForm)
+      setDocLibrary(prev => [created, ...prev])
+      setDocForm({ title: '', description: '', category: 'OTHER', fileUrl: '', fileName: '' })
+      setDocView('library')
+      setDocSuccess('Documento adicionado com sucesso!')
+      safeTimeout(() => setDocSuccess(''), 3000)
+    } catch (err) {
+      setDocError(err.message || 'Erro ao salvar documento.')
+    } finally {
+      setDocSaving(false)
+    }
+  }
+
+  const handleDeleteDocument = async (id) => {
+    if (!window.confirm('Remover este documento da biblioteca?')) return
+    try {
+      await documentsApi.deleteFromLibrary(id)
+      setDocLibrary(prev => prev.filter(d => d.id !== id))
+    } catch (err) {
+      setDocError(err.message || 'Erro ao remover documento.')
+    }
+  }
+
+  const handleSendDocument = async () => {
+    if (!sendDocCandidateId) return
+    setSendDocSaving(true)
+    setSendDocError('')
+    try {
+      await documentsApi.send(sendDocModal.doc.id, { candidateId: sendDocCandidateId, message: sendDocMessage })
+      setSendDocModal(null)
+      setSendDocCandidateId('')
+      setSendDocMessage('')
+      setSendDocError('')
+      fetchSentDocs()
+      setDocSuccess('Documento enviado com sucesso!')
+      safeTimeout(() => setDocSuccess(''), 3000)
+    } catch (err) {
+      setSendDocError(err.message || 'Erro ao enviar documento.')
+    } finally {
+      setSendDocSaving(false)
+    }
+  }
+
+  const [jobActionError, setJobActionError] = useState('')
+  const handlePauseJob = async (jobId) => {
+    setJobActionError('')
+    try {
+      await jobsApi.pause(jobId)
+      setMyJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: 'Pausada', rawStatus: 'PAUSED' } : j))
+    } catch (err) {
+      setJobActionError(err.message || 'Erro ao pausar vaga.')
+    }
+  }
+
   const handleCloseJob = async (jobId) => {
+    if (!window.confirm('Encerrar esta vaga? Candidatos não poderão mais se candidatar.')) return
+    setJobActionError('')
     try {
       await jobsApi.close(jobId)
       setMyJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: 'Encerrada', rawStatus: 'CLOSED' } : j))
     } catch (err) {
-      console.error('Erro ao encerrar vaga:', err)
+      setJobActionError(err.message || 'Erro ao encerrar vaga.')
     }
   }
 
@@ -206,6 +409,8 @@ export default function RecrutadorDashboard({ navigate }) {
         salaryMax: novaVaga.salaryMax ? Number(novaVaga.salaryMax) : undefined,
         hideSalary: novaVaga.hideSalary || false,
         expiresAt: novaVaga.expiresAt || undefined,
+        isConfidential: novaVaga.isConfidential || false,
+        openingReason: novaVaga.openingReason || undefined,
       }
       const created = await jobsApi.create(payload)
       setCreatedJobId(created.id)
@@ -223,20 +428,21 @@ export default function RecrutadorDashboard({ navigate }) {
     setPublishError('')
     setPublishing(true)
     try {
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i]
-        if (!q.question.trim()) continue
-        const dto = {
-          question: q.question,
-          type: q.type,
-          required: q.required,
-          order: i,
-          options: q.type === 'TEXT' ? [] : q.type === 'YES_NO'
-            ? [{ label: 'Sim', score: q.options[0]?.score || 1, order: 0 }, { label: 'Não', score: q.options[1]?.score || 0, order: 1 }]
-            : q.options.filter(o => o.label.trim()).map((o, idx) => ({ label: o.label, score: Number(o.score) || 0, order: idx })),
-        }
-        await jobQuestionsApi.create(createdJobId, dto)
-      }
+      const dtos = questions
+        .map((q, i) => {
+          if (!q.question.trim()) return null
+          return {
+            question: q.question,
+            type: q.type,
+            required: q.required,
+            order: i,
+            options: q.type === 'TEXT' ? [] : q.type === 'YES_NO'
+              ? [{ label: 'Sim', score: q.options[0]?.score || 1, order: 0 }, { label: 'Não', score: q.options[1]?.score || 0, order: 1 }]
+              : q.options.filter(o => o.label.trim()).map((o, idx) => ({ label: o.label, score: Number(o.score) || 0, order: idx })),
+          }
+        })
+        .filter(Boolean)
+      await Promise.all(dtos.map(dto => jobQuestionsApi.create(createdJobId, dto)))
       setPubStep(3)
     } catch (err) {
       setPublishError(err.message || 'Erro ao salvar perguntas')
@@ -253,7 +459,7 @@ export default function RecrutadorDashboard({ navigate }) {
     try {
       await jobsApi.publish(createdJobId)
       setVagaPublicada(true)
-      setTimeout(() => {
+      safeTimeout(() => {
         setVagaPublicada(false)
         setNovaVaga({ ...emptyVaga })
         setQuestions([])
@@ -336,7 +542,7 @@ export default function RecrutadorDashboard({ navigate }) {
       }
 
       setCourseSuccess('Curso criado com sucesso!')
-      setTimeout(() => {
+      safeTimeout(() => {
         setCourseSuccess('')
         setNovoCurso({ ...emptyCurso })
         setCourseSections([])
@@ -352,29 +558,39 @@ export default function RecrutadorDashboard({ navigate }) {
   }
 
   const handlePublishCourse = async (courseId) => {
+    setCourseError('')
     try {
       await coursesApi.publish(courseId)
       setMyCourses(prev => prev.map(c => c.id === courseId ? { ...c, status: 'PUBLISHED' } : c))
+      setCourseSuccess('Curso publicado com sucesso!')
+      safeTimeout(() => setCourseSuccess(''), 3000)
     } catch (err) {
-      console.error('Erro ao publicar curso:', err)
+      setCourseError(err.message || 'Erro ao publicar curso.')
     }
   }
 
   const handleArchiveCourse = async (courseId) => {
+    setCourseError('')
     try {
       await coursesApi.archive(courseId)
       setMyCourses(prev => prev.map(c => c.id === courseId ? { ...c, status: 'ARCHIVED' } : c))
+      setCourseSuccess('Curso arquivado.')
+      safeTimeout(() => setCourseSuccess(''), 3000)
     } catch (err) {
-      console.error('Erro ao arquivar curso:', err)
+      setCourseError(err.message || 'Erro ao arquivar curso.')
     }
   }
 
   const handleDeleteCourse = async (courseId) => {
+    if (!window.confirm('Tem certeza que deseja excluir este curso?')) return
+    setCourseError('')
     try {
       await coursesApi.delete(courseId)
       setMyCourses(prev => prev.filter(c => c.id !== courseId))
+      setCourseSuccess('Curso excluido.')
+      safeTimeout(() => setCourseSuccess(''), 3000)
     } catch (err) {
-      console.error('Erro ao deletar curso:', err)
+      setCourseError(err.message || 'Erro ao excluir curso.')
     }
   }
 
@@ -396,6 +612,84 @@ export default function RecrutadorDashboard({ navigate }) {
       setCourseStudents([])
     } finally {
       setCourseStatsLoading(false)
+    }
+  }
+
+  // Company management functions
+  const handleSaveCompany = async () => {
+    setCompanySaving(true)
+    setCompanyError('')
+    setCompanySuccess('')
+    try {
+      const payload = { ...companyForm }
+      // logoUrl and aboutVideoUrl are managed via upload endpoints, not PATCH
+      delete payload.logoUrl
+      delete payload.aboutVideoUrl
+      // Remove empty strings to avoid validation errors
+      Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k] })
+      if (myCompany) {
+        const updated = await companiesApi.update(myCompany.id, payload)
+        populateCompanyForm(updated)
+        localStorage.setItem('my_company_id', updated.id)
+        setCompanySuccess('Empresa atualizada com sucesso!')
+      } else {
+        if (!companyForm.name.trim()) { setCompanyError('Nome da empresa e obrigatorio.'); setCompanySaving(false); return }
+        const created = await companiesApi.create(payload)
+        populateCompanyForm(created)
+        localStorage.setItem('my_company_id', created.id)
+        setCompanySuccess('Empresa criada com sucesso!')
+      }
+      safeTimeout(() => setCompanySuccess(''), 4000)
+    } catch (err) {
+      setCompanyError(err.message || 'Erro ao salvar empresa.')
+    } finally {
+      setCompanySaving(false)
+    }
+  }
+
+  const handleUploadLogo = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!myCompany) { setCompanyError('Salve os dados da empresa primeiro antes de enviar o logo.'); return }
+    if (!file.type.startsWith('image/')) { setCompanyError('O logo deve ser uma imagem (JPG, PNG, SVG...).'); return }
+    if (file.size > 5 * 1024 * 1024) { setCompanyError('O logo deve ter no maximo 5 MB.'); return }
+    setCompanyError('')
+    setCompanySuccess('')
+    try {
+      const result = await companiesApi.uploadLogo(myCompany.id, file)
+      // Backend returns { company, upload } — company already has logoUrl updated
+      const url = result.company?.logoUrl || result.upload?.secureUrl || result.secureUrl || result.logoUrl
+      if (url) {
+        setCompanyForm(prev => ({ ...prev, logoUrl: url }))
+        setMyCompany(prev => ({ ...prev, logoUrl: url }))
+        setCompanySuccess('Logo atualizado!')
+        safeTimeout(() => setCompanySuccess(''), 4000)
+      }
+    } catch (err) {
+      setCompanyError(err.message || 'Erro ao enviar logo.')
+    }
+  }
+
+  const handleUploadVideo = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!myCompany) { setCompanyError('Salve os dados da empresa primeiro antes de enviar o video.'); return }
+    if (!file.type.startsWith('video/')) { setCompanyError('O video deve ser um arquivo de video (MP4, MOV...).'); return }
+    if (file.size > 200 * 1024 * 1024) { setCompanyError('O video deve ter no maximo 200 MB.'); return }
+    setCompanyError('')
+    setCompanySuccess('')
+    try {
+      const result = await companiesApi.uploadVideo(myCompany.id, file)
+      // Backend returns { company, upload } — company already has aboutVideoUrl updated
+      const url = result.company?.aboutVideoUrl || result.upload?.secureUrl || result.secureUrl || result.aboutVideoUrl
+      if (url) {
+        setCompanyForm(prev => ({ ...prev, aboutVideoUrl: url }))
+        setMyCompany(prev => ({ ...prev, aboutVideoUrl: url }))
+        setCompanySuccess('Video atualizado!')
+        safeTimeout(() => setCompanySuccess(''), 4000)
+      }
+    } catch (err) {
+      setCompanyError(err.message || 'Erro ao enviar video.')
     }
   }
 
@@ -475,6 +769,197 @@ export default function RecrutadorDashboard({ navigate }) {
         </div>
       )
 
+      case 'empresa': {
+        const lbl = { fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }
+        const inp = { width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box', color: '#334' }
+        const companySizes = [
+          { label: 'Startup', value: 'STARTUP' },
+          { label: 'Pequena', value: 'SMALL' },
+          { label: 'Media', value: 'MEDIUM' },
+          { label: 'Grande', value: 'LARGE' },
+          { label: 'Enterprise', value: 'ENTERPRISE' },
+        ]
+        const legalNatures = [
+          { label: 'Privada', value: 'PRIVATE' },
+          { label: 'Publica', value: 'PUBLIC' },
+          { label: 'ONG', value: 'NGO' },
+          { label: 'Cooperativa', value: 'COOPERATIVE' },
+          { label: 'Outra', value: 'OTHER' },
+        ]
+        const states = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
+
+        return (
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 8 }}>Minha Empresa</h2>
+            <p style={{ fontSize: 13.5, color: '#778899', marginBottom: 24 }}>
+              {myCompany ? 'Edite os dados da sua empresa.' : 'Cadastre sua empresa para publicar vagas.'}
+            </p>
+
+            {companyError && <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '10px 16px', color: '#c00', fontSize: 13, marginBottom: 16 }}>{companyError}</div>}
+            {companySuccess && <div style={{ background: '#f0fff4', border: '1px solid #c6f6d5', borderRadius: 10, padding: '10px 16px', color: '#22543d', fontSize: 13, marginBottom: 16 }}>{companySuccess}</div>}
+
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Dados Basicos</h3>
+
+              {/* Logo */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
+                <div style={{ width: 80, height: 80, borderRadius: 12, background: companyForm.logoUrl ? 'transparent' : '#e8f2fc', border: '2px dashed #c0d6ee', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                  {companyForm.logoUrl
+                    ? <img src={companyForm.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <span style={{ color: '#778899', fontSize: 12 }}>Logo</span>
+                  }
+                </div>
+                <div>
+                  <label style={{ display: 'inline-block', background: '#e8f2fc', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 18px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>
+                    {myCompany ? 'Alterar logo' : 'Enviar logo'}
+                    <input type="file" accept="image/*" onChange={handleUploadLogo} style={{ display: 'none' }} disabled={!myCompany} />
+                  </label>
+                  {!myCompany && <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>Salve a empresa primeiro</div>}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={lbl}>Nome da empresa *</label>
+                  <input style={inp} value={companyForm.name} onChange={e => setCompanyForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Easy4RH Ltda" />
+                </div>
+                <div>
+                  <label style={lbl}>Razao Social</label>
+                  <input style={inp} value={companyForm.razaoSocial} onChange={e => setCompanyForm(p => ({ ...p, razaoSocial: e.target.value }))} placeholder="Razao social" />
+                </div>
+                <div>
+                  <label style={lbl}>CNPJ</label>
+                  <input style={inp} value={companyForm.cnpj} onChange={e => setCompanyForm(p => ({ ...p, cnpj: e.target.value }))} placeholder="XX.XXX.XXX/XXXX-XX" />
+                </div>
+                <div>
+                  <label style={lbl}>Setor / Industria</label>
+                  <input style={inp} value={companyForm.industry} onChange={e => setCompanyForm(p => ({ ...p, industry: e.target.value }))} placeholder="Ex: Tecnologia, RH, Saude" />
+                </div>
+                <div>
+                  <label style={lbl}>Porte</label>
+                  <select style={inp} value={companyForm.size} onChange={e => setCompanyForm(p => ({ ...p, size: e.target.value }))}>
+                    <option value="">Selecione</option>
+                    {companySizes.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Natureza Juridica</label>
+                  <select style={inp} value={companyForm.legalNature} onChange={e => setCompanyForm(p => ({ ...p, legalNature: e.target.value }))}>
+                    <option value="">Selecione</option>
+                    {legalNatures.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Website</label>
+                  <input style={inp} value={companyForm.website} onChange={e => setCompanyForm(p => ({ ...p, website: e.target.value }))} placeholder="https://suaempresa.com.br" />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={lbl}>Descricao</label>
+                <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={companyForm.description} onChange={e => setCompanyForm(p => ({ ...p, description: e.target.value }))} placeholder="Descreva a empresa, o que faz, qual o diferencial..." />
+              </div>
+            </div>
+
+            {/* Endereco */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Endereco</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 120px 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={lbl}>Rua / Avenida</label>
+                  <input style={inp} value={companyForm.address} onChange={e => setCompanyForm(p => ({ ...p, address: e.target.value }))} placeholder="Endereco" />
+                </div>
+                <div>
+                  <label style={lbl}>Numero</label>
+                  <input style={inp} value={companyForm.addressNumber} onChange={e => setCompanyForm(p => ({ ...p, addressNumber: e.target.value }))} placeholder="123" />
+                </div>
+                <div>
+                  <label style={lbl}>Complemento</label>
+                  <input style={inp} value={companyForm.addressComplement} onChange={e => setCompanyForm(p => ({ ...p, addressComplement: e.target.value }))} placeholder="Sala, andar..." />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 100px 160px', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={lbl}>Bairro</label>
+                  <input style={inp} value={companyForm.neighborhood} onChange={e => setCompanyForm(p => ({ ...p, neighborhood: e.target.value }))} placeholder="Bairro" />
+                </div>
+                <div>
+                  <label style={lbl}>Cidade</label>
+                  <input style={inp} value={companyForm.city} onChange={e => setCompanyForm(p => ({ ...p, city: e.target.value }))} placeholder="Cidade" />
+                </div>
+                <div>
+                  <label style={lbl}>UF</label>
+                  <select style={inp} value={companyForm.state} onChange={e => setCompanyForm(p => ({ ...p, state: e.target.value }))}>
+                    <option value="">UF</option>
+                    {states.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>CEP</label>
+                  <input style={inp} value={companyForm.zipCode} onChange={e => setCompanyForm(p => ({ ...p, zipCode: e.target.value }))} placeholder="XXXXX-XXX" />
+                </div>
+              </div>
+            </div>
+
+            {/* Missao, Valores */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Missao e Valores</h3>
+              <div style={{ marginBottom: 16 }}>
+                <label style={lbl}>Missao</label>
+                <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={companyForm.mission} onChange={e => setCompanyForm(p => ({ ...p, mission: e.target.value }))} placeholder="Qual a missao da empresa?" />
+              </div>
+              <div>
+                <label style={lbl}>Valores</label>
+                <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={companyForm.values} onChange={e => setCompanyForm(p => ({ ...p, values: e.target.value }))} placeholder="Quais os valores da empresa?" />
+              </div>
+            </div>
+
+            {/* Redes Sociais */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Redes Sociais</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={lbl}>LinkedIn</label>
+                  <input style={inp} value={companyForm.linkedinUrl} onChange={e => setCompanyForm(p => ({ ...p, linkedinUrl: e.target.value }))} placeholder="https://linkedin.com/company/..." />
+                </div>
+                <div>
+                  <label style={lbl}>Instagram</label>
+                  <input style={inp} value={companyForm.instagramUrl} onChange={e => setCompanyForm(p => ({ ...p, instagramUrl: e.target.value }))} placeholder="https://instagram.com/..." />
+                </div>
+                <div>
+                  <label style={lbl}>Glassdoor</label>
+                  <input style={inp} value={companyForm.glassdoorUrl} onChange={e => setCompanyForm(p => ({ ...p, glassdoorUrl: e.target.value }))} placeholder="https://glassdoor.com.br/..." />
+                </div>
+              </div>
+            </div>
+
+            {/* Video institucional */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 24 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Video Institucional</h3>
+              {companyForm.aboutVideoUrl && (
+                <div style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden', background: '#000' }}>
+                  <video src={companyForm.aboutVideoUrl} controls style={{ width: '100%', maxHeight: 320 }} />
+                </div>
+              )}
+              <label style={{ display: 'inline-block', background: '#e8f2fc', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 18px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>
+                {companyForm.aboutVideoUrl ? 'Trocar video' : 'Enviar video'}
+                <input type="file" accept="video/*" onChange={handleUploadVideo} style={{ display: 'none' }} disabled={!myCompany} />
+              </label>
+              {!myCompany && <span style={{ fontSize: 11, color: '#999', marginLeft: 8 }}>Salve a empresa primeiro</span>}
+            </div>
+
+            {/* Save button */}
+            <button onClick={handleSaveCompany} disabled={companySaving} style={{
+              background: companySaving ? '#aaa' : 'linear-gradient(135deg, #1e4a8a, #4a9edd)',
+              color: 'white', border: 'none', borderRadius: 24, padding: '14px 36px',
+              cursor: companySaving ? 'default' : 'pointer', fontWeight: 700, fontSize: 14,
+            }}>
+              {companySaving ? 'Salvando...' : myCompany ? 'Salvar alteracoes' : 'Criar empresa'}
+            </button>
+          </div>
+        )
+      }
+
       case 'publicar': {
         const labelStyle = { fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }
         const inputBase = { width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }
@@ -524,10 +1009,16 @@ export default function RecrutadorDashboard({ navigate }) {
                     </div>
                     <div>
                       <label style={labelStyle}>Empresa *</label>
-                      <select value={novaVaga.companyId} onChange={e => setNovaVaga(prev => ({ ...prev, companyId: e.target.value }))} style={selectBase}>
-                        <option value="">Selecione a empresa</option>
-                        {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
+                      {myCompany ? (
+                        <div style={{ ...inputBase, background: '#f8fafc', color: '#334', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {myCompany.logoUrl && <img src={myCompany.logoUrl} alt="" style={{ width: 20, height: 20, borderRadius: 4, objectFit: 'cover' }} />}
+                          <span style={{ fontWeight: 500 }}>{myCompany.name}</span>
+                        </div>
+                      ) : (
+                        <div style={{ ...inputBase, background: '#f8fafc', color: '#999', fontSize: 13 }}>
+                          Cadastre sua empresa primeiro (aba "Minha Empresa")
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label style={labelStyle}>Cidade</label>
@@ -574,9 +1065,20 @@ export default function RecrutadorDashboard({ navigate }) {
                       <input type="checkbox" checked={novaVaga.hideSalary} onChange={e => setNovaVaga(prev => ({ ...prev, hideSalary: e.target.checked }))} style={{ accentColor: '#1e4a8a' }} />
                       <label style={{ fontSize: 13, color: '#556677' }}>Ocultar salário na vaga</label>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input type="checkbox" checked={novaVaga.isConfidential} onChange={e => setNovaVaga(prev => ({ ...prev, isConfidential: e.target.checked }))} style={{ accentColor: '#1e4a8a' }} />
+                      <label style={{ fontSize: 13, color: '#556677' }}>Vaga confidencial (empresa não divulgada)</label>
+                    </div>
                     <div>
-                      <label style={labelStyle}>Data de expiração</label>
+                      <label style={labelStyle}>Data de encerramento prevista</label>
                       <input type="date" value={novaVaga.expiresAt} onChange={e => setNovaVaga(prev => ({ ...prev, expiresAt: e.target.value }))} style={inputBase} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Motivo da abertura</label>
+                      <select value={novaVaga.openingReason} onChange={e => setNovaVaga(prev => ({ ...prev, openingReason: e.target.value }))} style={inputBase}>
+                        <option value=''>Selecione (opcional)</option>
+                        {openingReasons.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                      </select>
                     </div>
                   </div>
                   <div style={{ marginBottom: 16 }}>
@@ -691,7 +1193,7 @@ export default function RecrutadorDashboard({ navigate }) {
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 8 }}>
                       {[
                         { l: 'Título', v: novaVaga.title },
-                        { l: 'Empresa', v: companies.find(c => c.id === novaVaga.companyId)?.name || '—' },
+                        { l: 'Empresa', v: myCompany?.name || '—' },
                         { l: 'Local', v: [novaVaga.city, novaVaga.state].filter(Boolean).join(', ') || '—' },
                         { l: 'Modalidade', v: jobTypes.find(t => t.value === novaVaga.locationType)?.label || '—' },
                         { l: 'Nível', v: levels.find(l => l.value === novaVaga.experienceLevel)?.label || '—' },
@@ -725,6 +1227,12 @@ export default function RecrutadorDashboard({ navigate }) {
 
       case 'vagas': return (
         <div>
+          {jobActionError && (
+            <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '10px 16px', color: '#c00', fontSize: 13, marginBottom: 16 }}>
+              {jobActionError}
+              <button onClick={() => setJobActionError('')} style={{ float: 'right', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#c00' }}>×</button>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e' }}>Vagas Publicadas</h2>
             <button onClick={() => setActiveSection('publicar')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
@@ -739,71 +1247,433 @@ export default function RecrutadorDashboard({ navigate }) {
                 Você ainda não publicou nenhuma vaga.
               </div>
             ) : (
-              myJobs.map(v => (
-                <div key={v.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 4 }}>{v.title}</div>
-                      <div style={{ fontSize: 13, color: '#778899' }}>{[v.location, v.type, v.date && `Publicada em ${v.date}`].filter(Boolean).join(' · ')}</div>
-                      <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: v.status === 'Ativa' ? '#dcfce7' : '#f3f4f6', color: v.status === 'Ativa' ? '#16a34a' : '#6b7280' }}>{v.status}</span>
-                        <span style={{ fontSize: 12, color: '#778899' }}>📋 {v.aplicacoes} aplicações</span>
+              myJobs.map(v => {
+                const statusColors = { Aberta: ['#dcfce7', '#16a34a'], Pausada: ['#fef9c3', '#ca8a04'], Encerrada: ['#f3f4f6', '#6b7280'], Rascunho: ['#eff6ff', '#3b82f6'], Preenchida: ['#f0fdf4', '#15803d'] }
+                const [statusBg, statusColor] = statusColors[v.status] || ['#f3f4f6', '#6b7280']
+                const timeSincePublished = v.publishedAt ? (() => {
+                  const diff = Date.now() - new Date(v.publishedAt).getTime()
+                  const days = Math.floor(diff / 86400000)
+                  return days === 0 ? 'Hoje' : days === 1 ? 'Ontem' : `${days} dias`
+                })() : null
+                const slaText = v.publishedAt && v.expiresAt ? (() => {
+                  const open = new Date(v.publishedAt).toLocaleDateString('pt-BR')
+                  const close = new Date(v.expiresAt).toLocaleDateString('pt-BR')
+                  return `${open} → ${close}`
+                })() : null
+                const openingReasonLabel = { REPLACEMENT: 'Substituição', TEAM_GROWTH: 'Aumento de equipe' }[v.openingReason] || null
+                return (
+                  <div key={v.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e' }}>{v.title}</span>
+                          {v.isConfidential && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#fef3c7', color: '#b45309' }}>CONFIDENCIAL</span>}
+                        </div>
+                        <div style={{ fontSize: 12.5, color: '#778899', marginBottom: 10 }}>
+                          {[v.location, v.type, v.date && `Criada em ${v.date}`].filter(Boolean).join(' · ')}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: statusBg, color: statusColor }}>{v.status}</span>
+                          <span style={{ fontSize: 12, color: '#778899' }}>📋 {v.aplicacoes} aplicação(ões)</span>
+                          {timeSincePublished && <span style={{ fontSize: 12, color: '#778899' }}>⏱ Publicada há {timeSincePublished}</span>}
+                          {slaText && <span style={{ fontSize: 12, color: '#778899' }}>📅 SLA: {slaText}</span>}
+                          {openingReasonLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#3b82f6', fontWeight: 600 }}>{openingReasonLabel}</span>}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexShrink: 0 }}>
+                        <button onClick={() => setActiveSection('aplicacoes')} style={{ background: '#e8f2fc', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Candidatos</button>
+                        <button onClick={() => setPosterJob(v)} style={{ background: '#f5f3ff', color: '#7c3aed', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>🖼 Poster</button>
+                        {v.rawStatus === 'PUBLISHED' && (
+                          <button onClick={() => handlePauseJob(v.id)} style={{ background: '#fef9c3', color: '#ca8a04', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Pausar</button>
+                        )}
+                        {(v.rawStatus === 'PUBLISHED' || v.rawStatus === 'PAUSED') && (
+                          <button onClick={() => handleCloseJob(v.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Encerrar</button>
+                        )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button onClick={() => setActiveSection('aplicacoes')} style={{ background: '#e8f2fc', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Ver candidatos</button>
-                      {v.rawStatus === 'PUBLISHED' && (
-                        <button onClick={() => handleCloseJob(v.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Encerrar</button>
-                      )}
-                    </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>
       )
 
-      case 'aplicacoes': return (
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Aplicações Recebidas</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      case 'aplicacoes': {
+        // Kanban de seleção — filtra por vaga, agrupa por fase
+        const [kanbanJobFilter, setKanbanJobFilter] = [
+          // usar state local com um truque — guarda em objeto mutável para este case
+          applicationsJobFilter,
+          setApplicationsJobFilter,
+        ]
+
+        const visibleApps = kanbanJobFilter
+          ? allApplications.filter(a => a.jobId === kanbanJobFilter)
+          : allApplications
+
+        const rejectedApps = visibleApps.filter(a => normalizeStage(a.stage) === 'REJECTED')
+
+        return (
+          <div>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e' }}>Fases da Seleção</h2>
+              <select
+                value={kanbanJobFilter || ''}
+                onChange={e => setKanbanJobFilter(e.target.value || null)}
+                style={{ border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '8px 14px', fontSize: 13, outline: 'none', background: 'white', color: '#334', minWidth: 220 }}
+              >
+                <option value=''>Todas as vagas ({allApplications.length})</option>
+                {myJobs.map(j => (
+                  <option key={j.id} value={j.id}>
+                    {j.title} ({allApplications.filter(a => a.jobId === j.id).length})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {applicationsLoading ? (
-              <div style={{ background: 'white', borderRadius: 14, padding: '32px', textAlign: 'center', color: '#778899', fontSize: 13 }}>Carregando aplicações...</div>
-            ) : allApplications.length === 0 ? (
-              <div style={{ background: 'white', borderRadius: 14, padding: '32px', textAlign: 'center', color: '#778899', fontSize: 13 }}>
-                Nenhuma aplicação recebida ainda.
+              <div style={{ background: 'white', borderRadius: 14, padding: '48px', textAlign: 'center', color: '#778899', fontSize: 13 }}>
+                Carregando candidatos...
               </div>
             ) : (
-              allApplications.map(a => (
-                <div key={a.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f2fc, #c8daf0)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#1e4a8a', fontSize: 16, flexShrink: 0 }}>
-                      {(a.name || 'C')[0]}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e' }}>{a.name}</div>
-                      <div style={{ fontSize: 12, color: '#778899' }}>{a.role} · {a.date}</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: `${a.color}18`, color: a.color }}>{a.status}</span>
-                    {a.resumeUrl && (
-                      <a href={a.resumeUrl} target="_blank" rel="noopener noreferrer" style={{ background: '#e8f2fc', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12, textDecoration: 'none', display: 'inline-block' }}>Ver CV</a>
-                    )}
-                    {a.stage !== 'HIRED' && a.stage !== 'REJECTED' && (
-                      <>
-                        <button onClick={() => handleUpdateApplicationStatus(a.id, 'HIRED')} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Aprovar</button>
-                        <button onClick={() => handleUpdateApplicationStatus(a.id, 'REJECTED')} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Reprovar</button>
-                      </>
-                    )}
-                  </div>
+              <>
+                {/* Kanban */}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : `repeat(${PIPELINE_STAGES.length}, 1fr)`, gap: 12, overflowX: 'auto' }}>
+                  {PIPELINE_STAGES.map(stage => {
+                    const stageApps = visibleApps.filter(a => normalizeStage(a.stage) === stage.key && normalizeStage(a.stage) !== 'REJECTED')
+                    return (
+                      <div key={stage.key} style={{ background: '#f8fafc', borderRadius: 14, padding: 12, minHeight: 120 }}>
+                        {/* Column header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ width: 10, height: 10, borderRadius: '50%', background: stage.color, flexShrink: 0 }} />
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#1e3a6e' }}>{stage.label}</span>
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 700, background: stage.bg, color: stage.color, padding: '2px 8px', borderRadius: 20 }}>
+                            {stageApps.length}
+                          </span>
+                        </div>
+
+                        {/* Cards */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {stageApps.length === 0 ? (
+                            <div style={{ border: '2px dashed #e0eaf4', borderRadius: 10, padding: '20px 12px', textAlign: 'center', color: '#b0bec5', fontSize: 11 }}>
+                              Nenhum candidato
+                            </div>
+                          ) : stageApps.map(a => (
+                            <div key={a.id} style={{ background: 'white', borderRadius: 10, padding: '12px', boxShadow: '0 1px 4px rgba(30,74,138,0.07)', border: `1px solid ${stage.color}22` }}>
+                              {/* Avatar + name */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${stage.bg}, ${stage.color}33)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: stage.color, fontSize: 13, flexShrink: 0 }}>
+                                  {(a.name || 'C')[0].toUpperCase()}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1e3a6e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
+                                  <div style={{ fontSize: 11, color: '#778899', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.role}</div>
+                                </div>
+                              </div>
+
+                              {/* Score + date */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                <span style={{ fontSize: 10.5, color: '#778899' }}>{a.date}</span>
+                                {a.adherencePercent != null && (
+                                  <span style={{ fontSize: 10.5, fontWeight: 700, color: a.adherencePercent >= 70 ? '#16a34a' : a.adherencePercent >= 40 ? '#ca8a04' : '#dc2626' }}>
+                                    {a.adherencePercent}% fit
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Actions */}
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                {a.resumeUrl && (
+                                  <a href={a.resumeUrl} target="_blank" rel="noopener noreferrer"
+                                    style={{ fontSize: 10.5, padding: '3px 8px', borderRadius: 20, background: '#eff6ff', color: '#3b82f6', fontWeight: 600, textDecoration: 'none' }}>
+                                    CV
+                                  </a>
+                                )}
+                                {/* Stage advance buttons */}
+                                {PIPELINE_STAGES.filter(s => s.key !== stage.key).map(targetStage => (
+                                  <button key={targetStage.key}
+                                    onClick={() => handleUpdateApplicationStatus(a.id, targetStage.key)}
+                                    title={`Mover para ${targetStage.label}`}
+                                    style={{ fontSize: 10.5, padding: '3px 8px', borderRadius: 20, background: targetStage.bg, color: targetStage.color, border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                                    → {targetStage.label.split(' ')[0]}
+                                  </button>
+                                ))}
+                                <button
+                                  onClick={() => handleUpdateApplicationStatus(a.id, 'REJECTED')}
+                                  style={{ fontSize: 10.5, padding: '3px 8px', borderRadius: 20, background: '#fef2f2', color: '#ef4444', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                                  Reprovar
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-              ))
+
+                {/* Reprovados colapsáveis */}
+                {rejectedApps.length > 0 && (
+                  <details style={{ marginTop: 20 }}>
+                    <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#ef4444', padding: '10px 0', userSelect: 'none' }}>
+                      Reprovados ({rejectedApps.length})
+                    </summary>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                      {rejectedApps.map(a => (
+                        <div key={a.id} style={{ background: 'white', borderRadius: 10, padding: '12px 16px', border: '1px solid #fee2e2', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                          <div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#1e3a6e' }}>{a.name}</span>
+                            <span style={{ fontSize: 12, color: '#778899', marginLeft: 8 }}>{a.role} · {a.date}</span>
+                          </div>
+                          <button onClick={() => handleUpdateApplicationStatus(a.id, 'APPLIED')}
+                            style={{ fontSize: 11.5, padding: '4px 12px', borderRadius: 20, background: '#eff6ff', color: '#3b82f6', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                            Reativar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </>
             )}
           </div>
-        </div>
-      )
+        )
+      }
+
+      case 'documentos': {
+        const docCategories = [
+          { value: 'DRESS_CODE',        label: 'Código de Vestimenta' },
+          { value: 'WORK_CONTRACT',     label: 'Contrato Individual de Trabalho' },
+          { value: 'ADMISSION_DOCS',    label: 'Ficha de Documentos para Admissão' },
+          { value: 'REGISTRATION_INFO', label: 'Ficha de Informação para Registro' },
+          { value: 'OFFER_LETTER',      label: 'Carta Proposta' },
+          { value: 'OTHER',             label: 'Outro' },
+        ]
+        const docStatusLabel = { PENDING: 'Pendente', VIEWED: 'Visualizado', SIGNED: 'Assinado', REJECTED: 'Recusado' }
+        const docStatusColor = { PENDING: ['#fef9c3', '#ca8a04'], VIEWED: ['#eff6ff', '#3b82f6'], SIGNED: ['#dcfce7', '#16a34a'], REJECTED: ['#fee2e2', '#dc2626'] }
+        const categoryLabel = Object.fromEntries(docCategories.map(c => [c.value, c.label]))
+
+        return (
+          <div>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e' }}>Módulo de Documentos</h2>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setDocView('library')} style={{ background: docView === 'library' ? '#1e4a8a' : '#e8f2fc', color: docView === 'library' ? 'white' : '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Biblioteca</button>
+                <button onClick={() => { setDocView('sent'); fetchSentDocs() }} style={{ background: docView === 'sent' ? '#1e4a8a' : '#e8f2fc', color: docView === 'sent' ? 'white' : '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Enviados</button>
+                {docView !== 'add' && (
+                  <button onClick={() => setDocView('add')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>+ Adicionar</button>
+                )}
+              </div>
+            </div>
+
+            {docSuccess && (
+              <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 16px', color: '#15803d', fontSize: 13, marginBottom: 16 }}>{docSuccess}</div>
+            )}
+            {docError && (
+              <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '10px 16px', color: '#c00', fontSize: 13, marginBottom: 16 }}>
+                {docError}
+                <button onClick={() => setDocError('')} style={{ float: 'right', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#c00' }}>×</button>
+              </div>
+            )}
+
+            {/* Add document form */}
+            {docView === 'add' && (
+              <div style={{ background: 'white', borderRadius: 16, padding: '28px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', marginBottom: 20 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Adicionar documento à biblioteca</h3>
+                <form onSubmit={handleAddDocument} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>Título *</label>
+                    <input value={docForm.title} onChange={e => setDocForm(p => ({ ...p, title: e.target.value }))} placeholder="Ex: Código de Vestimenta 2025" style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>Categoria *</label>
+                    <select value={docForm.category} onChange={e => setDocForm(p => ({ ...p, category: e.target.value }))} style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', background: 'white', boxSizing: 'border-box' }}>
+                      {docCategories.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>Descrição</label>
+                    <textarea value={docForm.description} onChange={e => setDocForm(p => ({ ...p, description: e.target.value }))} rows={2} placeholder="Descrição opcional..." style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>URL do arquivo * <span style={{ fontWeight: 400, color: '#9ca3af' }}>(Cloudinary, Google Drive, etc.)</span></label>
+                    <input value={docForm.fileUrl} onChange={e => setDocForm(p => ({ ...p, fileUrl: e.target.value }))} placeholder="https://..." style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>Nome do arquivo *</label>
+                    <input value={docForm.fileName} onChange={e => setDocForm(p => ({ ...p, fileName: e.target.value }))} placeholder="Ex: codigo-vestimenta.pdf" style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button type="submit" disabled={docSaving} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 10, padding: '10px 24px', cursor: docSaving ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13 }}>
+                      {docSaving ? 'Salvando...' : 'Salvar'}
+                    </button>
+                    <button type="button" onClick={() => { setDocView('library'); setDocForm({ title: '', description: '', category: 'OTHER', fileUrl: '', fileName: '' }); setDocError('') }} style={{ background: '#f3f4f6', color: '#556677', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Cancelar</button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Library view */}
+            {docView === 'library' && (
+              docLibraryLoading ? (
+                <div style={{ background: 'white', borderRadius: 14, padding: 48, textAlign: 'center', color: '#778899', fontSize: 13 }}>Carregando biblioteca...</div>
+              ) : docLibrary.length === 0 ? (
+                <div style={{ background: 'white', borderRadius: 14, padding: 48, textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>📂</div>
+                  <p style={{ color: '#778899', fontSize: 13 }}>Sua biblioteca está vazia. Adicione documentos para enviar aos candidatos.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {docLibrary.map(doc => (
+                    <div key={doc.id} style={{ background: 'white', borderRadius: 14, padding: '18px 20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 20 }}>📄</span>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e' }}>{doc.title}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#778899' }}>
+                          {categoryLabel[doc.category] || doc.category} · {doc.fileName} · {doc._count?.sentDocuments ?? 0} envio(s)
+                        </div>
+                        {doc.description && <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>{doc.description}</div>}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <a href={doc.fileUrl} target="_blank" rel="noreferrer" style={{ background: '#eff6ff', color: '#3b82f6', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12, textDecoration: 'none', display: 'inline-block' }}>Abrir</a>
+                        <button onClick={() => { setSendDocModal({ doc, search: '' }); setSendDocCandidateId(''); setSendDocMessage('') }} style={{ background: '#f0fdf4', color: '#16a34a', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Enviar</button>
+                        <button onClick={() => handleDeleteDocument(doc.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Remover</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* Sent documents view */}
+            {docView === 'sent' && (
+              sentDocsLoading ? (
+                <div style={{ background: 'white', borderRadius: 14, padding: 48, textAlign: 'center', color: '#778899', fontSize: 13 }}>Carregando envios...</div>
+              ) : sentDocs.length === 0 ? (
+                <div style={{ background: 'white', borderRadius: 14, padding: 48, textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>📬</div>
+                  <p style={{ color: '#778899', fontSize: 13 }}>Nenhum documento enviado ainda.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {sentDocs.map(sd => {
+                    const [sBg, sColor] = docStatusColor[sd.status] || ['#f3f4f6', '#6b7280']
+                    return (
+                      <div key={sd.id} style={{ background: 'white', borderRadius: 14, padding: '16px 20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e', marginBottom: 2 }}>{sd.companyDocument?.title}</div>
+                          <div style={{ fontSize: 12, color: '#778899' }}>
+                            Para: {sd.candidate?.candidateProfile?.fullName || sd.candidate?.email} · {new Date(sd.createdAt).toLocaleDateString('pt-BR')}
+                          </div>
+                          {sd.message && <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>"{sd.message}"</div>}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: sBg, color: sColor, flexShrink: 0 }}>
+                          {docStatusLabel[sd.status] || sd.status}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            )}
+
+            {/* Send document modal */}
+            {sendDocModal && (() => {
+              // Deduplicate candidates by candidateId — same person may have applied to multiple jobs
+              const candidateMap = new Map()
+              allApplications.forEach(a => {
+                if (a.candidateId && !candidateMap.has(a.candidateId)) {
+                  candidateMap.set(a.candidateId, { id: a.candidateId, name: a.name, role: a.role })
+                }
+              })
+              const candidateOptions = Array.from(candidateMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+              const [search, setSearch] = [sendDocModal.search || '', (v) => setSendDocModal(prev => ({ ...prev, search: v }))]
+              const filtered = search
+                ? candidateOptions.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.role.toLowerCase().includes(search.toLowerCase()))
+                : candidateOptions
+
+              return (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={e => { if (e.target === e.currentTarget) { setSendDocModal(null); setSendDocCandidateId(''); setSendDocError('') } }}>
+                  <div style={{ background: 'white', borderRadius: 16, padding: 28, width: '100%', maxWidth: 480, boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, color: '#1e3a6e', marginBottom: 4 }}>Enviar documento</h3>
+                    <p style={{ fontSize: 13, color: '#778899', marginBottom: 20 }}>{sendDocModal.doc.title}</p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {/* Candidate picker */}
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>Candidato *</label>
+                        {candidateOptions.length === 0 ? (
+                          <div style={{ background: '#fef9c3', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#92400e' }}>
+                            Nenhum candidato encontrado. As aplicações precisam ser carregadas primeiro.
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              value={search}
+                              onChange={e => setSearch(e.target.value)}
+                              placeholder="Buscar por nome ou vaga..."
+                              style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '9px 14px', fontSize: 13, outline: 'none', boxSizing: 'border-box', marginBottom: 6 }}
+                            />
+                            <div style={{ border: '1.5px solid #e0eaf4', borderRadius: 10, maxHeight: 180, overflowY: 'auto' }}>
+                              {filtered.length === 0 ? (
+                                <div style={{ padding: '12px 14px', fontSize: 13, color: '#9ca3af' }}>Nenhum resultado</div>
+                              ) : filtered.map(c => (
+                                <button
+                                  key={c.id}
+                                  onClick={() => setSendDocCandidateId(c.id)}
+                                  style={{
+                                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '10px 14px', border: 'none', borderBottom: '1px solid #f0f4f8',
+                                    background: sendDocCandidateId === c.id ? '#eff6ff' : 'white',
+                                    cursor: 'pointer', textAlign: 'left',
+                                  }}
+                                >
+                                  <div>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a6e' }}>{c.name}</div>
+                                    <div style={{ fontSize: 11, color: '#9ca3af' }}>{c.role}</div>
+                                  </div>
+                                  {sendDocCandidateId === c.id && (
+                                    <span style={{ fontSize: 16, color: '#3b82f6', flexShrink: 0 }}>✓</span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Message */}
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>Mensagem (opcional)</label>
+                        <textarea value={sendDocMessage} onChange={e => setSendDocMessage(e.target.value)} rows={3} placeholder="Ex: Por favor, assine antes do primeiro dia." style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+                      </div>
+
+                      {sendDocError && (
+                        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
+                          {sendDocError}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button onClick={handleSendDocument} disabled={sendDocSaving || !sendDocCandidateId} style={{ flex: 1, background: sendDocCandidateId ? 'linear-gradient(135deg, #1a4f8a, #2a7ec8)' : '#e0eaf4', color: sendDocCandidateId ? 'white' : '#9ca3af', border: 'none', borderRadius: 10, padding: '10px', cursor: sendDocSaving || !sendDocCandidateId ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13 }}>
+                          {sendDocSaving ? 'Enviando...' : 'Enviar'}
+                        </button>
+                        <button onClick={() => { setSendDocModal(null); setSendDocCandidateId(''); setSendDocError('') }} style={{ background: '#f3f4f6', color: '#556677', border: 'none', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Cancelar</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        )
+      }
 
       case 'talentos': return (
         <div>
@@ -975,7 +1845,11 @@ export default function RecrutadorDashboard({ navigate }) {
                           </div>
                           <div>
                             <label style={{ ...labelStyle, fontSize: 11 }}>Upload de vídeo</label>
-                            <input type="file" accept="video/*" onChange={e => updateLesson(si, li, 'videoFile', e.target.files[0] || null)} style={{ fontSize: 12 }} />
+                            <input type="file" accept="video/*" onChange={e => {
+                              const f = e.target.files[0]
+                              if (f && f.size > 500 * 1024 * 1024) { setCourseError('O video deve ter no maximo 500 MB.'); e.target.value = ''; return }
+                              updateLesson(si, li, 'videoFile', f || null)
+                            }} style={{ fontSize: 12 }} />
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
@@ -1121,6 +1995,15 @@ export default function RecrutadorDashboard({ navigate }) {
         )}
         {renderSection()}
       </div>
+
+      {/* Job Poster Modal */}
+      {posterJob && (
+        <JobPosterModal
+          job={posterJob}
+          company={myCompany}
+          onClose={() => setPosterJob(null)}
+        />
+      )}
     </div>
   )
 }

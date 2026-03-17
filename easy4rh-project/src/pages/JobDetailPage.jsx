@@ -34,6 +34,7 @@ export default function JobDetailPage({ job, navigate }) {
   const isSaved = savedJobs.includes(job.id);
 
   const loadQuestions = async () => {
+    if (!job?.id) { setQuestions([]); return; }
     setQuestionsLoading(true);
     try {
       const data = await jobQuestionsApi.list(job.id);
