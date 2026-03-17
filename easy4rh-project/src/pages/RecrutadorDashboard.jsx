@@ -7,6 +7,7 @@ import { getStageLabel, getStageColor } from '../utils/applicationStages'
 
 const recruiterMenuItems = [
   { id: 'resumo',      icon: '🏠', label: 'Resumo' },
+  { id: 'empresa',     icon: '🏢', label: 'Minha Empresa' },
   { id: 'publicar',    icon: '➕', label: 'Publicar Vaga' },
   { id: 'vagas',       icon: '📢', label: 'Vagas Publicadas' },
   { id: 'aplicacoes',  icon: '📋', label: 'Aplicações' },
@@ -74,6 +75,21 @@ export default function RecrutadorDashboard({ navigate }) {
   const [allApplications, setAllApplications] = useState([])
   const [applicationsLoading, setApplicationsLoading] = useState(false)
 
+  // Company management
+  const [myCompany, setMyCompany] = useState(null)
+  const [companyLoading, setCompanyLoading] = useState(false)
+  const [companySaving, setCompanySaving] = useState(false)
+  const [companyError, setCompanyError] = useState('')
+  const [companySuccess, setCompanySuccess] = useState('')
+  const [companyForm, setCompanyForm] = useState({
+    name: '', razaoSocial: '', cnpj: '', description: '', website: '',
+    address: '', addressNumber: '', addressComplement: '', neighborhood: '', zipCode: '', city: '', state: '',
+    size: '', industry: '', legalNature: '',
+    mission: '', values: '',
+    linkedinUrl: '', instagramUrl: '', glassdoorUrl: '',
+    logoUrl: '', aboutVideoUrl: '',
+  })
+
   // Course management
   const [myCourses, setMyCourses] = useState([])
   const [myCoursesLoading, setMyCoursesLoading] = useState(false)
@@ -88,10 +104,35 @@ export default function RecrutadorDashboard({ navigate }) {
   const [courseStudents, setCourseStudents] = useState([])
   const [courseStatsLoading, setCourseStatsLoading] = useState(false)
 
+  const populateCompanyForm = (company) => {
+    setMyCompany(company)
+    setCompanyForm({
+      name: company.name || '', razaoSocial: company.razaoSocial || '', cnpj: company.cnpj || '',
+      description: company.description || '', website: company.website || '',
+      address: company.address || '', addressNumber: company.addressNumber || '',
+      addressComplement: company.addressComplement || '', neighborhood: company.neighborhood || '',
+      zipCode: company.zipCode || '', city: company.city || '', state: company.state || '',
+      size: company.size || '', industry: company.industry || '', legalNature: company.legalNature || '',
+      mission: company.mission || '', values: company.values || '',
+      linkedinUrl: company.linkedinUrl || '', instagramUrl: company.instagramUrl || '',
+      glassdoorUrl: company.glassdoorUrl || '',
+      logoUrl: company.logoUrl || '', aboutVideoUrl: company.aboutVideoUrl || '',
+    })
+  }
+
   useEffect(() => {
     companiesApi.list().then(data => {
       const list = Array.isArray(data) ? data : (data.data || [])
       setCompanies(list)
+      // Try to find the recruiter's company:
+      // 1. By user.companyId if backend returns it
+      // 2. By localStorage saved company id
+      // 3. First company in list as fallback for single-company recruiters
+      const savedCompanyId = localStorage.getItem('my_company_id')
+      const mine = (user?.companyId && list.find(c => c.id === user.companyId))
+        || (savedCompanyId && list.find(c => c.id === savedCompanyId))
+        || null
+      if (mine) populateCompanyForm(mine)
     }).catch(() => {})
   }, [])
 
@@ -399,6 +440,79 @@ export default function RecrutadorDashboard({ navigate }) {
     }
   }
 
+  // Company management functions
+  const handleSaveCompany = async () => {
+    setCompanySaving(true)
+    setCompanyError('')
+    setCompanySuccess('')
+    try {
+      const payload = { ...companyForm }
+      // logoUrl and aboutVideoUrl are managed via upload endpoints, not PATCH
+      delete payload.logoUrl
+      delete payload.aboutVideoUrl
+      // Remove empty strings to avoid validation errors
+      Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k] })
+      if (myCompany) {
+        const updated = await companiesApi.update(myCompany.id, payload)
+        populateCompanyForm(updated)
+        localStorage.setItem('my_company_id', updated.id)
+        setCompanySuccess('Empresa atualizada com sucesso!')
+      } else {
+        if (!companyForm.name.trim()) { setCompanyError('Nome da empresa e obrigatorio.'); setCompanySaving(false); return }
+        const created = await companiesApi.create(payload)
+        populateCompanyForm(created)
+        setCompanies(prev => [...prev, created])
+        localStorage.setItem('my_company_id', created.id)
+        setCompanySuccess('Empresa criada com sucesso!')
+      }
+      setTimeout(() => setCompanySuccess(''), 4000)
+    } catch (err) {
+      setCompanyError(err.message || 'Erro ao salvar empresa.')
+    } finally {
+      setCompanySaving(false)
+    }
+  }
+
+  const handleUploadLogo = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !myCompany) return
+    setCompanyError('')
+    setCompanySuccess('')
+    try {
+      const result = await companiesApi.uploadLogo(myCompany.id, file)
+      // Backend returns { company, upload } — company already has logoUrl updated
+      const url = result.company?.logoUrl || result.upload?.secureUrl || result.secureUrl || result.logoUrl
+      if (url) {
+        setCompanyForm(prev => ({ ...prev, logoUrl: url }))
+        setMyCompany(prev => ({ ...prev, logoUrl: url }))
+        setCompanySuccess('Logo atualizado!')
+        setTimeout(() => setCompanySuccess(''), 4000)
+      }
+    } catch (err) {
+      setCompanyError(err.message || 'Erro ao enviar logo.')
+    }
+  }
+
+  const handleUploadVideo = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !myCompany) return
+    setCompanyError('')
+    setCompanySuccess('')
+    try {
+      const result = await companiesApi.uploadVideo(myCompany.id, file)
+      // Backend returns { company, upload } — company already has aboutVideoUrl updated
+      const url = result.company?.aboutVideoUrl || result.upload?.secureUrl || result.secureUrl || result.aboutVideoUrl
+      if (url) {
+        setCompanyForm(prev => ({ ...prev, aboutVideoUrl: url }))
+        setMyCompany(prev => ({ ...prev, aboutVideoUrl: url }))
+        setCompanySuccess('Video atualizado!')
+        setTimeout(() => setCompanySuccess(''), 4000)
+      }
+    } catch (err) {
+      setCompanyError(err.message || 'Erro ao enviar video.')
+    }
+  }
+
   // Section/lesson helpers for course builder
   const addSection = () => setCourseSections(prev => [...prev, { title: '', lessons: [] }])
   const removeSection = (idx) => setCourseSections(prev => prev.filter((_, i) => i !== idx))
@@ -474,6 +588,197 @@ export default function RecrutadorDashboard({ navigate }) {
           </div>
         </div>
       )
+
+      case 'empresa': {
+        const lbl = { fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }
+        const inp = { width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box', color: '#334' }
+        const companySizes = [
+          { label: 'Startup', value: 'STARTUP' },
+          { label: 'Pequena', value: 'SMALL' },
+          { label: 'Media', value: 'MEDIUM' },
+          { label: 'Grande', value: 'LARGE' },
+          { label: 'Enterprise', value: 'ENTERPRISE' },
+        ]
+        const legalNatures = [
+          { label: 'Privada', value: 'PRIVATE' },
+          { label: 'Publica', value: 'PUBLIC' },
+          { label: 'ONG', value: 'NGO' },
+          { label: 'Cooperativa', value: 'COOPERATIVE' },
+          { label: 'Outra', value: 'OTHER' },
+        ]
+        const states = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
+
+        return (
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 8 }}>Minha Empresa</h2>
+            <p style={{ fontSize: 13.5, color: '#778899', marginBottom: 24 }}>
+              {myCompany ? 'Edite os dados da sua empresa.' : 'Cadastre sua empresa para publicar vagas.'}
+            </p>
+
+            {companyError && <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '10px 16px', color: '#c00', fontSize: 13, marginBottom: 16 }}>{companyError}</div>}
+            {companySuccess && <div style={{ background: '#f0fff4', border: '1px solid #c6f6d5', borderRadius: 10, padding: '10px 16px', color: '#22543d', fontSize: 13, marginBottom: 16 }}>{companySuccess}</div>}
+
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Dados Basicos</h3>
+
+              {/* Logo */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
+                <div style={{ width: 80, height: 80, borderRadius: 12, background: companyForm.logoUrl ? 'transparent' : '#e8f2fc', border: '2px dashed #c0d6ee', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                  {companyForm.logoUrl
+                    ? <img src={companyForm.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <span style={{ color: '#778899', fontSize: 12 }}>Logo</span>
+                  }
+                </div>
+                <div>
+                  <label style={{ display: 'inline-block', background: '#e8f2fc', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 18px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>
+                    {myCompany ? 'Alterar logo' : 'Enviar logo'}
+                    <input type="file" accept="image/*" onChange={handleUploadLogo} style={{ display: 'none' }} disabled={!myCompany} />
+                  </label>
+                  {!myCompany && <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>Salve a empresa primeiro</div>}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={lbl}>Nome da empresa *</label>
+                  <input style={inp} value={companyForm.name} onChange={e => setCompanyForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Easy4RH Ltda" />
+                </div>
+                <div>
+                  <label style={lbl}>Razao Social</label>
+                  <input style={inp} value={companyForm.razaoSocial} onChange={e => setCompanyForm(p => ({ ...p, razaoSocial: e.target.value }))} placeholder="Razao social" />
+                </div>
+                <div>
+                  <label style={lbl}>CNPJ</label>
+                  <input style={inp} value={companyForm.cnpj} onChange={e => setCompanyForm(p => ({ ...p, cnpj: e.target.value }))} placeholder="XX.XXX.XXX/XXXX-XX" />
+                </div>
+                <div>
+                  <label style={lbl}>Setor / Industria</label>
+                  <input style={inp} value={companyForm.industry} onChange={e => setCompanyForm(p => ({ ...p, industry: e.target.value }))} placeholder="Ex: Tecnologia, RH, Saude" />
+                </div>
+                <div>
+                  <label style={lbl}>Porte</label>
+                  <select style={inp} value={companyForm.size} onChange={e => setCompanyForm(p => ({ ...p, size: e.target.value }))}>
+                    <option value="">Selecione</option>
+                    {companySizes.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Natureza Juridica</label>
+                  <select style={inp} value={companyForm.legalNature} onChange={e => setCompanyForm(p => ({ ...p, legalNature: e.target.value }))}>
+                    <option value="">Selecione</option>
+                    {legalNatures.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Website</label>
+                  <input style={inp} value={companyForm.website} onChange={e => setCompanyForm(p => ({ ...p, website: e.target.value }))} placeholder="https://suaempresa.com.br" />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={lbl}>Descricao</label>
+                <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={companyForm.description} onChange={e => setCompanyForm(p => ({ ...p, description: e.target.value }))} placeholder="Descreva a empresa, o que faz, qual o diferencial..." />
+              </div>
+            </div>
+
+            {/* Endereco */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Endereco</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 120px 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={lbl}>Rua / Avenida</label>
+                  <input style={inp} value={companyForm.address} onChange={e => setCompanyForm(p => ({ ...p, address: e.target.value }))} placeholder="Endereco" />
+                </div>
+                <div>
+                  <label style={lbl}>Numero</label>
+                  <input style={inp} value={companyForm.addressNumber} onChange={e => setCompanyForm(p => ({ ...p, addressNumber: e.target.value }))} placeholder="123" />
+                </div>
+                <div>
+                  <label style={lbl}>Complemento</label>
+                  <input style={inp} value={companyForm.addressComplement} onChange={e => setCompanyForm(p => ({ ...p, addressComplement: e.target.value }))} placeholder="Sala, andar..." />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 100px 160px', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <label style={lbl}>Bairro</label>
+                  <input style={inp} value={companyForm.neighborhood} onChange={e => setCompanyForm(p => ({ ...p, neighborhood: e.target.value }))} placeholder="Bairro" />
+                </div>
+                <div>
+                  <label style={lbl}>Cidade</label>
+                  <input style={inp} value={companyForm.city} onChange={e => setCompanyForm(p => ({ ...p, city: e.target.value }))} placeholder="Cidade" />
+                </div>
+                <div>
+                  <label style={lbl}>UF</label>
+                  <select style={inp} value={companyForm.state} onChange={e => setCompanyForm(p => ({ ...p, state: e.target.value }))}>
+                    <option value="">UF</option>
+                    {states.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>CEP</label>
+                  <input style={inp} value={companyForm.zipCode} onChange={e => setCompanyForm(p => ({ ...p, zipCode: e.target.value }))} placeholder="XXXXX-XXX" />
+                </div>
+              </div>
+            </div>
+
+            {/* Missao, Valores */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Missao e Valores</h3>
+              <div style={{ marginBottom: 16 }}>
+                <label style={lbl}>Missao</label>
+                <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={companyForm.mission} onChange={e => setCompanyForm(p => ({ ...p, mission: e.target.value }))} placeholder="Qual a missao da empresa?" />
+              </div>
+              <div>
+                <label style={lbl}>Valores</label>
+                <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={companyForm.values} onChange={e => setCompanyForm(p => ({ ...p, values: e.target.value }))} placeholder="Quais os valores da empresa?" />
+              </div>
+            </div>
+
+            {/* Redes Sociais */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Redes Sociais</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={lbl}>LinkedIn</label>
+                  <input style={inp} value={companyForm.linkedinUrl} onChange={e => setCompanyForm(p => ({ ...p, linkedinUrl: e.target.value }))} placeholder="https://linkedin.com/company/..." />
+                </div>
+                <div>
+                  <label style={lbl}>Instagram</label>
+                  <input style={inp} value={companyForm.instagramUrl} onChange={e => setCompanyForm(p => ({ ...p, instagramUrl: e.target.value }))} placeholder="https://instagram.com/..." />
+                </div>
+                <div>
+                  <label style={lbl}>Glassdoor</label>
+                  <input style={inp} value={companyForm.glassdoorUrl} onChange={e => setCompanyForm(p => ({ ...p, glassdoorUrl: e.target.value }))} placeholder="https://glassdoor.com.br/..." />
+                </div>
+              </div>
+            </div>
+
+            {/* Video institucional */}
+            <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 24 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Video Institucional</h3>
+              {companyForm.aboutVideoUrl && (
+                <div style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden', background: '#000' }}>
+                  <video src={companyForm.aboutVideoUrl} controls style={{ width: '100%', maxHeight: 320 }} />
+                </div>
+              )}
+              <label style={{ display: 'inline-block', background: '#e8f2fc', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 18px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>
+                {companyForm.aboutVideoUrl ? 'Trocar video' : 'Enviar video'}
+                <input type="file" accept="video/*" onChange={handleUploadVideo} style={{ display: 'none' }} disabled={!myCompany} />
+              </label>
+              {!myCompany && <span style={{ fontSize: 11, color: '#999', marginLeft: 8 }}>Salve a empresa primeiro</span>}
+            </div>
+
+            {/* Save button */}
+            <button onClick={handleSaveCompany} disabled={companySaving} style={{
+              background: companySaving ? '#aaa' : 'linear-gradient(135deg, #1e4a8a, #4a9edd)',
+              color: 'white', border: 'none', borderRadius: 24, padding: '14px 36px',
+              cursor: companySaving ? 'default' : 'pointer', fontWeight: 700, fontSize: 14,
+            }}>
+              {companySaving ? 'Salvando...' : myCompany ? 'Salvar alteracoes' : 'Criar empresa'}
+            </button>
+          </div>
+        )
+      }
 
       case 'publicar': {
         const labelStyle = { fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }

@@ -205,23 +205,21 @@ export const applicationsApi = {
 // ── Companies (Empresas) ──────────────────────────────────────
 
 export const companiesApi = {
-  /**
-   * Listar empresas
-   * GET /companies
-   */
   list: () => request('GET', '/companies'),
-
-  /**
-   * Detalhes de empresa
-   * GET /companies/:id
-   */
   get: (id) => request('GET', `/companies/${id}`),
-
-  /**
-   * Criar empresa (Recrutador)
-   * POST /companies
-   */
   create: (data) => request('POST', '/companies', data),
+  update: (id, data) => request('PATCH', `/companies/${id}`, data),
+  delete: (id) => request('DELETE', `/companies/${id}`),
+  uploadLogo: (id, file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return requestFormData('POST', `/companies/${id}/upload-logo`, fd)
+  },
+  uploadVideo: (id, file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return requestFormData('POST', `/companies/${id}/upload-video`, fd)
+  },
 }
 
 // ── Courses / LMS ─────────────────────────────────────────────
