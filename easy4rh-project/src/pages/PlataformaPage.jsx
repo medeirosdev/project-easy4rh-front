@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { coursesApi } from '../services/api'
 import { useBreakpoint } from '../hooks/useBreakpoint'
@@ -10,6 +10,9 @@ export default function PlataformaPage({ navigate }) {
   const [enrollments, setEnrollments] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('todos') // 'todos' | 'meus'
+  const [search, setSearch] = useState('')
+  const [filterCategory, setFilterCategory] = useState('')
+  const [filterLevel, setFilterLevel] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -33,9 +36,19 @@ export default function PlataformaPage({ navigate }) {
   }, [])
 
   const enrolledCourseIds = enrollments.map(e => e.courseId || e.course?.id)
-  const displayCourses = tab === 'meus'
-    ? courses.filter(c => enrolledCourseIds.includes(c.id))
-    : courses
+
+  const categories = useMemo(() => [...new Set(courses.map(c => c.category).filter(Boolean))], [courses])
+  const levels = useMemo(() => [...new Set(courses.map(c => c.level).filter(Boolean))], [courses])
+
+  const displayCourses = useMemo(() => {
+    let list = tab === 'meus' ? courses.filter(c => enrolledCourseIds.includes(c.id)) : courses
+    if (search) list = list.filter(c => c.title?.toLowerCase().includes(search.toLowerCase()) || c.description?.toLowerCase().includes(search.toLowerCase()))
+    if (filterCategory) list = list.filter(c => c.category === filterCategory)
+    if (filterLevel) list = list.filter(c => c.level === filterLevel)
+    return list
+  }, [courses, enrollments, tab, search, filterCategory, filterLevel])
+
+  const hasFilters = search || filterCategory || filterLevel
 
   const getProgress = (courseId) => {
     const enr = enrollments.find(e => (e.courseId || e.course?.id) === courseId)
@@ -85,7 +98,7 @@ export default function PlataformaPage({ navigate }) {
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 40px', width: '100%', boxSizing: 'border-box' }}>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 32, borderBottom: '2px solid #dde4ee' }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #dde4ee' }}>
           {[
             { key: 'todos', label: 'Todos os cursos' },
             { key: 'meus', label: `Meus cursos (${enrollments.length})` },
@@ -102,6 +115,44 @@ export default function PlataformaPage({ navigate }) {
           ))}
         </div>
 
+        {/* Busca e filtros */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#aaa' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Buscar cursos..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 12px 10px 36px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box', background: 'white' }}
+            />
+          </div>
+          {categories.length > 0 && (
+            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', background: 'white', cursor: 'pointer', minWidth: 160 }}>
+              <option value="">Todas as categorias</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+          {levels.length > 0 && (
+            <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} style={{ border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', background: 'white', cursor: 'pointer', minWidth: 150 }}>
+              <option value="">Todos os níveis</option>
+              {levels.map(l => <option key={l} value={l}>{{ BEGINNER: 'Iniciante', INTERMEDIATE: 'Intermediário', ADVANCED: 'Avançado' }[l] || l}</option>)}
+            </select>
+          )}
+          {hasFilters && (
+            <button onClick={() => { setSearch(''); setFilterCategory(''); setFilterLevel('') }} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 10, padding: '10px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13, flexShrink: 0 }}>
+              ✕ Limpar
+            </button>
+          )}
+        </div>
+
+        {/* Contador de resultados */}
+        {!loading && hasFilters && (
+          <p style={{ fontSize: 13, color: '#778', marginBottom: 16, marginTop: -8 }}>
+            {displayCourses.length} resultado{displayCourses.length !== 1 ? 's' : ''} encontrado{displayCourses.length !== 1 ? 's' : ''}
+          </p>
+        )}
+
         {/* Loading */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: '#778' }}>
@@ -110,11 +161,16 @@ export default function PlataformaPage({ navigate }) {
           </div>
         ) : displayCourses.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: '#778' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🎓</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>{hasFilters ? '🔍' : '🎓'}</div>
             <h3 style={{ color: '#334', marginBottom: 8 }}>
-              {tab === 'meus' ? 'Você ainda não está matriculado em nenhum curso' : 'Nenhum curso disponível no momento'}
+              {hasFilters ? 'Nenhum curso encontrado' : tab === 'meus' ? 'Você ainda não está matriculado em nenhum curso' : 'Nenhum curso disponível no momento'}
             </h3>
-            {tab === 'meus' && (
+            {hasFilters && (
+              <button onClick={() => { setSearch(''); setFilterCategory(''); setFilterLevel('') }} style={{ background: '#1e4a8a', color: 'white', border: 'none', borderRadius: 10, padding: '12px 24px', cursor: 'pointer', fontWeight: 700, marginTop: 8, fontSize: 13 }}>
+                Limpar filtros
+              </button>
+            )}
+            {!hasFilters && tab === 'meus' && (
               <button onClick={() => setTab('todos')} style={{ background: '#1e4a8a', color: 'white', border: 'none', borderRadius: 10, padding: '12px 24px', cursor: 'pointer', fontWeight: 700, marginTop: 8 }}>
                 Explorar cursos
               </button>

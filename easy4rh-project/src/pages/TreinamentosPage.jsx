@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useJobs } from "../context/JobsContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -6,9 +7,35 @@ const categoryColors = {
   RH: "#2c5282", "E-commerce": "#2d3748"
 };
 
+const levelLabel = { BEGINNER: "Iniciante", INTERMEDIATE: "Intermediário", ADVANCED: "Avançado" };
+
 export default function TreinamentosPage({ navigate }) {
   const { courses, coursesLoading } = useJobs();
   const { user } = useAuth();
+
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterLevel, setFilterLevel] = useState("");
+
+  // Categorias e níveis disponíveis a partir dos cursos reais
+  const categories = useMemo(() => [...new Set(courses.map(c => c.category).filter(Boolean))], [courses]);
+  const levels = useMemo(() => [...new Set(courses.map(c => c.level).filter(Boolean))], [courses]);
+
+  const filtered = useMemo(() => {
+    return courses.filter(c => {
+      const matchSearch = !search || c.title?.toLowerCase().includes(search.toLowerCase()) || c.description?.toLowerCase().includes(search.toLowerCase());
+      const matchCategory = !filterCategory || c.category === filterCategory;
+      const matchLevel = !filterLevel || c.level === filterLevel;
+      return matchSearch && matchCategory && matchLevel;
+    });
+  }, [courses, search, filterCategory, filterLevel]);
+
+  const hasFilters = search || filterCategory || filterLevel;
+
+  const inputStyle = {
+    border: "1.5px solid #e0eaf4", borderRadius: 10, padding: "10px 14px",
+    fontSize: 13.5, outline: "none", background: "white", cursor: "pointer",
+  };
 
   return (
     <div>
@@ -17,13 +44,25 @@ export default function TreinamentosPage({ navigate }) {
         <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }}>
           <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>Capacite-se</p>
           <h1 style={{ color: "white", fontSize: 38, fontWeight: 800, marginBottom: 12 }}>Treinamentos para o Varejo</h1>
-          <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 15, lineHeight: 1.7, maxWidth: 560, margin: "0 auto" }}>
+          <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 15, lineHeight: 1.7, maxWidth: 560, margin: "0 auto 28px" }}>
             Desenvolva suas habilidades com cursos especializados no setor varejista, criados por especialistas do mercado.
           </p>
+
+          {/* Busca no hero */}
+          <div style={{ maxWidth: 520, margin: "0 auto", position: "relative" }}>
+            <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: "#aaa" }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Buscar cursos..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ width: "100%", border: "none", borderRadius: 12, padding: "14px 16px 14px 44px", fontSize: 15, outline: "none", boxSizing: "border-box", boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Individual/Corporate options */}
+      {/* Opções Individual/Empresa */}
       <div style={{ background: "#f8fafc", padding: "48px 20px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, color: "#1e3a6e", marginBottom: 8 }}>Escolha o Caminho ideal para você.</h2>
@@ -31,27 +70,10 @@ export default function TreinamentosPage({ navigate }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 48 }}>
             {[
-              {
-                title: "Consultoria para Empresas",
-                icon: "🏢",
-                items: ["Diagnóstico de RH completo", "Estruturação de processos seletivos", "Políticas de gestão de pessoas", "Acompanhamento mensal de KPIs"],
-                cta: "Fale com um especialista",
-                dark: true
-              },
-              {
-                title: "Desenvolvimento Pessoal",
-                icon: "🎯",
-                items: ["Cursos 100% online", "Certificado digital ao concluir", "Conteúdo prático do varejo", "Acesso vitalício ao material"],
-                cta: "Ver cursos disponíveis",
-                dark: false
-              }
+              { title: "Consultoria para Empresas", icon: "🏢", items: ["Diagnóstico de RH completo", "Estruturação de processos seletivos", "Políticas de gestão de pessoas", "Acompanhamento mensal de KPIs"], cta: "Fale com um especialista", dark: true },
+              { title: "Desenvolvimento Pessoal", icon: "🎯", items: ["Cursos 100% online", "Certificado digital ao concluir", "Conteúdo prático do varejo", "Acesso vitalício ao material"], cta: "Ver cursos disponíveis", dark: false }
             ].map(card => (
-              <div key={card.title} style={{
-                background: card.dark ? "linear-gradient(135deg, #1e3a6e, #2a5298)" : "white",
-                borderRadius: 20, padding: "32px 28px",
-                border: card.dark ? "none" : "1px solid #e8edf2",
-                boxShadow: "0 4px 20px rgba(30,74,138,0.08)"
-              }}>
+              <div key={card.title} style={{ background: card.dark ? "linear-gradient(135deg, #1e3a6e, #2a5298)" : "white", borderRadius: 20, padding: "32px 28px", border: card.dark ? "none" : "1px solid #e8edf2", boxShadow: "0 4px 20px rgba(30,74,138,0.08)" }}>
                 <div style={{ fontSize: 36, marginBottom: 12 }}>{card.icon}</div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: card.dark ? "white" : "#1e3a6e", marginBottom: 16 }}>{card.title}</h3>
                 <ul style={{ margin: "0 0 24px", paddingLeft: 20 }}>
@@ -59,66 +81,99 @@ export default function TreinamentosPage({ navigate }) {
                     <li key={item} style={{ color: card.dark ? "rgba(255,255,255,0.8)" : "#555", fontSize: 13.5, marginBottom: 8, lineHeight: 1.5 }}>{item}</li>
                   ))}
                 </ul>
-                <button onClick={() => navigate("login")} style={{
-                  background: card.dark ? "rgba(255,255,255,0.15)" : "linear-gradient(135deg, #1e4a8a, #4a9edd)",
-                  color: card.dark ? "white" : "white",
-                  border: card.dark ? "1px solid rgba(255,255,255,0.3)" : "none",
-                  borderRadius: 10, padding: "11px 22px", cursor: "pointer", fontWeight: 700, fontSize: 13
-                }}>
+                <button onClick={() => navigate("login")} style={{ background: card.dark ? "rgba(255,255,255,0.15)" : "linear-gradient(135deg, #1e4a8a, #4a9edd)", color: "white", border: card.dark ? "1px solid rgba(255,255,255,0.3)" : "none", borderRadius: 10, padding: "11px 22px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
                   {card.cta}
                 </button>
               </div>
             ))}
           </div>
 
-          {/* Courses grid */}
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#1e3a6e", marginBottom: 24 }}>Cursos Disponíveis</h2>
+          {/* Header dos cursos + filtros */}
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 24 }}>
+            <div>
+              <h2 style={{ fontSize: 24, fontWeight: 800, color: "#1e3a6e", margin: 0 }}>Cursos Disponíveis</h2>
+              {!coursesLoading && (
+                <p style={{ fontSize: 13, color: "#778899", margin: "4px 0 0" }}>
+                  {hasFilters ? `${filtered.length} resultado${filtered.length !== 1 ? "s" : ""} encontrado${filtered.length !== 1 ? "s" : ""}` : `${courses.length} curso${courses.length !== 1 ? "s" : ""} disponível`}
+                </p>
+              )}
+            </div>
+
+            {/* Filtros */}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              {categories.length > 0 && (
+                <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ ...inputStyle, minWidth: 150 }}>
+                  <option value="">Todas as categorias</option>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
+              {levels.length > 0 && (
+                <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} style={{ ...inputStyle, minWidth: 140 }}>
+                  <option value="">Todos os níveis</option>
+                  {levels.map(l => <option key={l} value={l}>{levelLabel[l] || l}</option>)}
+                </select>
+              )}
+              {hasFilters && (
+                <button onClick={() => { setSearch(""); setFilterCategory(""); setFilterLevel(""); }} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 10, padding: "10px 16px", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+                  ✕ Limpar filtros
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Grid de cursos */}
           {coursesLoading ? (
             <div style={{ textAlign: "center", padding: "48px 20px", color: "#778899", fontSize: 14 }}>Carregando cursos...</div>
-          ) : courses.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "48px 20px", color: "#778899", fontSize: 14 }}>Nenhum curso disponível no momento.</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 20px", color: "#778899" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+              <p style={{ fontSize: 15, fontWeight: 600, color: "#334" }}>Nenhum curso encontrado</p>
+              <p style={{ fontSize: 13, marginTop: 4 }}>Tente outros termos ou remova os filtros.</p>
+              <button onClick={() => { setSearch(""); setFilterCategory(""); setFilterLevel(""); }} style={{ marginTop: 16, background: "#1e4a8a", color: "white", border: "none", borderRadius: 10, padding: "10px 20px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+                Ver todos os cursos
+              </button>
+            </div>
           ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
-            {courses.map(course => (
-              <div key={course.id} style={{
-                background: "white", borderRadius: 16, border: "1px solid #e8edf2",
-                overflow: "hidden", boxShadow: "0 4px 16px rgba(30,74,138,0.06)",
-                transition: "all 0.2s", cursor: "pointer"
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(30,74,138,0.12)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(30,74,138,0.06)"; }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
+              {filtered.map(course => (
+                <div key={course.id} style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", overflow: "hidden", boxShadow: "0 4px 16px rgba(30,74,138,0.06)", transition: "all 0.2s", cursor: "pointer" }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(30,74,138,0.12)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(30,74,138,0.06)"; }}>
 
-                {/* Card header */}
-                <div style={{ background: `linear-gradient(135deg, ${categoryColors[course.category] || "#1e4a8a"}22, ${categoryColors[course.category] || "#1e4a8a"}11)`, padding: "24px 20px 20px", borderBottom: "1px solid #e8edf2" }}>
-                  <span style={{
-                    background: categoryColors[course.category] || "#1e4a8a", color: "white",
-                    borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 600, marginBottom: 12, display: "inline-block"
-                  }}>
-                    {course.category}
-                  </span>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1e3a6e", margin: "0 0 8px" }}>{course.title}</h3>
-                  <p style={{ fontSize: 12.5, color: "#666", lineHeight: 1.5, margin: 0 }}>{course.description}</p>
-                </div>
+                  <div style={{ background: `linear-gradient(135deg, ${categoryColors[course.category] || "#1e4a8a"}22, ${categoryColors[course.category] || "#1e4a8a"}11)`, padding: "24px 20px 20px", borderBottom: "1px solid #e8edf2" }}>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                      {course.category && (
+                        <span style={{ background: categoryColors[course.category] || "#1e4a8a", color: "white", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 600 }}>
+                          {course.category}
+                        </span>
+                      )}
+                      {course.level && (
+                        <span style={{ background: "#f0f4f8", color: "#556", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 600 }}>
+                          {levelLabel[course.level] || course.level}
+                        </span>
+                      )}
+                    </div>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, color: "#1e3a6e", margin: "0 0 8px" }}>{course.title}</h3>
+                    <p style={{ fontSize: 12.5, color: "#666", lineHeight: 1.5, margin: 0 }}>
+                      {course.description?.slice(0, 90)}{course.description?.length > 90 ? "..." : ""}
+                    </p>
+                  </div>
 
-                <div style={{ padding: "16px 20px" }}>
-                  <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, color: "#555" }}>⏱️ {course.duration}</span>
-                    <span style={{ fontSize: 12, color: "#555" }}>📊 {course.level}</span>
-                    <span style={{ fontSize: 12, color: "#555" }}>👥 {(course.students || 0).toLocaleString()} alunos</span>
-                    {course.rating > 0 && <span style={{ fontSize: 12, color: "#f59e0b" }}>{"⭐".repeat(Math.floor(course.rating))} {course.rating}</span>}
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-                    <button onClick={() => navigate(user ? `curso-${course.id}` : "login")} style={{
-                      background: "linear-gradient(135deg, #1e4a8a, #4a9edd)", color: "white",
-                      border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: 12.5
-                    }}>
-                      {user ? "Ver curso" : "Inscrever-se"}
-                    </button>
+                  <div style={{ padding: "16px 20px" }}>
+                    <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+                      {course.duration && <span style={{ fontSize: 12, color: "#555" }}>⏱️ {course.duration}</span>}
+                      <span style={{ fontSize: 12, color: "#555" }}>👥 {(course.students || 0).toLocaleString()} alunos</span>
+                      {course.rating > 0 && <span style={{ fontSize: 12, color: "#f59e0b" }}>{"⭐".repeat(Math.floor(course.rating))} {course.rating}</span>}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button onClick={() => navigate(user ? `curso-${course.id}` : "login")} style={{ background: "linear-gradient(135deg, #1e4a8a, #4a9edd)", color: "white", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: 12.5 }}>
+                        {user ? "Ver curso" : "Inscrever-se"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           )}
         </div>
       </div>

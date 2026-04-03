@@ -440,6 +440,101 @@ export default function RecrutadorDashboard({ navigate }) {
     }
   }
 
+  const handleEditCourse = async (course) => {
+    setEditingCourseId(course.id)
+    setNovoCurso({ title: course.title, description: course.description, thumbnailUrl: course.thumbnailUrl || '', level: course.level || 'BEGINNER', category: course.category || '' })
+    setCourseError('')
+    setCourseSuccess('')
+    setCoursePublishing(false)
+    setCourseView('edit')
+    try {
+      const sectionsData = await sectionsApi.list(course.id)
+      const secList = Array.isArray(sectionsData) ? sectionsData : (sectionsData.data || sectionsData.sections || [])
+      setCourseSections(secList.map(sec => ({
+        id: sec.id,
+        title: sec.title,
+        lessons: (sec.lessons || []).map(l => ({
+          id: l.id,
+          title: l.title,
+          description: l.description || '',
+          videoUrl: l.videoUrl || '',
+          duration: l.duration || '',
+          isFree: l.isFree || false,
+          videoFile: null,
+        }))
+      })))
+    } catch (err) {
+      console.error('Erro ao carregar seções:', err)
+      setCourseSections([])
+    }
+  }
+
+  const handleSaveEditCourse = async () => {
+    if (!novoCurso.title || !novoCurso.description) return
+    setCoursePublishing(true)
+    setCourseError('')
+    try {
+      await coursesApi.update(editingCourseId, {
+        title: novoCurso.title,
+        description: novoCurso.description,
+        thumbnailUrl: novoCurso.thumbnailUrl || undefined,
+        level: novoCurso.level || 'BEGINNER',
+        category: novoCurso.category || 'Geral',
+      })
+
+      for (let si = 0; si < courseSections.length; si++) {
+        const sec = courseSections[si]
+        if (!sec.title.trim()) continue
+        let sectionId = sec.id
+        if (sectionId) {
+          await sectionsApi.update(sectionId, { title: sec.title, order: si })
+        } else {
+          const created = await sectionsApi.create(editingCourseId, { title: sec.title, order: si })
+          sectionId = created.id
+        }
+        for (let li = 0; li < (sec.lessons || []).length; li++) {
+          const les = sec.lessons[li]
+          if (!les.title.trim()) continue
+          if (les.id) {
+            await lessonsApi.update(les.id, {
+              title: les.title,
+              description: les.description || undefined,
+              videoUrl: les.videoUrl || undefined,
+              duration: les.duration ? Number(les.duration) : undefined,
+              isFree: les.isFree || false,
+              order: li,
+            })
+          } else {
+            const createdLesson = await lessonsApi.create(sectionId, {
+              title: les.title,
+              description: les.description || undefined,
+              videoUrl: les.videoUrl || undefined,
+              duration: les.duration ? Number(les.duration) : undefined,
+              isFree: les.isFree || false,
+              order: li,
+            })
+            if (les.videoFile) {
+              try { await lessonsApi.uploadVideo(createdLesson.id, les.videoFile) } catch {}
+            }
+          }
+        }
+      }
+
+      setCourseSuccess('Curso atualizado com sucesso!')
+      fetchMyCourses()
+      setTimeout(() => {
+        setCourseSuccess('')
+        setCourseView('list')
+        setEditingCourseId(null)
+        setCourseSections([])
+      }, 2000)
+    } catch (err) {
+      setCourseError(err.message || 'Erro ao salvar curso')
+    } finally {
+      setCoursePublishing(false)
+    }
+  }
+
   // Company management functions
   const handleSaveCompany = async () => {
     setCompanySaving(true)
@@ -1195,6 +1290,127 @@ export default function RecrutadorDashboard({ navigate }) {
           )
         }
 
+        if (courseView === 'edit') return (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+              <button onClick={() => { setCourseView('list'); setCourseError(''); setCourseSuccess(''); setCourseSections([]) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#1e4a8a' }}>←</button>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>Editar Curso</h2>
+            </div>
+
+            {courseSuccess ? (
+              <div style={{ background: 'white', borderRadius: 16, padding: '48px', textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
+                <div style={{ fontSize: 56, marginBottom: 16 }}>✅</div>
+                <h3 style={{ color: '#22c55e', fontSize: 18, fontWeight: 800 }}>{courseSuccess}</h3>
+              </div>
+            ) : (
+              <div style={{ background: 'white', borderRadius: 16, padding: '28px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
+                {courseError && (
+                  <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>{courseError}</div>
+                )}
+
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginTop: 0, marginBottom: 16 }}>Informações do curso</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                  <div style={{ gridColumn: isMobile ? undefined : 'span 2' }}>
+                    <label style={labelStyle}>Título do curso *</label>
+                    <input value={novoCurso.title} onChange={e => setNovoCurso(prev => ({ ...prev, title: e.target.value }))} placeholder="Ex: Liderança no Varejo" style={inputBase} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Nível</label>
+                    <select value={novoCurso.level} onChange={e => setNovoCurso(prev => ({ ...prev, level: e.target.value }))} style={selectBase}>
+                      {courseLevels.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Categoria</label>
+                    <input value={novoCurso.category} onChange={e => setNovoCurso(prev => ({ ...prev, category: e.target.value }))} placeholder="Ex: Gestão, Vendas, RH" style={inputBase} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>URL da thumbnail</label>
+                    <input value={novoCurso.thumbnailUrl} onChange={e => setNovoCurso(prev => ({ ...prev, thumbnailUrl: e.target.value }))} placeholder="https://..." style={inputBase} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 28 }}>
+                  <label style={labelStyle}>Descrição *</label>
+                  <textarea value={novoCurso.description} onChange={e => setNovoCurso(prev => ({ ...prev, description: e.target.value }))} placeholder="Descreva o que o aluno vai aprender..." rows={4} style={{ ...inputBase, resize: 'vertical' }} />
+                </div>
+
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 8 }}>Conteúdo do curso</h3>
+                <p style={{ fontSize: 13, color: '#778899', marginTop: 0, marginBottom: 16 }}>Edite seções e aulas existentes ou adicione novas.</p>
+
+                {courseSections.map((sec, si) => (
+                  <div key={sec.id || si} style={{ background: '#f8fafc', border: '1px solid #e0eaf4', borderRadius: 12, padding: '20px', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#1e3a6e' }}>Seção {si + 1}{sec.id ? '' : ' (nova)'}</span>
+                      <button onClick={() => removeSection(si)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Remover</button>
+                    </div>
+                    <input value={sec.title} onChange={e => updateSectionTitle(si, e.target.value)} placeholder="Título da seção" style={{ ...inputBase, marginBottom: 16 }} />
+
+                    {(sec.lessons || []).map((les, li) => (
+                      <div key={les.id || li} style={{ background: 'white', border: '1px solid #e8edf2', borderRadius: 10, padding: '16px', marginBottom: 10 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#556677' }}>Aula {li + 1}{les.id ? '' : ' (nova)'}</span>
+                          <button onClick={() => removeLesson(si, li)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 16 }}>×</button>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                          <div>
+                            <label style={{ ...labelStyle, fontSize: 11 }}>Título da aula *</label>
+                            <input value={les.title} onChange={e => updateLesson(si, li, 'title', e.target.value)} placeholder="Ex: Introdução à liderança" style={inputBase} />
+                          </div>
+                          <div>
+                            <label style={{ ...labelStyle, fontSize: 11 }}>Duração (segundos)</label>
+                            <input type="number" value={les.duration} onChange={e => updateLesson(si, li, 'duration', e.target.value)} placeholder="600" style={inputBase} />
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: 10 }}>
+                          <label style={{ ...labelStyle, fontSize: 11 }}>Descrição</label>
+                          <input value={les.description} onChange={e => updateLesson(si, li, 'description', e.target.value)} placeholder="Breve descrição da aula" style={inputBase} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr auto', gap: 10, alignItems: 'end' }}>
+                          <div>
+                            <label style={{ ...labelStyle, fontSize: 11 }}>URL do vídeo</label>
+                            <input value={les.videoUrl} onChange={e => updateLesson(si, li, 'videoUrl', e.target.value)} placeholder="https://..." style={inputBase} />
+                          </div>
+                          {!les.id && (
+                            <div>
+                              <label style={{ ...labelStyle, fontSize: 11 }}>Upload de vídeo</label>
+                              <input type="file" accept="video/*" onChange={e => updateLesson(si, li, 'videoFile', e.target.files[0] || null)} style={{ fontSize: 12 }} />
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                          <input type="checkbox" checked={les.isFree} onChange={e => updateLesson(si, li, 'isFree', e.target.checked)} style={{ accentColor: '#1e4a8a' }} />
+                          <label style={{ fontSize: 12, color: '#556677' }}>Aula gratuita (amostra)</label>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button onClick={() => addLesson(si)} style={{ background: 'none', border: '1px dashed #c0cee0', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: '#1e4a8a', fontSize: 12, fontWeight: 600, width: '100%' }}>
+                      + Adicionar aula
+                    </button>
+                  </div>
+                ))}
+
+                <button onClick={addSection} style={{ background: '#e8f2fc', color: '#1e4a8a', border: '1px dashed #b0c8e4', borderRadius: 12, padding: '14px', width: '100%', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginBottom: 24 }}>
+                  + Adicionar nova seção
+                </button>
+
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button onClick={() => { setCourseView('list'); setCourseSections([]) }} style={{ background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 24, padding: '13px 28px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveEditCourse}
+                    disabled={coursePublishing || !novoCurso.title || !novoCurso.description}
+                    style={{ background: coursePublishing || !novoCurso.title || !novoCurso.description ? '#ccc' : 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '13px 32px', cursor: coursePublishing ? 'default' : 'pointer', fontWeight: 700, fontSize: 15 }}
+                  >
+                    {coursePublishing ? 'Salvando...' : '💾 Salvar alterações'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+
         if (courseView === 'create') return (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
@@ -1355,6 +1571,7 @@ export default function RecrutadorDashboard({ navigate }) {
                         </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <button onClick={() => handleViewCourseStats(course)} style={{ background: '#e8f2fc', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Ver alunos</button>
+                          <button onClick={() => handleEditCourse(course)} style={{ background: '#f0f4f8', color: '#334455', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>✏️ Editar</button>
                           {course.status === 'DRAFT' && (
                             <button onClick={() => handlePublishCourse(course.id)} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Publicar</button>
                           )}

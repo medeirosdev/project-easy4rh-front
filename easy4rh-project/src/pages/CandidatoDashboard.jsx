@@ -478,52 +478,160 @@ export default function CandidatoDashboard({ navigate }) {
         </div>
       )
 
-      case 'cursos': return (
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Meus Cursos</h2>
-          {enrollmentsLoading ? (
-            <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <p style={{ color: '#778899' }}>Carregando cursos...</p>
+      case 'cursos': {
+        const inProgress = enrollments.filter(e => (e.progress || 0) > 0 && (e.progress || 0) < 100)
+        const notStarted = enrollments.filter(e => (e.progress || 0) === 0)
+        const completed  = enrollments.filter(e => (e.progress || 0) >= 100)
+        const highlight  = inProgress[0] || notStarted[0] || null
+        const levelLabel = { BEGINNER: 'Iniciante', INTERMEDIATE: 'Intermediário', ADVANCED: 'Avançado' }
+
+        const CourseCard = ({ enr, isHighlight }) => {
+          const course   = enr.course || {}
+          const progress = enr.progress || 0
+          const isDone   = progress >= 100
+          const courseId = enr.courseId || course.id
+
+          return (
+            <div style={{
+              background: 'white', borderRadius: 16,
+              boxShadow: isHighlight ? '0 4px 20px rgba(30,74,138,0.12)' : '0 2px 8px rgba(30,74,138,0.06)',
+              overflow: 'hidden',
+              border: isHighlight ? '1.5px solid #c8daf0' : '1px solid #f0f4f8',
+              display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+            }}>
+              {/* Thumbnail */}
+              <div style={{
+                width: isMobile ? '100%' : 160, flexShrink: 0,
+                height: isMobile ? 120 : 'auto', minHeight: isMobile ? undefined : 130,
+                background: course.thumbnailUrl ? undefined : 'linear-gradient(135deg, #1e3a6e, #2a5298)',
+                position: 'relative', overflow: 'hidden',
+              }}>
+                {course.thumbnailUrl
+                  ? <img src={course.thumbnailUrl} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>🎓</div>
+                }
+                {isDone && (
+                  <div style={{ position: 'absolute', top: 8, left: 8, background: '#22c55e', color: 'white', fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 10px' }}>
+                    ✓ Concluído
+                  </div>
+                )}
+              </div>
+
+              {/* Conteúdo */}
+              <div style={{ flex: 1, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  {isHighlight && !isDone && (
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1a4f8a', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
+                      ▶ Continuar de onde parou
+                    </div>
+                  )}
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 4 }}>{course.title || 'Curso'}</div>
+                  <div style={{ fontSize: 12, color: '#778899' }}>
+                    {[course.category, levelLabel[course.level]].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+
+                {/* Progresso */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: isDone ? '#22c55e' : '#556', marginBottom: 6, fontWeight: 600 }}>
+                    <span>{isDone ? 'Curso concluído!' : `${progress}% concluído`}</span>
+                    {course.lessonsCount > 0 && (
+                      <span style={{ color: '#778899', fontWeight: 400 }}>
+                        {Math.round((progress / 100) * course.lessonsCount)}/{course.lessonsCount} aulas
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ height: 6, background: '#e8edf4', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${progress}%`, background: isDone ? '#22c55e' : 'linear-gradient(90deg, #1a4f8a, #4a9edd)', borderRadius: 3, transition: 'width 0.4s' }} />
+                  </div>
+                </div>
+
+                {/* Ações */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => navigate(`curso-${courseId}`)}
+                    style={{
+                      background: isDone ? '#f0f4f8' : 'linear-gradient(135deg, #1a4f8a, #2a7ec8)',
+                      color: isDone ? '#556' : 'white',
+                      border: 'none', borderRadius: 24,
+                      padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+                    }}
+                  >
+                    {isDone ? 'Rever curso' : progress > 0 ? '▶ Continuar' : '▶ Iniciar'}
+                  </button>
+                  {isDone && (
+                    <button
+                      onClick={() => navigate(`curso-${courseId}`)}
+                      style={{ background: 'linear-gradient(135deg, #b8860b, #f0a500)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
+                    >
+                      🏆 Certificado
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          ) : enrollments.length === 0 ? (
-            <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>🎓</div>
-              <p style={{ color: '#778899', marginTop: 12 }}>Você ainda não está matriculado em nenhum curso.</p>
-              <button onClick={() => navigate('plataforma')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
-                Explorar cursos
+          )
+        }
+
+        return (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 8 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>Meus Cursos</h2>
+              <button onClick={() => navigate('plataforma')} style={{ background: '#e8f2fc', color: '#1a4f8a', border: 'none', borderRadius: 24, padding: '8px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                + Explorar cursos
               </button>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {enrollments.map(enr => {
-                const course = enr.course || {}
-                const progress = enr.progress || 0
-                return (
-                  <div key={enr.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 4 }}>{course.title || 'Curso'}</div>
-                        <div style={{ fontSize: 13, color: '#778899', marginBottom: 8 }}>
-                          {[course.category, course.level && { BEGINNER: 'Iniciante', INTERMEDIATE: 'Intermediário', ADVANCED: 'Avançado' }[course.level]].filter(Boolean).join(' · ')}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ flex: 1, height: 6, background: '#e8edf4', borderRadius: 3 }}>
-                            <div style={{ height: '100%', background: progress >= 100 ? '#22c55e' : 'linear-gradient(90deg, #1e4a8a, #4a9edd)', borderRadius: 3, width: `${progress}%`, transition: 'width 0.3s' }} />
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: progress >= 100 ? '#22c55e' : '#1e4a8a', flexShrink: 0 }}>{progress}%</span>
-                        </div>
-                      </div>
-                      <button onClick={() => navigate(`curso-${enr.courseId || course.id}`)} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-                        {progress > 0 ? 'Continuar' : 'Iniciar'}
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )
+
+            {enrollmentsLoading ? (
+              <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
+                <p style={{ color: '#778899' }}>Carregando cursos...</p>
+              </div>
+            ) : enrollments.length === 0 ? (
+              <div style={{ background: 'white', borderRadius: 16, padding: '48px 40px', textAlign: 'center', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🎓</div>
+                <h3 style={{ color: '#1e3a6e', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Nenhum curso iniciado</h3>
+                <p style={{ color: '#778899', fontSize: 13, marginBottom: 20 }}>Explore a plataforma e inscreva-se em cursos para o varejo.</p>
+                <button onClick={() => navigate('plataforma')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                  Explorar cursos
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                {/* Destaque: continuar de onde parou */}
+                {highlight && (
+                  <CourseCard enr={highlight} isHighlight={true} />
+                )}
+
+                {/* Em andamento (exceto o destaque) */}
+                {inProgress.filter(e => e !== highlight).length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#778899', textTransform: 'uppercase', letterSpacing: 1 }}>Em andamento</div>
+                    {inProgress.filter(e => e !== highlight).map(enr => <CourseCard key={enr.id} enr={enr} />)}
+                  </>
+                )}
+
+                {/* Não iniciados */}
+                {notStarted.filter(e => e !== highlight).length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#778899', textTransform: 'uppercase', letterSpacing: 1 }}>Não iniciados</div>
+                    {notStarted.filter(e => e !== highlight).map(enr => <CourseCard key={enr.id} enr={enr} />)}
+                  </>
+                )}
+
+                {/* Concluídos */}
+                {completed.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#778899', textTransform: 'uppercase', letterSpacing: 1 }}>Concluídos 🏆</div>
+                    {completed.map(enr => <CourseCard key={enr.id} enr={enr} />)}
+                  </>
+                )}
+
+              </div>
+            )}
+          </div>
+        )
+      }
 
       default: return null
     }
