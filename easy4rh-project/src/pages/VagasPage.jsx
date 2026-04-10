@@ -5,7 +5,7 @@ import JobCard from '../components/JobCard'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
 const jobTypes = ['Remoto', 'Presencial', 'Híbrido']
-const levels = ['Estágio', 'Júnior', 'Pleno', 'Sênior']
+const levels = ['Estágio', 'Sem experiência', 'Até 1 ano', '2+ anos', 'Júnior', 'Pleno', 'Sênior', 'Lead', 'Gerente']
 const locations = ['São Paulo, SP', 'Rio de Janeiro, RJ', 'Belo Horizonte, MG', 'Curitiba, PR', 'Florianópolis, SC', 'Porto Alegre, RS', 'Campinas, SP', 'Recife, PE', 'Salvador, BA', 'Manaus, AM', 'Brasília, DF', 'Goiânia, GO']
 const distances = ['Até 10 km', 'Até 25 km', 'Até 50 km', 'Qualquer distância']
 const sortOptions = ['Mais recentes', 'Maior salário', 'Menor salário', 'Mais relevantes']

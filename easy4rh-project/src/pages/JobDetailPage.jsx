@@ -200,9 +200,11 @@ export default function JobDetailPage({ job, navigate }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, color: "#1e4a8a", margin: "0 0 8px" }}>{job.title}</h2>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, color: "#555" }}>Local: {job.location}</span>
-                    <span style={{ fontSize: 13, color: "#555" }}>Nivel: {job.level}</span>
-                    <span style={{ fontSize: 13, color: "#2e7d32", fontWeight: 600 }}>Salario: {job.salary}</span>
+                    <span style={{ fontSize: 13, color: "#555" }}>Local: {job.location || 'A definir'}</span>
+                    <span style={{ fontSize: 13, color: "#555" }}>Nível: {job.level}</span>
+                    {job.type && <span style={{ fontSize: 13, color: "#555" }}>Modalidade: {job.type}</span>}
+                    {job.contract && <span style={{ fontSize: 13, color: "#555" }}>Contrato: {job.contract}</span>}
+                    <span style={{ fontSize: 13, color: "#2e7d32", fontWeight: 600 }}>Salário: {job.salary}</span>
                   </div>
                   <p style={{ fontSize: 13.5, color: "#555", lineHeight: 1.6, margin: 0 }}>{job.description}</p>
                 </div>

@@ -5,7 +5,19 @@ const JobsContext = createContext()
 
 // Mapeia enums do backend para labels do frontend
 export const locationTypeMap = { ON_SITE: 'Presencial', REMOTE: 'Remoto', HYBRID: 'Híbrido' }
-export const experienceLevelMap = { INTERN: 'Estágio', JUNIOR: 'Júnior', MID: 'Pleno', SENIOR: 'Sênior', LEAD: 'Sênior', MANAGER: 'Sênior' }
+export const experienceLevelMap = {
+  INTERN: 'Estágio',
+  NO_EXPERIENCE: 'Sem experiência',
+  UP_TO_1_YEAR: 'Até 1 ano',
+  TWO_YEARS_PLUS: '2+ anos',
+  JUNIOR: 'Júnior',
+  MID: 'Pleno',
+  SENIOR: 'Sênior',
+  LEAD: 'Lead',
+  MANAGER: 'Gerente',
+}
+
+export const contractTypeMap = { CLT: 'CLT', PJ: 'PJ', INTERNSHIP: 'Estágio', TEMPORARY: 'Temporário', FREELANCE: 'Freelance' }
 
 const logoColors = ['#0066FF', '#CC0000', '#004B9B', '#E31E26', '#333333', '#009944', '#E60000', '#8B5CF6']
 
@@ -22,6 +34,7 @@ export function normalizeJob(job, index = 0) {
     logoColor: job.logoColor || logoColors[index % logoColors.length],
     type: locationTypeMap[job.locationType] || job.type || 'Presencial',
     level: experienceLevelMap[job.experienceLevel] || job.level || 'Pleno',
+    contract: contractTypeMap[job.contractType] || job.contract || null,
     location: job.city && job.state ? `${job.city}, ${job.state}` : (job.location || ''),
     salary: job.salaryMin != null
       ? `R$ ${job.salaryMin.toLocaleString('pt-BR')}${job.salaryMax ? ` – R$ ${job.salaryMax.toLocaleString('pt-BR')}` : ''}`

@@ -211,6 +211,8 @@ export default function RecrutadorDashboard({ navigate }) {
         expiresAt: job.expiresAt || null,
         isConfidential: job.isConfidential || false,
         openingReason: job.openingReason || null,
+        experienceLevel: job.experienceLevel || null,
+        contractType: job.contractType || null,
       })))
     } catch (err) {
       console.error('Erro ao carregar vagas:', err)
@@ -1002,6 +1004,16 @@ export default function RecrutadorDashboard({ navigate }) {
               {/* ── STEP 1: Dados da vaga ── */}
               {pubStep === 1 && (
                 <>
+                  {!myCompany && (
+                    <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 18 }}>⚠️</span>
+                      <div>
+                        <span style={{ fontSize: 13.5, color: '#9a3412', fontWeight: 600 }}>Empresa não cadastrada. </span>
+                        <span style={{ fontSize: 13, color: '#9a3412' }}>Você precisa cadastrar sua empresa antes de publicar vagas. </span>
+                        <span onClick={() => setActiveSection('empresa')} style={{ fontSize: 13, color: '#1e4a8a', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>Ir para Minha Empresa</span>
+                      </div>
+                    </div>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
                     <div>
                       <label style={labelStyle}>Título da vaga *</label>
@@ -1261,6 +1273,8 @@ export default function RecrutadorDashboard({ navigate }) {
                   return `${open} → ${close}`
                 })() : null
                 const openingReasonLabel = { REPLACEMENT: 'Substituição', TEAM_GROWTH: 'Aumento de equipe' }[v.openingReason] || null
+                const experienceLevelLabel = { INTERN: 'Estágio', NO_EXPERIENCE: 'Sem exp.', UP_TO_1_YEAR: 'Até 1 ano', TWO_YEARS_PLUS: '2+ anos', JUNIOR: 'Júnior', MID: 'Pleno', SENIOR: 'Sênior', LEAD: 'Lead', MANAGER: 'Gerente' }[v.experienceLevel] || null
+                const contractTypeLabel = { CLT: 'CLT', PJ: 'PJ', INTERNSHIP: 'Estágio', TEMPORARY: 'Temporário', FREELANCE: 'Freelance' }[v.contractType] || null
                 return (
                   <div key={v.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
@@ -1275,6 +1289,8 @@ export default function RecrutadorDashboard({ navigate }) {
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: statusBg, color: statusColor }}>{v.status}</span>
                           <span style={{ fontSize: 12, color: '#778899' }}>📋 {v.aplicacoes} aplicação(ões)</span>
+                          {experienceLevelLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0f9ff', color: '#0369a1', fontWeight: 600 }}>{experienceLevelLabel}</span>}
+                          {contractTypeLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', fontWeight: 600 }}>{contractTypeLabel}</span>}
                           {timeSincePublished && <span style={{ fontSize: 12, color: '#778899' }}>⏱ Publicada há {timeSincePublished}</span>}
                           {slaText && <span style={{ fontSize: 12, color: '#778899' }}>📅 SLA: {slaText}</span>}
                           {openingReasonLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#3b82f6', fontWeight: 600 }}>{openingReasonLabel}</span>}
