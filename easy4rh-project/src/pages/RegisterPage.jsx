@@ -26,15 +26,14 @@ export default function RegisterPage({ navigate }) {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
     const result = await register({ email: form.email, password: form.password, role, name: `${form.firstName} ${form.lastName}`.trim(), phone: form.phone });
     if (!result.success) { setErrors({ general: result.message }); setLoading(false); return; }
     setLoading(false);
     setSuccess(true);
     setTimeout(() => {
       const r = result.user?.role
-      if (r === 'RECRUITER' || r === 'INSTRUCTOR') navigate('dashboard-recrutador')
-      else navigate('dashboard-candidato')
+      const isRecruiterSide = ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(r)
+      navigate(isRecruiterSide ? 'dashboard-recrutador' : 'dashboard-candidato')
     }, 1500);
   };
 
@@ -174,7 +173,7 @@ export default function RegisterPage({ navigate }) {
 
                 <p style={{ fontSize: 12.5, color: "#888", marginTop: 14 }}>
                   Já tem conta?{" "}
-                  <button onClick={() => navigate("consultoria-login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontWeight: 600, fontSize: 12.5 }}>
+                  <button onClick={() => navigate("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontWeight: 600, fontSize: 12.5 }}>
                     Faça login
                   </button>
                 </p>

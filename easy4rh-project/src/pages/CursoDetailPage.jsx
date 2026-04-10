@@ -44,7 +44,8 @@ export default function CursoDetailPage({ navigate, courseId }) {
       }
     }
     load()
-  }, [courseId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, user?.id])
 
   const handleLessonClick = async (lesson) => {
     if (!enrollment) return

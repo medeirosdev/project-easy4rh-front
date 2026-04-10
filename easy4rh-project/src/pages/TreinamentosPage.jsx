@@ -166,7 +166,7 @@ export default function TreinamentosPage({ navigate }) {
                       {course.rating > 0 && <span style={{ fontSize: 12, color: "#f59e0b" }}>{"⭐".repeat(Math.floor(course.rating))} {course.rating}</span>}
                     </div>
                     <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <button onClick={() => navigate(user ? `curso-${course.id}` : "login")} style={{ background: "linear-gradient(135deg, #1e4a8a, #4a9edd)", color: "white", border: "none", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontWeight: 600, fontSize: 12.5 }}>
+                      <button onClick={() => course.id ? navigate(user ? `curso-${course.id}` : "login") : null} disabled={!course.id} style={{ background: course.id ? "linear-gradient(135deg, #1e4a8a, #4a9edd)" : "#ccc", color: "white", border: "none", borderRadius: 8, padding: "8px 16px", cursor: course.id ? "pointer" : "default", fontWeight: 600, fontSize: 12.5 }}>
                         {user ? "Ver curso" : "Inscrever-se"}
                       </button>
                     </div>

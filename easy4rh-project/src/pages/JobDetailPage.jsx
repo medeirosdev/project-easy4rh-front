@@ -47,14 +47,14 @@ export default function JobDetailPage({ job, navigate }) {
     }
   };
 
-  const handleStartApply = () => {
+  const handleStartApply = async () => {
     if (!user) { navigate("login"); return; }
     setShowApplyModal(true);
     setApplyStep(1);
     setCoverLetter('');
     setAnswers({});
     setSubmitError('');
-    loadQuestions();
+    await loadQuestions();
   };
 
   const handleSubmitApplication = async () => {
@@ -65,21 +65,21 @@ export default function JobDetailPage({ job, navigate }) {
       if (coverLetter.trim()) payload.coverLetter = coverLetter.trim();
 
       if (questions.length > 0) {
-        payload.answers = questions.map(q => {
+        payload.answers = questions.flatMap(q => {
           const ans = answers[q.id];
-          if (!ans) return null;
-          const entry = { questionId: q.id };
+          if (!ans) return [];
           if (q.type === 'TEXT') {
-            entry.textAnswer = ans.textAnswer || '';
-          } else if (q.type === 'MULTIPLE_CHOICE') {
-            // For multiple choice, send multiple answer entries
-            // But backend expects single answer per question, pick first selected
-            entry.optionId = ans.optionId || undefined;
-          } else {
-            entry.optionId = ans.optionId || undefined;
+            const text = ans.textAnswer?.trim();
+            return text ? [{ questionId: q.id, textAnswer: text }] : [];
           }
-          return entry;
-        }).filter(Boolean);
+          if (q.type === 'MULTIPLE_CHOICE') {
+            // Send one entry per selected option
+            const selected = ans.optionIds || [];
+            return selected.map(optId => ({ questionId: q.id, optionId: optId }));
+          }
+          // SINGLE_CHOICE, YES_NO
+          return ans.optionId ? [{ questionId: q.id, optionId: ans.optionId }] : [];
+        });
       }
 
       const result = await applyToJob(job.id, payload);
@@ -110,6 +110,7 @@ export default function JobDetailPage({ job, navigate }) {
       const a = answers[q.id];
       if (!a) return false;
       if (q.type === 'TEXT') return a.textAnswer && a.textAnswer.trim();
+      if (q.type === 'MULTIPLE_CHOICE') return a.optionIds && a.optionIds.length > 0;
       return a.optionId;
     });
   };
@@ -394,21 +395,30 @@ export default function JobDetailPage({ job, navigate }) {
                           </div>
                         )}
 
-                        {/* MULTIPLE_CHOICE type — select one for backend compatibility */}
+                        {/* MULTIPLE_CHOICE — múltipla seleção com checkboxes */}
                         {q.type === 'MULTIPLE_CHOICE' && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {(q.options || []).map(opt => (
-                              <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 12px', borderRadius: 8, border: answers[q.id]?.optionId === opt.id ? '2px solid #1e4a8a' : '1.5px solid #e8edf2', background: answers[q.id]?.optionId === opt.id ? '#e8f2fc' : 'white' }}>
-                                <input
-                                  type="radio"
-                                  name={`q-${q.id}`}
-                                  checked={answers[q.id]?.optionId === opt.id}
-                                  onChange={() => setAnswer(q.id, { optionId: opt.id })}
-                                  style={{ accentColor: '#1e4a8a' }}
-                                />
-                                <span style={{ fontSize: 13, color: '#334' }}>{opt.label}</span>
-                              </label>
-                            ))}
+                            {(q.options || []).map(opt => {
+                              const selected = answers[q.id]?.optionIds || []
+                              const isChecked = selected.includes(opt.id)
+                              const toggleOption = () => {
+                                const next = isChecked
+                                  ? selected.filter(id => id !== opt.id)
+                                  : [...selected, opt.id]
+                                setAnswer(q.id, { optionIds: next })
+                              }
+                              return (
+                                <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 12px', borderRadius: 8, border: isChecked ? '2px solid #1e4a8a' : '1.5px solid #e8edf2', background: isChecked ? '#e8f2fc' : 'white' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={toggleOption}
+                                    style={{ accentColor: '#1e4a8a', cursor: 'pointer' }}
+                                  />
+                                  <span style={{ fontSize: 13, color: '#334' }}>{opt.label}</span>
+                                </label>
+                              )
+                            })}
                           </div>
                         )}
                       </div>

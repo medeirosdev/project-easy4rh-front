@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useJobs } from '../context/JobsContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
@@ -27,11 +27,11 @@ export default function CandidatoDashboard({ navigate }) {
   const { jobs, loading: jobsLoading } = useJobs()
   const { isMobile } = useBreakpoint()
   const timersRef = useRef([])
-  const safeTimeout = (fn, ms) => {
+  const safeTimeout = useCallback((fn, ms) => {
     const id = setTimeout(fn, ms)
     timersRef.current.push(id)
     return id
-  }
+  }, [])
   useEffect(() => () => timersRef.current.forEach(clearTimeout), [])
   const [activeSection, setActiveSection] = useState('resumo')
   const [keyword, setKeyword] = useState('')
@@ -134,9 +134,7 @@ export default function CandidatoDashboard({ navigate }) {
     if (activeSection === 'documentos' && !receivedDocsLoaded && !receivedDocsLoading) {
       loadReceivedDocs()
     }
-  // loadReceivedDocs is intentionally stable (no deps) — safe to omit
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSection, receivedDocsLoaded, receivedDocsLoading])
+  }, [activeSection, receivedDocsLoaded, receivedDocsLoading, loadReceivedDocs])
 
   const handleSaveProfile = async () => {
     setProfileLoading(true)
@@ -180,7 +178,7 @@ export default function CandidatoDashboard({ navigate }) {
     }
   }
 
-  const loadReceivedDocs = async () => {
+  const loadReceivedDocs = useCallback(async () => {
     if (receivedDocsLoaded) return
     setReceivedDocsLoading(true)
     try {
@@ -192,7 +190,7 @@ export default function CandidatoDashboard({ navigate }) {
     } finally {
       setReceivedDocsLoading(false)
     }
-  }
+  }, [receivedDocsLoaded])
 
   const handleRespondDoc = async (sentDocumentId, status) => {
     try {
