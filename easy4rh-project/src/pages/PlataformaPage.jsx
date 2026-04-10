@@ -18,18 +18,25 @@ export default function PlataformaPage({ navigate }) {
     const load = async () => {
       setLoading(true)
       try {
-        const [coursesData, enrollmentsData] = await Promise.all([
-          coursesApi.list(),
-          coursesApi.myEnrollments(),
-        ])
+        const coursesData = await coursesApi.list()
         const list = Array.isArray(coursesData) ? coursesData : (coursesData.data || coursesData.courses || [])
-        const enrList = Array.isArray(enrollmentsData) ? enrollmentsData : (enrollmentsData.data || enrollmentsData.enrollments || [])
-        setCourses(list)
-        setEnrollments(enrList)
+        setCourses(list.map(c => ({
+          ...c,
+          // totalDuration vem do backend em segundos; converter para horas formatadas
+          duration: c.totalDuration ?? c.duration ?? null,
+        })))
       } catch (err) {
         console.error('Erro ao carregar cursos:', err)
       } finally {
         setLoading(false)
+      }
+      // Matrículas carregam separadamente — falha aqui não impede exibir os cursos
+      try {
+        const enrollmentsData = await coursesApi.myEnrollments()
+        const enrList = Array.isArray(enrollmentsData) ? enrollmentsData : (enrollmentsData.data || enrollmentsData.enrollments || [])
+        setEnrollments(enrList)
+      } catch {
+        // usuário pode não ter matrículas ou não ter permissão — ignora silenciosamente
       }
     }
     load()
@@ -239,7 +246,7 @@ export default function PlataformaPage({ navigate }) {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: 13, color: '#556' }}>
                         {course.lessonsCount || course._count?.lessons || 0} aulas
-                        {course.duration ? ` · ${Math.round(course.duration / 60)}h` : ''}
+                        {course.duration ? ` · ${Math.round(course.duration / 3600)}h` : ''}
                       </div>
                       <button
                         onClick={e => { e.stopPropagation(); navigate(`curso-${course.id}`) }}

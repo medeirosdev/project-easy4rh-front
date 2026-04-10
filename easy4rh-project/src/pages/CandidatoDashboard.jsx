@@ -129,6 +129,21 @@ export default function CandidatoDashboard({ navigate }) {
     [jobs, savedJobs]
   )
 
+  // Declarado antes do useEffect que o usa para evitar Temporal Dead Zone com const
+  const loadReceivedDocs = useCallback(async () => {
+    if (receivedDocsLoaded) return
+    setReceivedDocsLoading(true)
+    try {
+      const data = await documentsApi.listReceived()
+      setReceivedDocs(Array.isArray(data) ? data : [])
+      setReceivedDocsLoaded(true)
+    } catch {
+      setReceivedDocs([])
+    } finally {
+      setReceivedDocsLoading(false)
+    }
+  }, [receivedDocsLoaded])
+
   // Lazy-load de documentos recebidos ao entrar na seção
   useEffect(() => {
     if (activeSection === 'documentos' && !receivedDocsLoaded && !receivedDocsLoading) {
@@ -178,20 +193,6 @@ export default function CandidatoDashboard({ navigate }) {
     }
   }
 
-  const loadReceivedDocs = useCallback(async () => {
-    if (receivedDocsLoaded) return
-    setReceivedDocsLoading(true)
-    try {
-      const data = await documentsApi.listReceived()
-      setReceivedDocs(Array.isArray(data) ? data : [])
-      setReceivedDocsLoaded(true)
-    } catch {
-      setReceivedDocs([])
-    } finally {
-      setReceivedDocsLoading(false)
-    }
-  }, [receivedDocsLoaded])
-
   const handleRespondDoc = async (sentDocumentId, status) => {
     try {
       await documentsApi.respond(sentDocumentId, status)
@@ -201,9 +202,14 @@ export default function CandidatoDashboard({ navigate }) {
     }
   }
 
-  const filteredJobs = jobs.filter(j =>
-    !keyword || j.title.toLowerCase().includes(keyword.toLowerCase()) || (typeof j.company === 'object' && j.company ? j.company.name : (j.company || '')).toLowerCase().includes(keyword.toLowerCase())
-  )
+  const filteredJobs = jobs.filter(j => {
+    if (!keyword) return true
+    const kw = keyword.toLowerCase()
+    const titleMatch = j.title?.toLowerCase().includes(kw)
+    const companyName = typeof j.company === 'object' ? j.company?.name : (j.company || '')
+    const companyMatch = companyName?.toLowerCase().includes(kw)
+    return titleMatch || companyMatch
+  })
 
   const sidebarWidth = 240
 
@@ -251,7 +257,7 @@ export default function CandidatoDashboard({ navigate }) {
           <div style={{ background: 'white', borderRadius: 16, padding: '28px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28, flexWrap: 'wrap' }}>
               <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: 'white', fontWeight: 800, flexShrink: 0 }}>
-                {user?.name?.[0] || user?.email?.[0]?.toUpperCase()}
+                {(user?.name?.[0] || user?.email?.charAt(0) || '?').toUpperCase()}
               </div>
               <div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: '#1e3a6e' }}>{user?.name || user?.email?.split('@')[0]}</div>

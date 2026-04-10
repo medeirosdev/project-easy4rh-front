@@ -17,6 +17,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
   const [openSections, setOpenSections] = useState({})
   const [completedLessons, setCompletedLessons] = useState(new Set())
   const [markingComplete, setMarkingComplete] = useState(false)
+  const [progressError, setProgressError] = useState('')
 
   useEffect(() => {
     if (!courseId) return
@@ -64,6 +65,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
   const handleProgress = async (completed) => {
     if (!activeLesson || markingComplete) return
     setMarkingComplete(true)
+    setProgressError('')
     try {
       await lessonsApi.updateProgress(activeLesson.id, { completed, watchedSeconds: 0 })
       if (completed) {
@@ -71,6 +73,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
       }
     } catch (err) {
       console.error('Erro ao atualizar progresso:', err)
+      setProgressError('Não foi possível salvar o progresso. Tente novamente.')
     } finally {
       setMarkingComplete(false)
     }
@@ -164,13 +167,18 @@ export default function CursoDetailPage({ navigate, courseId }) {
                     <span style={{ fontSize: 18 }}>✓</span> Aula concluida!
                   </div>
                 ) : (
-                  <button
-                    onClick={() => handleProgress(true)}
-                    disabled={markingComplete}
-                    style={{ marginTop: 16, background: markingComplete ? '#aaa' : '#2a7a4e', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: markingComplete ? 'default' : 'pointer', fontWeight: 700, fontSize: 13 }}
-                  >
-                    {markingComplete ? 'Salvando...' : '✓ Marcar como concluida'}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleProgress(true)}
+                      disabled={markingComplete}
+                      style={{ marginTop: 16, background: markingComplete ? '#aaa' : '#2a7a4e', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: markingComplete ? 'default' : 'pointer', fontWeight: 700, fontSize: 13 }}
+                    >
+                      {markingComplete ? 'Salvando...' : '✓ Marcar como concluida'}
+                    </button>
+                    {progressError && (
+                      <p style={{ marginTop: 8, fontSize: 12.5, color: '#dc2626' }}>{progressError}</p>
+                    )}
+                  </>
                 )}
               </div>
             </div>

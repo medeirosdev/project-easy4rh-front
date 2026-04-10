@@ -75,6 +75,7 @@ export default function App() {
     default:
       if (page?.startsWith('curso-')) {
         const courseId = page.replace('curso-', '')
+        if (!courseId) return <HomePage navigate={navigate} />
         return <CursoDetailPage navigate={navigate} courseId={courseId} />
       }
       return <HomePage navigate={navigate} />
