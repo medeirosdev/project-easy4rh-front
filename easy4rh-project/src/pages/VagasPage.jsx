@@ -1,25 +1,25 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useJobs } from '../context/JobsContext'
 import { useAuth } from '../context/AuthContext'
 import JobCard from '../components/JobCard'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
 const jobTypes = ['Remoto', 'Presencial', 'Híbrido']
-const levels = ['Estágio', 'Júnior', 'Pleno', 'Sênior']
+const levels = ['Estágio', 'Sem experiência', 'Até 1 ano', '2+ anos', 'Júnior', 'Pleno', 'Sênior', 'Lead', 'Gerente']
 const locations = ['São Paulo, SP', 'Rio de Janeiro, RJ', 'Belo Horizonte, MG', 'Curitiba, PR', 'Florianópolis, SC', 'Porto Alegre, RS', 'Campinas, SP', 'Recife, PE', 'Salvador, BA', 'Manaus, AM', 'Brasília, DF', 'Goiânia, GO']
-const distances = ['Até 10 km', 'Até 25 km', 'Até 50 km', 'Qualquer distância']
-const sortOptions = ['Mais recentes', 'Maior salário', 'Menor salário', 'Mais relevantes']
+const sortOptions = ['Mais recentes', 'Maior salário', 'Menor salário']
 
 export default function VagasPage({ navigate }) {
-  const { jobs } = useJobs()
+  const { jobs, loading } = useJobs()
   const { user } = useAuth()
   const { isMobile } = useBreakpoint()
 
-  const [filters, setFilters] = useState({ types: [], levels: [], locations: [], keyword: '', location: '', distance: '' })
+  const [filters, setFilters] = useState({ types: [], levels: [], locations: [] })
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [keywordInput, setKeywordInput] = useState('')
   const [locationInput, setLocationInput] = useState('')
-  const [distanceInput, setDistanceInput] = useState('')
+  const [appliedKeyword, setAppliedKeyword] = useState('')
+  const [appliedLocation, setAppliedLocation] = useState('')
   const [sortBy, setSortBy] = useState('Mais recentes')
 
   const toggleFilter = (key, val) => {
@@ -30,16 +30,52 @@ export default function VagasPage({ navigate }) {
   }
 
   const handleSearch = () => {
-    setFilters(prev => ({ ...prev, keyword: keywordInput, location: locationInput, distance: distanceInput }))
+    setAppliedKeyword(keywordInput.trim())
+    setAppliedLocation(locationInput.trim())
   }
 
-  const filtered = jobs.filter(job => {
-    if (filters.types.length && !filters.types.includes(job.type)) return false
-    if (filters.levels.length && !filters.levels.includes(job.level)) return false
-    if (filters.locations.length && !filters.locations.some(l => job.location.includes(l.split(',')[0]))) return false
-    if (filters.keyword && !job.title.toLowerCase().includes(filters.keyword.toLowerCase()) && !(typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')).toLowerCase().includes(filters.keyword.toLowerCase())) return false
-    return true
-  })
+  const handleClearAll = () => {
+    setFilters({ types: [], levels: [], locations: [] })
+    setKeywordInput('')
+    setLocationInput('')
+    setAppliedKeyword('')
+    setAppliedLocation('')
+  }
+
+  const parseSalary = (job) => {
+    if (job.salaryMin != null) return job.salaryMin
+    return 0
+  }
+
+  const filtered = useMemo(() => {
+    let list = jobs.filter(job => {
+      if (filters.types.length && !filters.types.includes(job.type)) return false
+      if (filters.levels.length && !filters.levels.includes(job.level)) return false
+      if (filters.locations.length && !filters.locations.some(l => job.location.includes(l.split(',')[0]))) return false
+      if (appliedKeyword) {
+        const kw = appliedKeyword.toLowerCase()
+        const companyName = typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')
+        if (!job.title.toLowerCase().includes(kw) && !companyName.toLowerCase().includes(kw) && !job.description?.toLowerCase().includes(kw)) return false
+      }
+      if (appliedLocation) {
+        const loc = appliedLocation.toLowerCase()
+        if (!job.location.toLowerCase().includes(loc)) return false
+      }
+      return true
+    })
+
+    if (sortBy === 'Maior salário') {
+      list = [...list].sort((a, b) => parseSalary(b) - parseSalary(a))
+    } else if (sortBy === 'Menor salário') {
+      list = [...list].sort((a, b) => parseSalary(a) - parseSalary(b))
+    }
+    // 'Mais recentes' keeps default order (already sorted by createdAt desc from API)
+
+    return list
+  }, [jobs, filters, appliedKeyword, appliedLocation, sortBy])
+
+  const isRecruiter = user && ['RECRUITER', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(user.role)
+  const hasActiveFilters = filters.types.length || filters.levels.length || filters.locations.length || appliedKeyword || appliedLocation
 
   const inputStyle = {
     border: '1.5px solid #d0dcea',
@@ -67,7 +103,7 @@ export default function VagasPage({ navigate }) {
           {/* Search bar */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr auto',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr auto',
             gap: 10,
             background: 'white',
             borderRadius: 14,
@@ -77,26 +113,18 @@ export default function VagasPage({ navigate }) {
           }}>
             <input
               style={{ ...inputStyle, border: 'none', borderRight: isMobile ? 'none' : '1.5px solid #e8edf2' }}
-              placeholder="Palavras-chave/cargo"
+              placeholder="Palavras-chave, cargo ou empresa"
               value={keywordInput}
               onChange={e => setKeywordInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
             />
             <input
-              style={{ ...inputStyle, border: 'none', borderRight: isMobile ? 'none' : '1.5px solid #e8edf2' }}
-              placeholder="Localidade"
+              style={{ ...inputStyle, border: 'none' }}
+              placeholder="Cidade, estado ou região"
               value={locationInput}
               onChange={e => setLocationInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
             />
-            <select
-              style={{ ...inputStyle, border: 'none', cursor: 'pointer' }}
-              value={distanceInput}
-              onChange={e => setDistanceInput(e.target.value)}
-            >
-              <option value="">Distância</option>
-              {distances.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
             <button
               onClick={handleSearch}
               style={{
@@ -106,7 +134,7 @@ export default function VagasPage({ navigate }) {
                 fontSize: 14, whiteSpace: 'nowrap',
               }}
             >
-              Procurar
+              Buscar
             </button>
           </div>
 
@@ -155,10 +183,10 @@ export default function VagasPage({ navigate }) {
                   </div>
                 </div>
               ))}
-              {(filters.types.length || filters.levels.length) ? (
+              {hasActiveFilters ? (
                 <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                   <button
-                    onClick={() => setFilters(prev => ({ ...prev, types: [], levels: [] }))}
+                    onClick={handleClearAll}
                     style={{ background: 'rgba(255,80,80,0.2)', color: 'white', border: '1px solid rgba(255,80,80,0.4)', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
                   >
                     Limpar filtros
@@ -184,20 +212,35 @@ export default function VagasPage({ navigate }) {
       {/* ── Secondary nav bar ── */}
       <div style={{ background: 'white', borderBottom: '1px solid #e8edf2' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '10px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 10, position: 'relative' }}>
-          <div style={{ display: 'flex', gap: isMobile ? 12 : 32, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {[
-              { label: '🔐 Login',          action: () => navigate('login') },
-              { label: '📝 Registre seu CV', action: () => navigate('register') },
-              { label: '🔍 Recrutamento',    action: () => navigate('login') },
-            ].map((item) => (
-              <button key={item.label} onClick={item.action}
+          {!user ? (
+            <div style={{ display: 'flex', gap: isMobile ? 12 : 32, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {[
+                { label: '🔐 Entrar', action: () => navigate('login') },
+                { label: '📝 Criar conta', action: () => navigate('register') },
+                { label: '🔍 Recrutamento', action: () => navigate('login') },
+              ].map((item) => (
+                <button key={item.label} onClick={item.action}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: isMobile ? 12 : 24, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+              <button onClick={() => navigate(isRecruiter ? 'dashboard-recrutador' : 'dashboard-candidato')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
-                {item.label}
+                🏠 Meu Painel
               </button>
-            ))}
-          </div>
-          {user?.role === 'RECRUITER' && (
-            <button onClick={() => navigate('login')} style={{ position: 'absolute', right: 20, background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 10, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+              {!isRecruiter && (
+                <button onClick={() => navigate('dashboard-candidato')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
+                  📋 Minhas Candidaturas
+                </button>
+              )}
+            </div>
+          )}
+          {isRecruiter && (
+            <button onClick={() => navigate('dashboard-recrutador')} style={{ position: isMobile ? 'static' : 'absolute', right: 20, background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 10, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
               + Publicar vaga
             </button>
           )}
@@ -210,7 +253,7 @@ export default function VagasPage({ navigate }) {
         {/* Count + Sort row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <p style={{ color: '#555', fontSize: 13.5, margin: 0, fontWeight: 500 }}>
-            <strong>{filtered.length}</strong> vagas encontradas
+            {loading ? 'Carregando vagas...' : <><strong>{filtered.length}</strong> vagas encontradas</>}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 13, color: '#778899', fontWeight: 500 }}>Ordenar por:</span>
@@ -257,8 +300,8 @@ export default function VagasPage({ navigate }) {
                 ))}
               </div>
             ))}
-            {(filters.types.length || filters.levels.length || filters.locations.length) ? (
-              <button onClick={() => setFilters({ types: [], levels: [], locations: [], keyword: '', location: '', distance: '' })}
+            {hasActiveFilters ? (
+              <button onClick={handleClearAll}
                 style={{ background: '#fee', border: '1px solid #fcc', color: '#c00', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, width: '100%' }}>
                 Limpar todos os filtros
               </button>
@@ -267,11 +310,20 @@ export default function VagasPage({ navigate }) {
 
           {/* Listings */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {filtered.length === 0 ? (
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} style={{ background: 'white', borderRadius: 16, padding: 24, border: '1px solid #e8edf2', height: 100, opacity: 0.5 + i * 0.1 }} />
+              ))
+            ) : filtered.length === 0 ? (
               <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center', border: '1px solid #e8edf2' }}>
                 <div style={{ fontSize: 48 }}>🔍</div>
                 <h3 style={{ color: '#1e3a6e' }}>Nenhuma vaga encontrada</h3>
-                <p style={{ color: '#666' }}>Tente ajustar seus filtros</p>
+                <p style={{ color: '#666' }}>Tente ajustar seus filtros ou busca</p>
+                {hasActiveFilters && (
+                  <button onClick={handleClearAll} style={{ marginTop: 8, background: '#1e4a8a', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                    Limpar filtros
+                  </button>
+                )}
               </div>
             ) : (
               filtered.map(job => <JobCard key={job.id} job={job} navigate={navigate} />)

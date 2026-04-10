@@ -11,6 +11,26 @@ function getToken() {
   return localStorage.getItem('access_token')
 }
 
+// Verifica se o JWT expirou antes de enviar o request
+function isTokenExpired(token) {
+  if (!token) return true
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp * 1000 < Date.now()
+  } catch {
+    return true
+  }
+}
+
+// Limpa sessao e redireciona para login quando token expira
+function handleAuthExpired() {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('user')
+  localStorage.removeItem('easy4rh_saved_jobs')
+  // Dispara evento customizado para o AuthContext reagir
+  window.dispatchEvent(new CustomEvent('auth:expired'))
+}
+
 function authHeaders() {
   const token = getToken()
   return {
@@ -20,13 +40,27 @@ function authHeaders() {
 }
 
 async function request(method, path, body = null) {
+  const token = getToken()
+
+  // Verifica expiracao antes de enviar
+  if (token && isTokenExpired(token)) {
+    handleAuthExpired()
+    throw new Error('Sessao expirada. Faca login novamente.')
+  }
+
   const options = {
     method,
     headers: authHeaders(),
   }
-  if (body) options.body = JSON.stringify(body)
+  if (body !== null && body !== undefined) options.body = JSON.stringify(body)
 
   const res = await fetch(`${BASE_URL}${path}`, options)
+
+  // Token invalido ou expirado no servidor
+  if (res.status === 401) {
+    handleAuthExpired()
+    throw new Error('Sessao expirada. Faca login novamente.')
+  }
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: 'Erro desconhecido' }))
@@ -40,11 +74,23 @@ async function request(method, path, body = null) {
 
 async function requestFormData(method, path, formData) {
   const token = getToken()
+
+  if (token && isTokenExpired(token)) {
+    handleAuthExpired()
+    throw new Error('Sessao expirada. Faca login novamente.')
+  }
+
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   })
+
+  if (res.status === 401) {
+    handleAuthExpired()
+    throw new Error('Sessao expirada. Faca login novamente.')
+  }
+
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: 'Erro desconhecido' }))
     throw new Error(error.message || `Erro ${res.status}`)
@@ -143,6 +189,7 @@ export const jobsApi = {
    * POST /jobs/:id/publish
    */
   publish: (id) => request('POST', `/jobs/${id}/publish`),
+  pause: (id) => request('POST', `/jobs/${id}/pause`),
 
   /**
    * Encerrar vaga (Recrutador)
@@ -206,6 +253,7 @@ export const applicationsApi = {
 
 export const companiesApi = {
   list: () => request('GET', '/companies'),
+  mine: () => request('GET', '/companies/mine'),
   get: (id) => request('GET', `/companies/${id}`),
   create: (data) => request('POST', '/companies', data),
   update: (id, data) => request('PATCH', `/companies/${id}`, data),
@@ -273,6 +321,20 @@ export const profileApi = {
   update: (data) => request('PATCH', '/candidate-profiles/me', data),
 }
 
+export const documentsApi = {
+  // Recruiter — library
+  listLibrary: () => request('GET', '/documents/library'),
+  addToLibrary: (data) => request('POST', '/documents/library', data),
+  deleteFromLibrary: (id) => request('DELETE', `/documents/library/${id}`),
+  // Recruiter — send + track
+  send: (documentId, data) => request('POST', `/documents/library/${documentId}/send`, data),
+  listSent: () => request('GET', '/documents/sent'),
+  // Candidate — receive + respond
+  listReceived: () => request('GET', '/documents/received'),
+  markAsViewed: (sentDocumentId) => request('PATCH', `/documents/received/${sentDocumentId}/view`),
+  respond: (sentDocumentId, status) => request('PATCH', `/documents/received/${sentDocumentId}`, { status }),
+}
+
 // ── Token helpers (usados no AuthContext) ──────────────────────
 
 export function saveToken(token) {
@@ -290,7 +352,10 @@ export function saveUser(user) {
 
 export function loadUser() {
   try {
-    return JSON.parse(localStorage.getItem('user'))
+    const user = JSON.parse(localStorage.getItem('user'))
+    // Valida schema minimo para evitar objeto invalido de versoes antigas
+    if (!user?.email || !user?.role) return null
+    return user
   } catch {
     return null
   }

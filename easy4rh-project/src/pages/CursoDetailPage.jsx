@@ -15,26 +15,29 @@ export default function CursoDetailPage({ navigate, courseId }) {
   const [lessonLoading, setLessonLoading] = useState(false)
   const [enrolling, setEnrolling] = useState(false)
   const [openSections, setOpenSections] = useState({})
+  const [completedLessons, setCompletedLessons] = useState(new Set())
+  const [markingComplete, setMarkingComplete] = useState(false)
+  const [progressError, setProgressError] = useState('')
 
   useEffect(() => {
     if (!courseId) return
     const load = async () => {
       setLoading(true)
       try {
-        const [courseData, sectionsData, enrollmentsData] = await Promise.all([
-          coursesApi.get(courseId),
-          coursesApi.sections(courseId),
-          coursesApi.myEnrollments(),
-        ])
+        const requests = [coursesApi.get(courseId), coursesApi.sections(courseId)]
+        if (user) requests.push(coursesApi.myEnrollments())
+
+        const [courseData, sectionsData, enrollmentsData] = await Promise.all(requests)
         setCourse(courseData)
         const secList = Array.isArray(sectionsData) ? sectionsData : (sectionsData.data || sectionsData.sections || [])
         setSections(secList)
-        // Open first section by default
         if (secList.length > 0) setOpenSections({ [secList[0].id]: true })
 
-        const enrList = Array.isArray(enrollmentsData) ? enrollmentsData : (enrollmentsData.data || [])
-        const enr = enrList.find(e => (e.courseId || e.course?.id) === courseId)
-        setEnrollment(enr || null)
+        if (enrollmentsData) {
+          const enrList = Array.isArray(enrollmentsData) ? enrollmentsData : (enrollmentsData.data || [])
+          const enr = enrList.find(e => (e.courseId || e.course?.id) === courseId)
+          setEnrollment(enr || null)
+        }
       } catch (err) {
         console.error('Erro ao carregar curso:', err)
       } finally {
@@ -42,7 +45,8 @@ export default function CursoDetailPage({ navigate, courseId }) {
       }
     }
     load()
-  }, [courseId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseId, user?.id])
 
   const handleLessonClick = async (lesson) => {
     if (!enrollment) return
@@ -59,11 +63,19 @@ export default function CursoDetailPage({ navigate, courseId }) {
   }
 
   const handleProgress = async (completed) => {
-    if (!activeLesson) return
+    if (!activeLesson || markingComplete) return
+    setMarkingComplete(true)
+    setProgressError('')
     try {
       await lessonsApi.updateProgress(activeLesson.id, { completed, watchedSeconds: 0 })
+      if (completed) {
+        setCompletedLessons(prev => new Set([...prev, activeLesson.id]))
+      }
     } catch (err) {
       console.error('Erro ao atualizar progresso:', err)
+      setProgressError('Não foi possível salvar o progresso. Tente novamente.')
+    } finally {
+      setMarkingComplete(false)
     }
   }
 
@@ -150,12 +162,24 @@ export default function CursoDetailPage({ navigate, courseId }) {
                 {lessonData?.description && (
                   <p style={{ fontSize: 14, color: '#556', lineHeight: 1.7 }}>{lessonData.description}</p>
                 )}
-                <button
-                  onClick={() => handleProgress(true)}
-                  style={{ marginTop: 16, background: '#2a7a4e', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
-                >
-                  ✓ Marcar como concluída
-                </button>
+                {completedLessons.has(activeLesson.id) ? (
+                  <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, color: '#2a7a4e', fontWeight: 700, fontSize: 13 }}>
+                    <span style={{ fontSize: 18 }}>✓</span> Aula concluida!
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleProgress(true)}
+                      disabled={markingComplete}
+                      style={{ marginTop: 16, background: markingComplete ? '#aaa' : '#2a7a4e', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: markingComplete ? 'default' : 'pointer', fontWeight: 700, fontSize: 13 }}
+                    >
+                      {markingComplete ? 'Salvando...' : '✓ Marcar como concluida'}
+                    </button>
+                    {progressError && (
+                      <p style={{ marginTop: 8, fontSize: 12.5, color: '#dc2626' }}>{progressError}</p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           ) : (
@@ -247,9 +271,14 @@ export default function CursoDetailPage({ navigate, courseId }) {
                     onMouseEnter={e => { if (!isLocked && !isActive) e.currentTarget.style.background = '#f4f8ff' }}
                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'white' }}
                   >
-                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: isActive ? '#1e4a8a' : '#e8edf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0, color: isActive ? 'white' : '#778' }}>
-                      {isLocked ? '🔒' : isActive ? '▶' : li + 1}
-                    </div>
+                    {(() => {
+                      const isDone = completedLessons.has(lesson.id)
+                      return (
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: isDone ? '#2a7a4e' : isActive ? '#1e4a8a' : '#e8edf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0, color: (isDone || isActive) ? 'white' : '#778' }}>
+                          {isLocked ? '🔒' : isDone ? '✓' : isActive ? '▶' : li + 1}
+                        </div>
+                      )
+                    })()}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? '#1e4a8a' : '#334', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {lesson.title}

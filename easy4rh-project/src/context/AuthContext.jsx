@@ -1,14 +1,26 @@
-import { createContext, useContext, useState, useEffect } from 'react'
-import { authApi, saveToken, clearToken, saveUser, loadUser } from '../services/api'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { authApi, profileApi, saveToken, clearToken, saveUser, loadUser } from '../services/api'
 
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(loadUser) // carrega do localStorage se existir
+  const navigateRef = useRef(null)
   const [savedJobs, setSavedJobs] = useState(() => {
     try { return JSON.parse(localStorage.getItem('easy4rh_saved_jobs')) || [] } catch { return [] }
   })
   const [loading, setLoading] = useState(false)
+
+  // Ouve evento de sessao expirada disparado pelo api.js (401 ou token expirado)
+  useEffect(() => {
+    const handler = () => {
+      setUser(null)
+      setSavedJobs([])
+      if (navigateRef.current) navigateRef.current('login')
+    }
+    window.addEventListener('auth:expired', handler)
+    return () => window.removeEventListener('auth:expired', handler)
+  }, [])
 
   // ── Login (candidato ou recrutador — o backend decide pelo role) ──
   const login = async (email, password) => {
@@ -24,7 +36,6 @@ export function AuthProvider({ children }) {
       // Tenta buscar o nome do perfil do candidato
       if (loggedUser.role === 'CANDIDATE' && !loggedUser.name) {
         try {
-          const { profileApi } = await import('../services/api')
           const profile = await profileApi.get()
           if (profile?.fullName) loggedUser.name = profile.fullName
         } catch {
@@ -45,20 +56,24 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // ── loginRecruiter reutiliza o mesmo endpoint — o role vem do backend ──
+  // ── loginRecruiter — aceita RECRUITER e RECRUITER_INSTRUCTOR ──
   const loginRecruiter = async (email, password) => {
     const result = await login(email, password)
-    if (result.success && result.user?.role !== 'RECRUITER') {
+    const role = result.user?.role
+    const allowed = ['RECRUITER', 'RECRUITER_INSTRUCTOR', 'ADMIN']
+    if (result.success && !allowed.includes(role)) {
       logout()
       return { success: false, message: 'Essa conta não é de recrutador.' }
     }
     return result
   }
 
-  // ── loginInstructor — valida que o usuário tem role INSTRUCTOR ──
+  // ── loginInstructor — aceita INSTRUCTOR e RECRUITER_INSTRUCTOR ──
   const loginInstructor = async (email, password) => {
     const result = await login(email, password)
-    if (result.success && result.user?.role !== 'INSTRUCTOR') {
+    const role = result.user?.role
+    const allowed = ['INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN']
+    if (result.success && !allowed.includes(role)) {
       logout()
       return { success: false, message: 'Essa conta não é de instrutor.' }
     }
@@ -80,7 +95,6 @@ export function AuthProvider({ children }) {
 
       // Se tem dados extras (nome, telefone), cria o perfil do candidato
       if (result.success && (data.role || 'CANDIDATE') === 'CANDIDATE') {
-        const { profileApi } = await import('../services/api')
         try {
           await profileApi.create({
             fullName: data.name || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
@@ -116,6 +130,8 @@ export function AuthProvider({ children }) {
     })
   }
 
+  const setNavigate = (fn) => { navigateRef.current = fn }
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -127,6 +143,7 @@ export function AuthProvider({ children }) {
       logout,
       savedJobs,
       toggleSaveJob,
+      setNavigate,
     }}>
       {children}
     </AuthContext.Provider>
