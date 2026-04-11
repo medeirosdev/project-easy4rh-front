@@ -22,13 +22,6 @@ function formatContract(contract) {
   return { CLT: 'CLT', PJ: 'PJ', INTERNSHIP: 'Estágio', TEMPORARY: 'Temporário', FREELANCE: 'Freelance' }[contract] || contract
 }
 
-function formatOpeningReason(reason) {
-  return {
-    NEW_POSITION: 'Nova posição', REPLACEMENT: 'Substituição',
-    EXPANSION: 'Expansão', INTERNSHIP: 'Estágio', TEMPORARY: 'Temporária',
-  }[reason] || reason
-}
-
 // Normaliza campo que pode vir como string ou array (responsabilidades/requisitos)
 function toText(value) {
   if (!value) return ''
@@ -155,18 +148,13 @@ export default function JobPosterModal({ job, company, onClose }) {
               {job.title}
             </h1>
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
-              {job.isConfidential && (
+            {job.isConfidential && (
+              <div style={{ marginTop: 6 }}>
                 <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)', letterSpacing: 1 }}>
                   VAGA CONFIDENCIAL
                 </span>
-              )}
-              {job.openingReason && (
-                <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 }}>
-                  {formatOpeningReason(job.openingReason)}
-                </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* ── Tags ── */}
