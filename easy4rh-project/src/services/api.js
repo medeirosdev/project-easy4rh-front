@@ -27,9 +27,16 @@ function handleAuthExpired() {
   localStorage.removeItem('access_token')
   localStorage.removeItem('user')
   localStorage.removeItem('easy4rh_saved_jobs')
+  // Remove user-scoped company cache keys
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('my_company_id_'))
+    .forEach(k => localStorage.removeItem(k))
   // Dispara evento customizado para o AuthContext reagir
   window.dispatchEvent(new CustomEvent('auth:expired'))
 }
+
+// Exportado para uso no AuthContext (validação na montagem)
+export { isTokenExpired }
 
 function authHeaders() {
   const token = getToken()
