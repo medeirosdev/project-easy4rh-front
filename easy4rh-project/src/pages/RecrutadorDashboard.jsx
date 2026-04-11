@@ -175,14 +175,20 @@ export default function RecrutadorDashboard({ navigate }) {
 
   useEffect(() => {
     // Load recruiter's own company via dedicated endpoint
+    // Use user-scoped localStorage key to avoid cross-account contamination
+    const storageKey = user?.id ? `my_company_id_${user.id}` : null
     companiesApi.mine().then(company => {
       if (company) {
         populateCompanyForm(company)
-        localStorage.setItem('my_company_id', company.id)
+        if (storageKey) localStorage.setItem(storageKey, company.id)
+      } else {
+        // No company yet — ensure stale key is cleared
+        if (storageKey) localStorage.removeItem(storageKey)
       }
     }).catch(() => {
-      // Fallback: try localStorage saved id
-      const savedCompanyId = localStorage.getItem('my_company_id')
+      // Network error fallback: use user-scoped cached id
+      if (!storageKey) return
+      const savedCompanyId = localStorage.getItem(storageKey)
       if (savedCompanyId) {
         companiesApi.get(savedCompanyId).then(c => {
           if (c) populateCompanyForm(c)
@@ -638,16 +644,17 @@ export default function RecrutadorDashboard({ navigate }) {
       delete payload.aboutVideoUrl
       // Remove empty strings to avoid validation errors
       Object.keys(payload).forEach(k => { if (payload[k] === '') delete payload[k] })
+      const storageKey = user?.id ? `my_company_id_${user.id}` : null
       if (myCompany) {
         const updated = await companiesApi.update(myCompany.id, payload)
         populateCompanyForm(updated)
-        localStorage.setItem('my_company_id', updated.id)
+        if (storageKey) localStorage.setItem(storageKey, updated.id)
         setCompanySuccess('Empresa atualizada com sucesso!')
       } else {
         if (!companyForm.name.trim()) { setCompanyError('Nome da empresa e obrigatorio.'); setCompanySaving(false); return }
         const created = await companiesApi.create(payload)
         populateCompanyForm(created)
-        localStorage.setItem('my_company_id', created.id)
+        if (storageKey) localStorage.setItem(storageKey, created.id)
         setCompanySuccess('Empresa criada com sucesso!')
       }
       safeTimeout(() => setCompanySuccess(''), 4000)

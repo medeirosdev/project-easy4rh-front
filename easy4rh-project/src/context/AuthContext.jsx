@@ -117,6 +117,10 @@ export function AuthProvider({ children }) {
   const logout = () => {
     clearToken()
     localStorage.removeItem('easy4rh_saved_jobs')
+    // Remove user-scoped company cache keys
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('my_company_id_'))
+      .forEach(k => localStorage.removeItem(k))
     setUser(null)
     setSavedJobs([])
   }
