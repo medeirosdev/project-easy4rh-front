@@ -192,28 +192,22 @@ export default function JobPosterModal({ job, company, onClose }) {
             </Section>
           )}
 
-          {/* ── Responsabilidades e Requisitos lado a lado ── */}
-          {(responsibilities || requirements) && (
-            <div style={{ display: 'grid', gridTemplateColumns: responsibilities && requirements ? '1fr 1fr' : '1fr', gap: 0, padding: '16px 40px 0' }}>
-              {responsibilities && (
-                <div style={{ paddingRight: requirements ? 16 : 0, borderRight: requirements ? '1px solid #e8f0f8' : 'none' }}>
-                  <SectionInline title="Responsabilidades">
-                    <p style={{ fontSize: 12, color: '#4b5563', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>
-                      {truncate(responsibilities, 320)}
-                    </p>
-                  </SectionInline>
-                </div>
-              )}
-              {requirements && (
-                <div style={{ paddingLeft: responsibilities ? 16 : 0 }}>
-                  <SectionInline title="Requisitos">
-                    <p style={{ fontSize: 12, color: '#4b5563', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>
-                      {truncate(requirements, 320)}
-                    </p>
-                  </SectionInline>
-                </div>
-              )}
-            </div>
+          {/* ── Responsabilidades ── */}
+          {responsibilities && (
+            <Section title="Responsabilidades">
+              <p style={{ fontSize: 12.5, color: '#4b5563', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>
+                {truncate(responsibilities, 300)}
+              </p>
+            </Section>
+          )}
+
+          {/* ── Requisitos ── */}
+          {requirements && (
+            <Section title="Requisitos">
+              <p style={{ fontSize: 12.5, color: '#4b5563', lineHeight: 1.65, margin: 0, whiteSpace: 'pre-wrap' }}>
+                {truncate(requirements, 300)}
+              </p>
+            </Section>
           )}
 
           {/* Spacer */}
@@ -276,14 +270,3 @@ function Section({ title, children }) {
   )
 }
 
-function SectionInline({ title, children }) {
-  return (
-    <div>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#1a4f8a', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ width: 14, height: 2, background: '#1a4f8a', borderRadius: 2 }} />
-        {title}
-      </div>
-      {children}
-    </div>
-  )
-}
