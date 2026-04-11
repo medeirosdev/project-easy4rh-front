@@ -1,10 +1,10 @@
 import { useRef } from 'react'
 import QRCode from 'react-qr-code'
 
-// Generates a shareable URL for a job posting.
-// In production this should point to the public job detail page.
-function getJobUrl(jobId) {
-  return `${window.location.origin}/vaga/${jobId}`
+// Generates a shareable URL for the jobs page.
+// The app uses state-based routing (no URL params), so we point to the vagas page.
+function getJobUrl() {
+  return `${window.location.origin}`
 }
 
 function formatType(type) {
@@ -25,7 +25,7 @@ function formatContract(contract) {
 
 export default function JobPosterModal({ job, company, onClose }) {
   const posterRef = useRef(null)
-  const jobUrl = getJobUrl(job.id)
+  const jobUrl = getJobUrl()
 
   function handlePrint() {
     window.print()
@@ -202,9 +202,12 @@ export default function JobPosterModal({ job, company, onClose }) {
                 Candidate-se agora!
               </div>
               <div style={{ fontSize: 11.5, color: '#778899', lineHeight: 1.5, marginBottom: 8 }}>
-                Escaneie o QR Code com seu celular<br />ou acesse o link abaixo:
+                Escaneie o QR Code com seu celular<br />ou acesse o site e busque pela vaga:
               </div>
-              <div style={{ fontSize: 11, color: '#2a7ec8', wordBreak: 'break-all', fontWeight: 600 }}>
+              <div style={{ fontSize: 12, color: '#1e3a6e', fontWeight: 700, marginBottom: 4 }}>
+                "{job.title}"
+              </div>
+              <div style={{ fontSize: 11, color: '#2a7ec8', wordBreak: 'break-all', fontWeight: 500 }}>
                 {jobUrl}
               </div>
               {job.expiresAt && (

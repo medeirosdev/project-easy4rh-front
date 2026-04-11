@@ -163,10 +163,11 @@ export default function RegisterPage({ navigate }) {
                 )}
 
                 <button onClick={handleSubmit} disabled={loading} style={{
-                  background: loading ? "#aaa" : "linear-gradient(135deg, #1e4a8a, #4a9edd)",
+                  background: "linear-gradient(135deg, #1e4a8a, #4a9edd)",
+                  opacity: loading ? 0.6 : 1,
                   color: "white", border: "none", borderRadius: 10,
                   padding: "14px 32px", cursor: loading ? "default" : "pointer",
-                  fontWeight: 700, fontSize: 14, transition: "all 0.2s"
+                  fontWeight: 700, fontSize: 14, transition: "opacity 0.2s"
                 }}>
                   {loading ? "Registrando..." : role === "RECRUITER" ? "Criar conta de recrutador" : role === "INSTRUCTOR" ? "Criar conta de instrutor" : "Criar conta"}
                 </button>
@@ -178,7 +179,7 @@ export default function RegisterPage({ navigate }) {
                   </button>
                 </p>
 
-                <p style={{ fontSize: 11.5, color: "#aabbcc", marginTop: 16 }}>
+                <p style={{ fontSize: 12, color: "#555", marginTop: 16 }}>
                   Ao continuar, você concorda com os{" "}
                   <span style={{ color: "#4a9edd", cursor: "pointer" }}>Termos de Serviço</span>
                   {" "}e a{" "}

@@ -54,7 +54,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
 
   const inputStyle = {
     width: '100%', border: 'none', borderBottom: '1.5px solid #c8d4e0',
-    padding: '10px 2px', fontSize: 14, outline: 'none',
+    padding: '10px 14px', fontSize: 14, outline: 'none',
     background: 'transparent', color: '#334', boxSizing: 'border-box',
     marginBottom: 20,
   }
@@ -79,10 +79,10 @@ export default function ConsultoriaLoginPage({ navigate }) {
               <>
                 {error && <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '9px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>⚠️ {error}</div>}
 
-                <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
-                <input type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={inputStyle} />
+                <input type="email" aria-label="Email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
+                <input type="password" aria-label="Senha" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={inputStyle} />
 
-                <button onClick={handleLogin} disabled={loading} style={{ width: '100%', background: loading ? '#aaa' : 'linear-gradient(135deg, #1e3a6e, #2a5298)', color: 'white', border: 'none', borderRadius: 10, padding: '13px', cursor: loading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
+                <button onClick={handleLogin} disabled={loading} style={{ width: '100%', background: 'linear-gradient(135deg, #1e3a6e, #2a5298)', opacity: loading ? 0.6 : 1, color: 'white', border: 'none', borderRadius: 10, padding: '13px', cursor: loading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15, marginBottom: 16, transition: 'opacity 0.2s' }}>
                   {loading ? 'Entrando...' : 'Login'}
                 </button>
 
@@ -91,7 +91,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                   <span onClick={() => setTab('register')} style={{ color: '#1e4a8a', fontWeight: 700, cursor: 'pointer' }}>Crie aqui.</span>
                 </p>
 
-                <p style={{ textAlign: 'center', fontSize: 11.5, color: '#aabbcc', marginTop: 32 }}>
+                <p style={{ textAlign: 'center', fontSize: 12, color: '#555', marginTop: 32 }}>
                   Ao continuar, você concorda com os{' '}
                   <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Termos de Serviço</span>
                   {' '}e a{' '}
@@ -157,7 +157,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                   Me lembrar
                 </label>
 
-                <button onClick={handleRegister} disabled={regLoading} style={{ width: '100%', background: regLoading ? '#aaa' : 'linear-gradient(135deg, #1e3a6e, #2a5298)', color: 'white', border: 'none', borderRadius: 10, padding: '13px', cursor: regLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15, marginBottom: 16 }}>
+                <button onClick={handleRegister} disabled={regLoading} style={{ width: '100%', background: 'linear-gradient(135deg, #1e3a6e, #2a5298)', opacity: regLoading ? 0.6 : 1, color: 'white', border: 'none', borderRadius: 10, padding: '13px', cursor: regLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15, marginBottom: 16, transition: 'opacity 0.2s' }}>
                   {regLoading ? 'Criando conta...' : regRole === 'RECRUITER' ? 'Criar conta de recrutador' : regRole === 'INSTRUCTOR' ? 'Criar conta de instrutor' : regRole === 'RECRUITER_INSTRUCTOR' ? 'Criar conta empresa completa' : 'Criar conta'}
                 </button>
 
@@ -166,7 +166,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                   <span onClick={() => setTab('login')} style={{ color: '#1e4a8a', fontWeight: 700, cursor: 'pointer' }}>Entre aqui.</span>
                 </p>
 
-                <p style={{ textAlign: 'center', fontSize: 11.5, color: '#aabbcc', marginTop: 24 }}>
+                <p style={{ textAlign: 'center', fontSize: 12, color: '#555', marginTop: 24 }}>
                   Ao continuar, você concorda com os{' '}
                   <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Termos de Serviço</span>
                   {' '}e a{' '}

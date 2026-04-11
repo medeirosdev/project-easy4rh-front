@@ -200,8 +200,19 @@ export default function RecrutadorDashboard({ navigate }) {
       setMyJobs(list.map(job => ({
         id: job.id,
         title: job.title,
+        description: job.description || '',
+        requirements: job.requirements || '',
+        responsibilities: job.responsibilities || '',
+        city: job.city || null,
+        state: job.state || null,
         location: job.city && job.state ? `${job.city}, ${job.state}` : (job.city || job.state || ''),
+        locationType: job.locationType || null,
         type: locationTypeMap[job.locationType] || 'Presencial',
+        contractType: job.contractType || null,
+        experienceLevel: job.experienceLevel || null,
+        salaryMin: job.salaryMin ?? null,
+        salaryMax: job.salaryMax ?? null,
+        hideSalary: job.hideSalary || false,
         aplicacoes: job._count?.applications ?? 0,
         status: { PUBLISHED: 'Aberta', PAUSED: 'Pausada', CLOSED: 'Encerrada', DRAFT: 'Rascunho', FILLED: 'Preenchida' }[job.status] || job.status,
         rawStatus: job.status,
@@ -211,8 +222,6 @@ export default function RecrutadorDashboard({ navigate }) {
         expiresAt: job.expiresAt || null,
         isConfidential: job.isConfidential || false,
         openingReason: job.openingReason || null,
-        experienceLevel: job.experienceLevel || null,
-        contractType: job.contractType || null,
       })))
     } catch (err) {
       console.error('Erro ao carregar vagas:', err)

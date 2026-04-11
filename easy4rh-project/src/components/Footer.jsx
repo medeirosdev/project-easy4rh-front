@@ -70,7 +70,7 @@ export default function Footer({ navigate }) {
                     <div style={{ fontSize: 9, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Consultoria em RH</div>
                   </div>
                 </div>
-                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', lineHeight: 1.8, marginBottom: 16 }}>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.8, marginBottom: 16 }}>
                   Fácil para você, estratégico para o seu negócio. Transformamos a gestão de pessoas em resultados reais.
                 </p>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -136,7 +136,7 @@ export default function Footer({ navigate }) {
                     <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Consultoria em RH</div>
                   </div>
                 </div>
-                <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.65)', lineHeight: 1.8, marginBottom: 18 }}>
+                <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)', lineHeight: 1.8, marginBottom: 18 }}>
                   Fácil para você, estratégico para o seu negócio. Transformamos a gestão de pessoas em resultados reais.
                 </p>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
@@ -173,7 +173,7 @@ export default function Footer({ navigate }) {
                 <div key={pillar}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                     <div style={{ height: 2, width: 16, background: '#4a9edd', borderRadius: 2 }} />
-                    <h4 style={{ fontSize: 11, fontWeight: 800, color: '#4a9edd', letterSpacing: 1.5, textTransform: 'uppercase', margin: 0 }}>{pillar}</h4>
+                    <h4 style={{ fontSize: 13, fontWeight: 800, color: '#4a9edd', letterSpacing: 1.5, textTransform: 'uppercase', margin: 0 }}>{pillar}</h4>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                     {items.map((item, i) => (

@@ -229,7 +229,7 @@ export default function HeroSearch({ navigate }) {
                         {key}
                         <span style={{ fontSize: 8, color: '#4a9edd', transform: isHov ? 'rotate(180deg)' : 'none', display: 'inline-block', transition: 'transform 0.2s' }}>▼</span>
                       </div>
-                      <div style={{ fontSize: 10.5, color: '#778899', marginTop: 1 }}>{p.desc}</div>
+                      <div style={{ fontSize: 12, color: '#778899', marginTop: 1 }}>{p.desc}</div>
                     </div>
                   </div>
                   {isHov && (

@@ -31,6 +31,7 @@ export default function JobCard({ job, navigate }) {
             {job.type}
           </span>
           <button
+            aria-label={isSaved ? "Remover vaga salva" : "Salvar vaga"}
             onClick={() => (user ? toggleSaveJob(job.id) : navigate('login'))}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, opacity: isSaved ? 1 : 0.25, transition: 'opacity 0.2s' }}
           >
@@ -46,8 +47,8 @@ export default function JobCard({ job, navigate }) {
         <span style={{ fontSize: 12, color: '#999', marginLeft: 'auto' }}>🕐 Há {job.posted}</span>
       </div>
 
-      <p style={{ fontSize: 13, color: '#666', lineHeight: 1.6, marginBottom: 14 }}>
-        {job.description.slice(0, 110)}...
+      <p style={{ fontSize: 13, color: '#666', lineHeight: 1.6, marginBottom: 14, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {job.description}
       </p>
 
       <button

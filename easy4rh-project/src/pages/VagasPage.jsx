@@ -15,6 +15,7 @@ export default function VagasPage({ navigate }) {
   const { isMobile } = useBreakpoint()
 
   const [filters, setFilters] = useState({ types: [], levels: [], locations: [] })
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [keywordInput, setKeywordInput] = useState('')
   const [locationInput, setLocationInput] = useState('')
@@ -112,6 +113,7 @@ export default function VagasPage({ navigate }) {
             marginBottom: 12,
           }}>
             <input
+              aria-label="Palavras-chave, cargo ou empresa"
               style={{ ...inputStyle, border: 'none', borderRight: isMobile ? 'none' : '1.5px solid #e8edf2' }}
               placeholder="Palavras-chave, cargo ou empresa"
               value={keywordInput}
@@ -119,6 +121,7 @@ export default function VagasPage({ navigate }) {
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
             />
             <input
+              aria-label="Cidade, estado ou região"
               style={{ ...inputStyle, border: 'none' }}
               placeholder="Cidade, estado ou região"
               value={locationInput}
@@ -252,18 +255,28 @@ export default function VagasPage({ navigate }) {
 
         {/* Count + Sort row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <p style={{ color: '#555', fontSize: 13.5, margin: 0, fontWeight: 500 }}>
-            {loading ? 'Carregando vagas...' : <><strong>{filtered.length}</strong> vagas encontradas</>}
-          </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 13, color: '#778899', fontWeight: 500 }}>Ordenar por:</span>
+            <p style={{ color: '#555', fontSize: 13.5, margin: 0, fontWeight: 500 }}>
+              {loading ? 'Carregando vagas...' : <><strong>{filtered.length}</strong> vagas encontradas</>}
+            </p>
+            {isMobile && (
+              <button
+                onClick={() => setShowFilterDrawer(true)}
+                style={{ background: hasActiveFilters ? '#1e4a8a' : 'white', color: hasActiveFilters ? 'white' : '#1e4a8a', border: '1.5px solid #1e4a8a', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                🔧 Filtros{hasActiveFilters ? ` (${filters.types.length + filters.levels.length + filters.locations.length})` : ''}
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 13, color: '#444', fontWeight: 500 }}>Ordenar por:</span>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {sortOptions.map(opt => (
                 <button
                   key={opt}
                   onClick={() => setSortBy(opt)}
                   style={{
-                    padding: '6px 14px',
+                    padding: '8px 16px',
                     borderRadius: 20,
                     border: sortBy === opt ? '1.5px solid #1e4a8a' : '1.5px solid #d0dcea',
                     background: sortBy === opt ? '#1e4a8a' : 'white',
@@ -273,6 +286,8 @@ export default function VagasPage({ navigate }) {
                     cursor: 'pointer',
                     transition: 'all 0.15s',
                   }}
+                  onMouseEnter={e => { if (sortBy !== opt) e.currentTarget.style.opacity = '0.8' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
                 >
                   {opt}
                 </button>
@@ -281,10 +296,48 @@ export default function VagasPage({ navigate }) {
           </div>
         </div>
 
+        {/* Mobile filter drawer */}
+        {showFilterDrawer && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowFilterDrawer(false)} />
+            <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '88%', maxWidth: 340, background: 'white', overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>Filtros</h3>
+                <button onClick={() => setShowFilterDrawer(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: '#888', lineHeight: 1 }}>×</button>
+              </div>
+              {[
+                { title: 'TIPO DE VAGA', key: 'types', options: jobTypes },
+                { title: 'NÍVEL', key: 'levels', options: levels },
+                { title: 'LOCALIZAÇÃO', key: 'locations', options: locations },
+              ].map(section => (
+                <div key={section.title} style={{ borderBottom: '1px solid #e8edf2', paddingBottom: 16, marginBottom: 16 }}>
+                  <h4 style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: 1, margin: '0 0 12px', textTransform: 'uppercase' }}>{section.title}</h4>
+                  {section.options.map(opt => (
+                    <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 10, fontSize: 13 }}>
+                      <input type="checkbox" checked={filters[section.key].includes(opt)} onChange={() => toggleFilter(section.key, opt)} style={{ cursor: 'pointer', accentColor: '#1e4a8a', width: 16, height: 16 }} />
+                      <span style={{ color: '#444' }}>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                {hasActiveFilters && (
+                  <button onClick={() => { handleClearAll(); setShowFilterDrawer(false) }} style={{ flex: 1, background: '#fee', border: '1px solid #fcc', color: '#c00', borderRadius: 10, padding: '12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                    Limpar filtros
+                  </button>
+                )}
+                <button onClick={() => setShowFilterDrawer(false)} style={{ flex: 1, background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                  Ver vagas
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr', gap: 28 }}>
 
-          {/* Sidebar */}
-          <div>
+          {/* Sidebar — hidden on mobile (use drawer instead) */}
+          <div style={{ display: isMobile ? 'none' : 'block' }}>
             {[
               { title: 'TIPO DE VAGA', key: 'types', options: jobTypes },
               { title: 'NÍVEL', key: 'levels', options: levels },
@@ -318,7 +371,9 @@ export default function VagasPage({ navigate }) {
               <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center', border: '1px solid #e8edf2' }}>
                 <div style={{ fontSize: 48 }}>🔍</div>
                 <h3 style={{ color: '#1e3a6e' }}>Nenhuma vaga encontrada</h3>
-                <p style={{ color: '#666' }}>Tente ajustar seus filtros ou busca</p>
+                <p style={{ color: '#666' }}>
+                  {appliedKeyword ? `Nenhuma vaga para "${appliedKeyword}"` : 'Tente ajustar seus filtros ou busca'}
+                </p>
                 {hasActiveFilters && (
                   <button onClick={handleClearAll} style={{ marginTop: 8, background: '#1e4a8a', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
                     Limpar filtros

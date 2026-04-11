@@ -184,13 +184,15 @@ export default function JobDetailPage({ job, navigate }) {
 
           {/* Main content */}
           <div>
-            <div style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", padding: isMobile ? 20 : 28 }}>
+            <div style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", padding: isMobile ? 24 : 28 }}>
               {/* Header bar */}
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, gap: 8, flexWrap: "wrap" }}>
-                <button style={{ background: "none", border: "1px solid #d0d8e4", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#555" }}>
+                <button aria-label="Compartilhar vaga" style={{ background: "none", border: "1px solid #d0d8e4", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#555" }}>
                   Compartilhar
                 </button>
-                <button onClick={() => user ? toggleSaveJob(job.id) : navigate("login")}
+                <button
+                  aria-label={isSaved ? "Remover vaga salva" : "Salvar vaga"}
+                  onClick={() => user ? toggleSaveJob(job.id) : navigate("login")}
                   style={{ background: "none", border: "1px solid #d0d8e4", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: isSaved ? "#1e4a8a" : "#555" }}>
                   {isSaved ? "Salvo" : "Salvar"}
                 </button>
@@ -200,12 +202,16 @@ export default function JobDetailPage({ job, navigate }) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, color: "#1e4a8a", margin: "0 0 8px" }}>{job.title}</h2>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
                     <span style={{ fontSize: 13, color: "#555" }}>Local: {job.location || 'A definir'}</span>
                     <span style={{ fontSize: 13, color: "#555" }}>Nível: {job.level}</span>
                     {job.type && <span style={{ fontSize: 13, color: "#555" }}>Modalidade: {job.type}</span>}
                     {job.contract && <span style={{ fontSize: 13, color: "#555" }}>Contrato: {job.contract}</span>}
-                    <span style={{ fontSize: 13, color: "#2e7d32", fontWeight: 600 }}>Salário: {job.salary}</span>
+                    {job.salary && (
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#276749', background: '#f0ffe4', borderRadius: 20, padding: '3px 10px' }}>
+                        💰 {job.salary}
+                      </span>
+                    )}
                   </div>
                   <p style={{ fontSize: 13.5, color: "#555", lineHeight: 1.6, margin: 0 }}>{job.description}</p>
                 </div>
@@ -251,7 +257,8 @@ export default function JobDetailPage({ job, navigate }) {
                 background: isApplied ? "#38a169" : "linear-gradient(135deg, #1e4a8a, #4a9edd)",
                 color: "white", border: "none", borderRadius: 10,
                 padding: "14px 28px", cursor: isApplied ? "default" : "pointer",
-                fontWeight: 700, fontSize: 14, width: isMobile ? "100%" : "auto"
+                fontWeight: 700, fontSize: 14, width: isMobile ? "100%" : "auto",
+                transition: 'background 0.3s ease',
               }}>
                 {isApplied ? "Candidatura enviada!" : "Aplicar para a Vaga"}
               </button>
@@ -266,8 +273,8 @@ export default function JobDetailPage({ job, navigate }) {
 
       {/* Apply Modal — Screening Questions Flow */}
       {showApplyModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "20px" }}>
-          <div style={{ background: "white", borderRadius: 20, padding: isMobile ? 24 : 36, maxWidth: 560, width: "100%", maxHeight: '90vh', overflowY: 'auto', boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center", zIndex: 2000, padding: isMobile ? 0 : "20px" }}>
+          <div style={{ background: "white", borderRadius: isMobile ? "20px 20px 0 0" : 20, padding: isMobile ? 24 : 36, maxWidth: isMobile ? "100%" : 560, width: "100%", maxHeight: isMobile ? 'calc(100vh - 60px)' : '90vh', overflowY: 'auto', boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
 
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>

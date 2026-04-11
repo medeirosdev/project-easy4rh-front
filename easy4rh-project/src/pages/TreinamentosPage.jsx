@@ -128,13 +128,22 @@ export default function TreinamentosPage({ navigate }) {
             <div style={{ textAlign: "center", padding: "48px 20px", color: "#778899" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
               <p style={{ fontSize: 15, fontWeight: 600, color: "#334" }}>Nenhum curso encontrado</p>
-              <p style={{ fontSize: 13, marginTop: 4 }}>Tente outros termos ou remova os filtros.</p>
+              <p style={{ fontSize: 13, marginTop: 4 }}>
+                {search ? `Nenhum resultado para "${search}"` : 'Tente outros termos ou remova os filtros.'}
+              </p>
+              {hasFilters && (
+                <div style={{ fontSize: 12, color: '#778899', marginTop: 8, display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {search && <span style={{ background: '#f0f4f8', borderRadius: 20, padding: '3px 10px' }}>Busca: "{search}"</span>}
+                  {filterCategory && <span style={{ background: '#f0f4f8', borderRadius: 20, padding: '3px 10px' }}>Categoria: {filterCategory}</span>}
+                  {filterLevel && <span style={{ background: '#f0f4f8', borderRadius: 20, padding: '3px 10px' }}>Nível: {levelLabel[filterLevel] || filterLevel}</span>}
+                </div>
+              )}
               <button onClick={() => { setSearch(""); setFilterCategory(""); setFilterLevel(""); }} style={{ marginTop: 16, background: "#1e4a8a", color: "white", border: "none", borderRadius: 10, padding: "10px 20px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-                Ver todos os cursos
+                Limpar filtros
               </button>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
               {filtered.map(course => (
                 <div key={course.id} style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", overflow: "hidden", boxShadow: "0 4px 16px rgba(30,74,138,0.06)", transition: "all 0.2s", cursor: "pointer" }}
                   onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(30,74,138,0.12)"; }}
@@ -166,7 +175,12 @@ export default function TreinamentosPage({ navigate }) {
                       {course.rating > 0 && <span style={{ fontSize: 12, color: "#f59e0b" }}>{"⭐".repeat(Math.floor(course.rating))} {course.rating}</span>}
                     </div>
                     <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <button onClick={() => course.id ? navigate(user ? `curso-${course.id}` : "login") : null} disabled={!course.id} style={{ background: course.id ? "linear-gradient(135deg, #1e4a8a, #4a9edd)" : "#ccc", color: "white", border: "none", borderRadius: 8, padding: "8px 16px", cursor: course.id ? "pointer" : "default", fontWeight: 600, fontSize: 12.5 }}>
+                      <button
+                        aria-label={`${user ? "Ver curso" : "Inscrever-se"}: ${course.title}`}
+                        onClick={() => course.id ? navigate(user ? `curso-${course.id}` : "login") : null}
+                        disabled={!course.id}
+                        style={{ background: course.id ? "linear-gradient(135deg, #1e4a8a, #4a9edd)" : "#ccc", color: "white", border: "none", borderRadius: 8, padding: "8px 16px", cursor: course.id ? "pointer" : "default", fontWeight: 600, fontSize: 12.5 }}
+                      >
                         {user ? "Ver curso" : "Inscrever-se"}
                       </button>
                     </div>

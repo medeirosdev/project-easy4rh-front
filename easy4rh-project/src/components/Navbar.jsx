@@ -153,7 +153,7 @@ export default function Navbar({ navigate, page }) {
                               <div style={{ width: 36, height: 36, borderRadius: 10, background: `${p.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{p.icon}</div>
                               <div>
                                 <div style={{ fontSize: 13, fontWeight: 700, color: p.color }}>{p.label}</div>
-                                <div style={{ fontSize: 11, color: '#778899', marginTop: 1 }}>{p.desc}</div>
+                                <div style={{ fontSize: 12.5, color: '#778899', marginTop: 1 }}>{p.desc}</div>
                               </div>
                               <span style={{ marginLeft: 'auto', fontSize: 12, color: '#aabbcc' }}>›</span>
                             </div>
