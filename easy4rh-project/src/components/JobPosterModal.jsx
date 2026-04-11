@@ -2,8 +2,8 @@ import { useRef } from 'react'
 import QRCode from 'react-qr-code'
 import logoImg from '../assets/logo.png'
 
-function getJobUrl() {
-  return `${window.location.origin}`
+function getJobUrl(jobId) {
+  return `${window.location.origin}?job=${jobId}`
 }
 
 function formatType(type) {
@@ -31,7 +31,7 @@ function toText(value) {
 
 export default function JobPosterModal({ job, company, onClose }) {
   const posterRef = useRef(null)
-  const jobUrl = getJobUrl()
+  const jobUrl = getJobUrl(job.id)
 
   function handlePrint() {
     window.print()
@@ -223,12 +223,9 @@ export default function JobPosterModal({ job, company, onClose }) {
                 Candidate-se agora!
               </div>
               <div style={{ fontSize: 11, color: '#778899', lineHeight: 1.5, marginBottom: 6 }}>
-                Escaneie o QR Code ou acesse o site e busque pela vaga:
+                Escaneie o QR Code ou acesse o link abaixo para se candidatar:
               </div>
-              <div style={{ fontSize: 12, color: '#1a4f8a', fontWeight: 700, marginBottom: 3 }}>
-                "{job.title}"
-              </div>
-              <div style={{ fontSize: 10.5, color: '#2a7ec8', fontWeight: 500 }}>
+              <div style={{ fontSize: 10.5, color: '#2a7ec8', fontWeight: 600, wordBreak: 'break-all' }}>
                 {jobUrl}
               </div>
               {job.expiresAt && (

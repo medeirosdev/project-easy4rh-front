@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { JobsProvider } from './context/JobsContext'
+import { jobsApi } from './services/api'
+import { normalizeJob } from './context/JobsContext'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
@@ -49,7 +51,36 @@ export default function App() {
     window.scrollTo(0, 0)
     const title = pageTitles[pg] || (pg?.startsWith('curso-') ? 'Curso — Easy4RH' : 'Easy4RH')
     document.title = title
+    // Atualiza URL sem recarregar: limpa ?job= quando sai da vaga
+    const url = new URL(window.location.href)
+    if (pg === 'job-detail' && data?.id) {
+      url.searchParams.set('job', data.id)
+    } else {
+      url.searchParams.delete('job')
+    }
+    window.history.replaceState(null, '', url.toString())
   }
+
+  // Lê ?job=<id> na URL ao montar e navega diretamente para a vaga
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const jobId = params.get('job')
+    if (!jobId) return
+    jobsApi.get(jobId)
+      .then(job => {
+        if (job) {
+          setSelectedJob(normalizeJob(job))
+          setPage('job-detail')
+          document.title = `${job.title} — Easy4RH`
+        }
+      })
+      .catch(() => {
+        // Job não encontrado — remove param e fica na home
+        const url = new URL(window.location.href)
+        url.searchParams.delete('job')
+        window.history.replaceState(null, '', url.toString())
+      })
+  }, [])
 
   const hideLayout = ['login', 'consultoria-login', 'register', 'dashboard-candidato', 'dashboard-recrutador']
 
