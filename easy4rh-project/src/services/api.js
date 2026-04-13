@@ -290,6 +290,7 @@ export const coursesApi = {
   myCourses: () => request('GET', '/courses/instructor/my-courses'),
   enroll: (id) => request('POST', `/courses/${id}/enroll`),
   myEnrollments: () => request('GET', '/me/enrollments'),
+  enrollmentDetail: (id) => request('GET', `/enrollments/${id}`),
   sections: (id) => request('GET', `/courses/${id}/sections`),
   students: (id) => request('GET', `/courses/${id}/students`),
   stats: (id) => request('GET', `/courses/${id}/stats`),

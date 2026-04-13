@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { coursesApi, lessonsApi } from '../services/api'
 import { useBreakpoint } from '../hooks/useBreakpoint'
@@ -18,25 +18,44 @@ export default function CursoDetailPage({ navigate, courseId }) {
   const [completedLessons, setCompletedLessons] = useState(new Set())
   const [markingComplete, setMarkingComplete] = useState(false)
   const [progressError, setProgressError] = useState('')
+  // BUG-M03: ref to video element so we can read currentTime for watchedSeconds
+  const videoRef = useRef(null)
 
   useEffect(() => {
     if (!courseId) return
     const load = async () => {
       setLoading(true)
       try {
-        const requests = [coursesApi.get(courseId), coursesApi.sections(courseId)]
+        // BUG-M05: coursesApi.get already returns sections — no need for a separate sections call
+        const requests = [coursesApi.get(courseId)]
         if (user) requests.push(coursesApi.myEnrollments())
 
-        const [courseData, sectionsData, enrollmentsData] = await Promise.all(requests)
+        const [courseData, enrollmentsData] = await Promise.all(requests)
         setCourse(courseData)
-        const secList = Array.isArray(sectionsData) ? sectionsData : (sectionsData.data || sectionsData.sections || [])
+
+        // BUG-M05: use sections embedded in course response
+        const secList = courseData.sections || []
         setSections(secList)
         if (secList.length > 0) setOpenSections({ [secList[0].id]: true })
 
         if (enrollmentsData) {
           const enrList = Array.isArray(enrollmentsData) ? enrollmentsData : (enrollmentsData.data || [])
           const enr = enrList.find(e => (e.courseId || e.course?.id) === courseId)
-          setEnrollment(enr || null)
+          if (enr) {
+            setEnrollment(enr)
+            // BUG-M04: load existing lesson progress so already-completed lessons show as done
+            try {
+              const detail = await coursesApi.enrollmentDetail(enr.id)
+              const doneLessons = new Set(
+                (detail.lessonProgress || [])
+                  .filter(p => p.completed)
+                  .map(p => p.lessonId)
+              )
+              setCompletedLessons(doneLessons)
+            } catch {
+              // non-critical — proceed without pre-loaded progress
+            }
+          }
         }
       } catch (err) {
         console.error('Erro ao carregar curso:', err)
@@ -67,7 +86,9 @@ export default function CursoDetailPage({ navigate, courseId }) {
     setMarkingComplete(true)
     setProgressError('')
     try {
-      await lessonsApi.updateProgress(activeLesson.id, { completed, watchedSeconds: 0 })
+      // BUG-M03: read actual currentTime from the video element instead of sending 0
+      const watchedSeconds = Math.floor(videoRef.current?.currentTime ?? 0)
+      await lessonsApi.updateProgress(activeLesson.id, { completed, watchedSeconds })
       if (completed) {
         setCompletedLessons(prev => new Set([...prev, activeLesson.id]))
       }
@@ -145,6 +166,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
                   <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>Carregando aula...</span>
                 ) : lessonData?.videoUrl ? (
                   <video
+                    ref={videoRef}
                     src={lessonData.videoUrl}
                     controls
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
@@ -195,7 +217,8 @@ export default function CursoDetailPage({ navigate, courseId }) {
                 {[
                   { icon: '📚', label: `${totalLessons} aulas` },
                   { icon: '🎯', label: course.level ? { BEGINNER: 'Iniciante', INTERMEDIATE: 'Intermediário', ADVANCED: 'Avançado' }[course.level] : 'Todos os níveis' },
-                  { icon: '👤', label: course.instructor?.name || 'Instrutor' },
+                  // BUG-L04: instructor object has { id, email, candidateProfile: { fullName } }, no .name field
+                  { icon: '👤', label: course.instructor?.candidateProfile?.fullName || course.instructor?.email || 'Instrutor' },
                 ].map(item => (
                   <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#556' }}>
                     <span>{item.icon}</span>

@@ -58,10 +58,14 @@ function normalizeCourse(course) {
     level: courseLevelMap[course.level] || course.level || 'Básico',
     students: course.enrollmentCount ?? course.students ?? 0,
     rating: course.rating ?? 0,
-    instructor: course.instructor?.fullName || course.instructor?.email || course.instructorName || course.instructor || '',
-    duration: course.totalDuration
-      ? `${Math.round(course.totalDuration / 3600)}h`
-      : (course.duration || '—'),
+    instructor: course.instructor?.candidateProfile?.fullName || course.instructor?.fullName || course.instructor?.email || course.instructorName || course.instructor || '',
+    // BUG-A02: course.duration is stored in seconds — convert to hours for display
+    duration: (() => {
+      const secs = course.totalDuration ?? course.duration
+      if (!secs) return '—'
+      const hours = Math.round(secs / 3600)
+      return hours > 0 ? `${hours}h` : `${Math.round(secs / 60)}min`
+    })(),
     description: course.description || '',
     category: course.category || '',
   }
