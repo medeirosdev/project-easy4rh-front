@@ -224,7 +224,6 @@ export default function JobDetailPage({ job, navigate }) {
                       </span>
                     )}
                   </div>
-                  <p style={{ fontSize: 13.5, color: "#555", lineHeight: 1.6, margin: 0 }}>{job.description}</p>
                 </div>
                 {!isMobile && (
                   <div style={{ width: 72, height: 72, borderRadius: 12, background: job.logoColor, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "white", fontSize: 14, flexShrink: 0 }}>
@@ -237,18 +236,19 @@ export default function JobDetailPage({ job, navigate }) {
 
               <h3 style={{ fontSize: 14, fontWeight: 700, color: "#333", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 16 }}>Detalhes da vaga</h3>
 
-              <div style={{ marginBottom: 24 }}>
-                <p style={{ color: "#555", fontSize: 13.5, lineHeight: 1.7 }}>
-                  Estamos em busca de um(a) {job.title} para liderar nossa equipe e garantir a melhor experiencia para nossos clientes.
-                </p>
-              </div>
+              {job.description && (
+                <div style={{ marginBottom: 24 }}>
+                  <p style={{ color: "#555", fontSize: 13.5, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    {job.description}
+                  </p>
+                </div>
+              )}
 
               {[
                 { title: "Responsabilidades", items: job.responsibilities },
                 { title: "Requisitos", items: job.requirements },
-                { title: "Diferenciais", items: ["Experiencia no varejo da categoria", "Conhecimento em indicadores de desempenho (KPIs)", "Vivencia em ambientes dinamicos"] },
                 { title: "O que oferecemos", items: job.benefits },
-              ].map(section => (
+              ].filter(s => s.items && s.items.length > 0).map(section => (
                 <div key={section.title} style={{ marginBottom: 24 }}>
                   <h4 style={{ fontSize: 14, fontWeight: 700, color: "#333", marginBottom: 10 }}>{section.title}</h4>
                   <ul style={{ margin: 0, paddingLeft: 20 }}>
@@ -261,7 +261,7 @@ export default function JobDetailPage({ job, navigate }) {
 
               <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20, fontSize: 13, flexWrap: "wrap" }}>
                 <span style={{ color: "#555" }}>Local de trabalho: {typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')}</span>
-                <span style={{ color: "#555" }}>Regime: CLT</span>
+                {job.contract && <span style={{ color: "#555" }}>Regime: {job.contract}</span>}
               </div>
 
               <button onClick={handleStartApply} disabled={isApplied} style={{
