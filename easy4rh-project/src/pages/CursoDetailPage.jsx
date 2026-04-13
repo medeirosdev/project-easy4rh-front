@@ -68,7 +68,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
   }, [courseId, user?.id])
 
   const handleLessonClick = async (lesson) => {
-    if (!enrollment) return
+    if (!enrollment && !lesson.isFree) return
     setActiveLesson(lesson)
     setLessonLoading(true)
     try {
@@ -83,6 +83,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
 
   const handleProgress = async (completed) => {
     if (!activeLesson || markingComplete) return
+    if (!enrollment) return // cannot track progress without enrollment
     setMarkingComplete(true)
     setProgressError('')
     try {
@@ -158,7 +159,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
 
         {/* Main — Video Player or Course Info */}
         <div>
-          {activeLesson && enrollment ? (
+          {activeLesson && (enrollment || activeLesson.isFree) ? (
             /* Video Player */
             <div style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(30,74,138,0.08)' }}>
               <div style={{ background: '#0d1a2e', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -278,7 +279,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
               {/* Lessons */}
               {openSections[section.id] && (section.lessons || []).map((lesson, li) => {
                 const isActive = activeLesson?.id === lesson.id
-                const isLocked = !enrollment
+                const isLocked = !enrollment && !lesson.isFree
                 return (
                   <div
                     key={lesson.id}
