@@ -185,6 +185,8 @@ export default function CandidatoDashboard({ navigate }) {
   }
 
   const handleWithdraw = async (appId) => {
+    const confirmed = window.confirm('Tem certeza que deseja desistir desta vaga? Esta ação não pode ser desfeita.')
+    if (!confirmed) return
     try {
       await applicationsApi.withdraw(appId)
       setApplications(prev => prev.filter(a => a.id !== appId))

@@ -47,14 +47,15 @@ export default function JobDetailPage({ job, navigate }) {
     }
   };
 
-  const handleStartApply = async () => {
+  const handleStartApply = () => {
     if (!user) { navigate("login"); return; }
+    if (isApplied) return;
     setShowApplyModal(true);
     setApplyStep(1);
     setCoverLetter('');
     setAnswers({});
     setSubmitError('');
-    await loadQuestions();
+    loadQuestions();
   };
 
   const handleSubmitApplication = async () => {
@@ -87,6 +88,9 @@ export default function JobDetailPage({ job, navigate }) {
         setApplied(true);
         setShowApplyModal(false);
         setShowModal(true);
+      } else if (result.isDuplicate) {
+        setApplied(true);
+        setShowApplyModal(false);
       } else {
         setSubmitError(result.message || 'Erro ao enviar candidatura.');
       }
@@ -147,13 +151,20 @@ export default function JobDetailPage({ job, navigate }) {
       {/* Quick nav */}
       <div style={{ background: "white", borderBottom: "1px solid #e8edf2" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "10px 20px", display: "flex", gap: isMobile ? 12 : 20, justifyContent: "center", flexWrap: "wrap" }}>
-          {[
-            { label: "Login", action: () => navigate("login") },
-            { label: "Registre seu CV", action: () => navigate("register") },
-            { label: "Recrutamento", action: () => navigate("login") },
-          ].map((item) => (
-            <button key={item.label} onClick={item.action} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>{item.label}</button>
-          ))}
+          {!user ? (
+            <>
+              <button onClick={() => navigate("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>Login</button>
+              <button onClick={() => navigate("register")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>Registre seu CV</button>
+            </>
+          ) : (
+            <button
+              onClick={() => navigate(user.role === 'CANDIDATE' ? 'dashboard-candidato' : 'dashboard-recrutador')}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}
+            >
+              Meu Painel
+            </button>
+          )}
+          <button onClick={() => navigate("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>Recrutamento</button>
         </div>
       </div>
 
@@ -477,10 +488,16 @@ export default function JobDetailPage({ job, navigate }) {
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#778899', marginBottom: 12, textTransform: 'uppercase' }}>Respostas</div>
                     {questions.map((q, idx) => {
                       const a = answers[q.id];
-                      let answerText = 'Nao respondida';
+                      let answerText = 'Não respondida';
                       if (a) {
-                        if (q.type === 'TEXT') answerText = a.textAnswer || 'Nao respondida';
-                        else if (a.optionId) {
+                        if (q.type === 'TEXT') {
+                          answerText = a.textAnswer?.trim() || 'Não respondida';
+                        } else if (q.type === 'MULTIPLE_CHOICE') {
+                          const selected = (a.optionIds || [])
+                            .map(id => (q.options || []).find(o => o.id === id)?.label)
+                            .filter(Boolean);
+                          answerText = selected.length ? selected.join(', ') : 'Não respondida';
+                        } else if (a.optionId) {
                           const opt = (q.options || []).find(o => o.id === a.optionId);
                           answerText = opt?.label || 'Selecionada';
                         }

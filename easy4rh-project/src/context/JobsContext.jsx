@@ -70,7 +70,9 @@ function normalizeCourse(course) {
 export function JobsProvider({ children }) {
   const [jobs, setJobs] = useState([])
   const [courses, setCourses] = useState([])
-  const [appliedJobs, setAppliedJobs] = useState([])
+  const [appliedJobs, setAppliedJobs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('easy4rh_applied_jobs')) || [] } catch { return [] }
+  })
   const [loading, setLoading] = useState(false)
   const [coursesLoading, setCoursesLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -80,7 +82,7 @@ export function JobsProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      const data = await jobsApi.list(filters)
+      const data = await jobsApi.list({ limit: 100, ...filters })
       const list = Array.isArray(data) ? data : (data.data || data.jobs || [])
       setJobs(list.map(normalizeJob))
     } catch (err) {
@@ -116,12 +118,36 @@ export function JobsProvider({ children }) {
   const applyToJob = async (jobId, data = {}) => {
     try {
       await applicationsApi.apply(jobId, data)
-      setAppliedJobs((prev) => (prev.includes(jobId) ? prev : [...prev, jobId]))
+      setAppliedJobs(prev => {
+        if (prev.includes(jobId)) return prev
+        const next = [...prev, jobId]
+        localStorage.setItem('easy4rh_applied_jobs', JSON.stringify(next))
+        return next
+      })
       return { success: true }
     } catch (err) {
+      // 409 = já se candidatou — trata como sucesso local para sincronizar estado
+      const isDuplicate =
+        err.message?.includes('409') ||
+        err.message?.toLowerCase().includes('já se candidatou') ||
+        err.message?.toLowerCase().includes('already applied')
+      if (isDuplicate) {
+        setAppliedJobs(prev => {
+          if (prev.includes(jobId)) return prev
+          const next = [...prev, jobId]
+          localStorage.setItem('easy4rh_applied_jobs', JSON.stringify(next))
+          return next
+        })
+        return { success: false, isDuplicate: true, message: 'Você já se candidatou a esta vaga.' }
+      }
       console.error('Erro ao candidatar:', err)
       return { success: false, message: err.message }
     }
+  }
+
+  const clearAppliedJobs = () => {
+    setAppliedJobs([])
+    localStorage.removeItem('easy4rh_applied_jobs')
   }
 
   return (
@@ -133,6 +159,7 @@ export function JobsProvider({ children }) {
       coursesLoading,
       error,
       applyToJob,
+      clearAppliedJobs,
       fetchJobs,
       fetchCourses,
     }}>

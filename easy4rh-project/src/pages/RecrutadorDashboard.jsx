@@ -407,6 +407,8 @@ export default function RecrutadorDashboard({ navigate }) {
   // Step 1 → criar vaga (rascunho) e ir para perguntas
   const handleCreateDraft = async () => {
     if (!novaVaga.title || !novaVaga.companyId || !novaVaga.description || !novaVaga.requirements) return
+    // BUG-10: rascunho já criado — apenas avança para o passo seguinte
+    if (createdJobId) { setPubStep(2); return }
     setPublishError('')
     setPublishing(true)
     try {
