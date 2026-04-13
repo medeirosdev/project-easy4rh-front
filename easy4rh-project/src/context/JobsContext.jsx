@@ -5,19 +5,7 @@ const JobsContext = createContext()
 
 // Mapeia enums do backend para labels do frontend
 export const locationTypeMap = { ON_SITE: 'Presencial', REMOTE: 'Remoto', HYBRID: 'Híbrido' }
-export const experienceLevelMap = {
-  INTERN: 'Estágio',
-  NO_EXPERIENCE: 'Sem experiência',
-  UP_TO_1_YEAR: 'Até 1 ano',
-  TWO_YEARS_PLUS: '2+ anos',
-  JUNIOR: 'Júnior',
-  MID: 'Pleno',
-  SENIOR: 'Sênior',
-  LEAD: 'Lead',
-  MANAGER: 'Gerente',
-}
-
-export const contractTypeMap = { CLT: 'CLT', PJ: 'PJ', INTERNSHIP: 'Estágio', TEMPORARY: 'Temporário', FREELANCE: 'Freelance' }
+export const experienceLevelMap = { INTERN: 'Estágio', JUNIOR: 'Júnior', MID: 'Pleno', SENIOR: 'Sênior', LEAD: 'Sênior', MANAGER: 'Sênior' }
 
 const logoColors = ['#0066FF', '#CC0000', '#004B9B', '#E31E26', '#333333', '#009944', '#E60000', '#8B5CF6']
 
@@ -34,7 +22,6 @@ export function normalizeJob(job, index = 0) {
     logoColor: job.logoColor || logoColors[index % logoColors.length],
     type: locationTypeMap[job.locationType] || job.type || 'Presencial',
     level: experienceLevelMap[job.experienceLevel] || job.level || 'Pleno',
-    contract: contractTypeMap[job.contractType] || job.contract || null,
     location: job.city && job.state ? `${job.city}, ${job.state}` : (job.location || ''),
     salary: job.salaryMin != null
       ? `R$ ${job.salaryMin.toLocaleString('pt-BR')}${job.salaryMax ? ` – R$ ${job.salaryMax.toLocaleString('pt-BR')}` : ''}`
@@ -70,17 +57,20 @@ function normalizeCourse(course) {
 export function JobsProvider({ children }) {
   const [jobs, setJobs] = useState([])
   const [courses, setCourses] = useState([])
-  const [appliedJobs, setAppliedJobs] = useState([])
+  // BUG-06: persiste appliedJobs no localStorage para não perder no refresh
+  const [appliedJobs, setAppliedJobs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('easy4rh_applied_jobs')) || [] } catch { return [] }
+  })
   const [loading, setLoading] = useState(false)
   const [coursesLoading, setCoursesLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // ── Carregar vagas ao montar ──
+  // BUG-07: passa filtros para a API ao invés de filtrar client-side nos 10 primeiros
   const fetchJobs = useCallback(async (filters = {}) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await jobsApi.list(filters)
+      const data = await jobsApi.list({ ...filters, limit: 100 })
       const list = Array.isArray(data) ? data : (data.data || data.jobs || [])
       setJobs(list.map(normalizeJob))
     } catch (err) {
@@ -116,12 +106,32 @@ export function JobsProvider({ children }) {
   const applyToJob = async (jobId, data = {}) => {
     try {
       await applicationsApi.apply(jobId, data)
-      setAppliedJobs((prev) => (prev.includes(jobId) ? prev : [...prev, jobId]))
+      setAppliedJobs((prev) => {
+        if (prev.includes(jobId)) return prev
+        const next = [...prev, jobId]
+        localStorage.setItem('easy4rh_applied_jobs', JSON.stringify(next))
+        return next
+      })
       return { success: true }
     } catch (err) {
       console.error('Erro ao candidatar:', err)
+      // BUG-03: trata 409 especificamente
+      if (err.message?.includes('409') || err.message?.toLowerCase().includes('conflict') || err.message?.toLowerCase().includes('já se candidatou')) {
+        setAppliedJobs((prev) => {
+          if (prev.includes(jobId)) return prev
+          const next = [...prev, jobId]
+          localStorage.setItem('easy4rh_applied_jobs', JSON.stringify(next))
+          return next
+        })
+        return { success: false, isDuplicate: true, message: 'Você já se candidatou a esta vaga.' }
+      }
       return { success: false, message: err.message }
     }
+  }
+
+  const clearAppliedJobs = () => {
+    setAppliedJobs([])
+    localStorage.removeItem('easy4rh_applied_jobs')
   }
 
   return (
@@ -133,6 +143,7 @@ export function JobsProvider({ children }) {
       coursesLoading,
       error,
       applyToJob,
+      clearAppliedJobs,
       fetchJobs,
       fetchCourses,
     }}>

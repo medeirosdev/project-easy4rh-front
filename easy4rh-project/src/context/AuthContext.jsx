@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { authApi, profileApi, saveToken, clearToken, saveUser, loadUser, isTokenExpired } from '../services/api'
+import { authApi, saveToken, clearToken, saveUser, loadUser } from '../services/api'
 
 const AuthContext = createContext()
 
@@ -10,50 +10,6 @@ export function AuthProvider({ children }) {
     try { return JSON.parse(localStorage.getItem('easy4rh_saved_jobs')) || [] } catch { return [] }
   })
   const [loading, setLoading] = useState(false)
-
-  // Valida sessão salva no localStorage ao montar o app
-  useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    const storedUser = loadUser()
-
-    // Se não tem token ou já expirou, limpa tudo imediatamente
-    if (!token || isTokenExpired(token)) {
-      if (storedUser) {
-        clearToken()
-        localStorage.removeItem('easy4rh_saved_jobs')
-        Object.keys(localStorage)
-          .filter(k => k.startsWith('my_company_id_'))
-          .forEach(k => localStorage.removeItem(k))
-        setUser(null)
-        setSavedJobs([])
-      }
-      return
-    }
-
-    // Token válido: re-verifica o role com o backend para evitar dado desatualizado
-    if (storedUser?.id) {
-      authApi.getUser(storedUser.id).then(freshUser => {
-        if (freshUser && freshUser.role !== storedUser.role) {
-          const updated = { ...storedUser, role: freshUser.role }
-          saveUser(updated)
-          setUser(updated)
-        }
-      }).catch(() => {
-        // Falha silenciosa — mantém os dados salvos se não conseguir verificar
-      })
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Ouve evento de sessao expirada disparado pelo api.js (401 ou token expirado)
-  useEffect(() => {
-    const handler = () => {
-      setUser(null)
-      setSavedJobs([])
-      if (navigateRef.current) navigateRef.current('login')
-    }
-    window.addEventListener('auth:expired', handler)
-    return () => window.removeEventListener('auth:expired', handler)
-  }, [])
 
   // ── Login (candidato ou recrutador — o backend decide pelo role) ──
   const login = async (email, password) => {
@@ -69,6 +25,7 @@ export function AuthProvider({ children }) {
       // Tenta buscar o nome do perfil do candidato
       if (loggedUser.role === 'CANDIDATE' && !loggedUser.name) {
         try {
+          const { profileApi } = await import('../services/api')
           const profile = await profileApi.get()
           if (profile?.fullName) loggedUser.name = profile.fullName
         } catch {
@@ -89,24 +46,20 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // ── loginRecruiter — aceita RECRUITER e RECRUITER_INSTRUCTOR ──
+  // ── loginRecruiter reutiliza o mesmo endpoint — o role vem do backend ──
   const loginRecruiter = async (email, password) => {
     const result = await login(email, password)
-    const role = result.user?.role
-    const allowed = ['RECRUITER', 'RECRUITER_INSTRUCTOR', 'ADMIN']
-    if (result.success && !allowed.includes(role)) {
+    if (result.success && result.user?.role !== 'RECRUITER') {
       logout()
       return { success: false, message: 'Essa conta não é de recrutador.' }
     }
     return result
   }
 
-  // ── loginInstructor — aceita INSTRUCTOR e RECRUITER_INSTRUCTOR ──
+  // ── loginInstructor — valida que o usuário tem role INSTRUCTOR ──
   const loginInstructor = async (email, password) => {
     const result = await login(email, password)
-    const role = result.user?.role
-    const allowed = ['INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN']
-    if (result.success && !allowed.includes(role)) {
+    if (result.success && result.user?.role !== 'INSTRUCTOR') {
       logout()
       return { success: false, message: 'Essa conta não é de instrutor.' }
     }
@@ -128,6 +81,7 @@ export function AuthProvider({ children }) {
 
       // Se tem dados extras (nome, telefone), cria o perfil do candidato
       if (result.success && (data.role || 'CANDIDATE') === 'CANDIDATE') {
+        const { profileApi } = await import('../services/api')
         try {
           await profileApi.create({
             fullName: data.name || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
@@ -150,10 +104,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     clearToken()
     localStorage.removeItem('easy4rh_saved_jobs')
-    // Remove user-scoped company cache keys
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('my_company_id_'))
-      .forEach(k => localStorage.removeItem(k))
+    localStorage.removeItem('easy4rh_applied_jobs')
     setUser(null)
     setSavedJobs([])
   }

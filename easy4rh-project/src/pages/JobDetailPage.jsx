@@ -34,7 +34,6 @@ export default function JobDetailPage({ job, navigate }) {
   const isSaved = savedJobs.includes(job.id);
 
   const loadQuestions = async () => {
-    if (!job?.id) { setQuestions([]); return; }
     setQuestionsLoading(true);
     try {
       const data = await jobQuestionsApi.list(job.id);
@@ -47,14 +46,16 @@ export default function JobDetailPage({ job, navigate }) {
     }
   };
 
-  const handleStartApply = async () => {
+  const handleStartApply = () => {
     if (!user) { navigate("login"); return; }
+    // BUG-03: verifica se já candidatou antes de abrir o modal
+    if (isApplied) return;
     setShowApplyModal(true);
     setApplyStep(1);
     setCoverLetter('');
     setAnswers({});
     setSubmitError('');
-    await loadQuestions();
+    loadQuestions();
   };
 
   const handleSubmitApplication = async () => {
@@ -65,21 +66,21 @@ export default function JobDetailPage({ job, navigate }) {
       if (coverLetter.trim()) payload.coverLetter = coverLetter.trim();
 
       if (questions.length > 0) {
-        payload.answers = questions.flatMap(q => {
+        payload.answers = questions.map(q => {
           const ans = answers[q.id];
-          if (!ans) return [];
+          if (!ans) return null;
+          const entry = { questionId: q.id };
           if (q.type === 'TEXT') {
-            const text = ans.textAnswer?.trim();
-            return text ? [{ questionId: q.id, textAnswer: text }] : [];
+            entry.textAnswer = ans.textAnswer || '';
+          } else if (q.type === 'MULTIPLE_CHOICE') {
+            // For multiple choice, send multiple answer entries
+            // But backend expects single answer per question, pick first selected
+            entry.optionId = ans.optionId || undefined;
+          } else {
+            entry.optionId = ans.optionId || undefined;
           }
-          if (q.type === 'MULTIPLE_CHOICE') {
-            // Send one entry per selected option
-            const selected = ans.optionIds || [];
-            return selected.map(optId => ({ questionId: q.id, optionId: optId }));
-          }
-          // SINGLE_CHOICE, YES_NO
-          return ans.optionId ? [{ questionId: q.id, optionId: ans.optionId }] : [];
-        });
+          return entry;
+        }).filter(Boolean);
       }
 
       const result = await applyToJob(job.id, payload);
@@ -87,6 +88,11 @@ export default function JobDetailPage({ job, navigate }) {
         setApplied(true);
         setShowApplyModal(false);
         setShowModal(true);
+      } else if (result.isDuplicate) {
+        // BUG-03: candidatura duplicada — fecha modal e mostra estado de já candidatado
+        setApplied(true);
+        setShowApplyModal(false);
+        setSubmitError('');
       } else {
         setSubmitError(result.message || 'Erro ao enviar candidatura.');
       }
@@ -110,7 +116,6 @@ export default function JobDetailPage({ job, navigate }) {
       const a = answers[q.id];
       if (!a) return false;
       if (q.type === 'TEXT') return a.textAnswer && a.textAnswer.trim();
-      if (q.type === 'MULTIPLE_CHOICE') return a.optionIds && a.optionIds.length > 0;
       return a.optionId;
     });
   };
@@ -144,16 +149,17 @@ export default function JobDetailPage({ job, navigate }) {
         </div>
       </div>
 
-      {/* Quick nav */}
+      {/* Quick nav — BUG-15: só mostra login/registro se não estiver logado */}
       <div style={{ background: "white", borderBottom: "1px solid #e8edf2" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "10px 20px", display: "flex", gap: isMobile ? 12 : 20, justifyContent: "center", flexWrap: "wrap" }}>
-          {[
-            { label: "Login", action: () => navigate("login") },
-            { label: "Registre seu CV", action: () => navigate("register") },
-            { label: "Recrutamento", action: () => navigate("login") },
-          ].map((item) => (
-            <button key={item.label} onClick={item.action} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>{item.label}</button>
-          ))}
+          {!user && <>
+            <button onClick={() => navigate("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>Login</button>
+            <button onClick={() => navigate("register")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>Registre seu CV</button>
+          </>}
+          {user && (
+            <button onClick={() => navigate(user.role === 'CANDIDATE' ? 'dashboard-candidato' : 'dashboard-recrutador')} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>Meu Painel</button>
+          )}
+          <button onClick={() => navigate("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>Recrutamento</button>
         </div>
       </div>
 
@@ -161,21 +167,21 @@ export default function JobDetailPage({ job, navigate }) {
         <h2 style={{ textAlign: "center", fontSize: isMobile ? 20 : 26, fontWeight: 800, color: "#1e3a6e", marginBottom: 24 }}>Detalhes da vaga</h2>
 
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "220px 1fr", gap: 28 }}>
-          {/* Sidebar */}
+          {/* Sidebar — BUG-16: filtros funcionais que navegam para VagasPage */}
           {!isMobile && (
             <div>
               {[
-                { title: "TIPO DE VAGA", options: ["Remoto", "Presencial", "Hibrido"] },
-                { title: "NIVEL", options: ["Estagio", "Junior", "Pleno", "Senior"] },
-                { title: "LOCALIZACAO", options: ["Sao Paulo, SP", "Rio de Janeiro, RJ", "Belo Horizonte, MG", "Curitiba, PR", "Florianopolis, SC", "Porto Alegre, RS", "Campinas, SP", "Recife, PE", "Salvador, BA", "Manaus, AM", "Brasilia, DF", "Goiania, GO"] }
+                { title: "TIPO DE VAGA", options: ["Remoto", "Presencial", "Híbrido"] },
+                { title: "NÍVEL", options: ["Estágio", "Júnior", "Pleno", "Sênior"] },
+                { title: "LOCALIZAÇÃO", options: ["São Paulo, SP", "Rio de Janeiro, RJ", "Belo Horizonte, MG", "Curitiba, PR", "Florianópolis, SC", "Porto Alegre, RS"] }
               ].map(section => (
                 <div key={section.title} style={{ background: "white", border: "1px solid #e8edf2", borderRadius: 12, padding: 16, marginBottom: 16 }}>
                   <h4 style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: 1, margin: "0 0 10px", textTransform: "uppercase" }}>{section.title}</h4>
                   {section.options.map(opt => (
-                    <label key={opt} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 8, fontSize: 13 }}>
-                      <input type="checkbox" style={{ cursor: "pointer" }} readOnly />
+                    <button key={opt} onClick={() => navigate("vagas")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 8, fontSize: 13, background: "none", border: "none", padding: 0, width: "100%", textAlign: "left" }}>
+                      <span style={{ width: 14, height: 14, borderRadius: 3, border: "1.5px solid #d0dae4", flexShrink: 0, display: "inline-block" }} />
                       <span style={{ color: "#444" }}>{opt}</span>
-                    </label>
+                    </button>
                   ))}
                 </div>
               ))}
@@ -184,15 +190,13 @@ export default function JobDetailPage({ job, navigate }) {
 
           {/* Main content */}
           <div>
-            <div style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", padding: isMobile ? 24 : 28 }}>
+            <div style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", padding: isMobile ? 20 : 28 }}>
               {/* Header bar */}
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, gap: 8, flexWrap: "wrap" }}>
-                <button aria-label="Compartilhar vaga" style={{ background: "none", border: "1px solid #d0d8e4", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#555" }}>
+                <button style={{ background: "none", border: "1px solid #d0d8e4", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#555" }}>
                   Compartilhar
                 </button>
-                <button
-                  aria-label={isSaved ? "Remover vaga salva" : "Salvar vaga"}
-                  onClick={() => user ? toggleSaveJob(job.id) : navigate("login")}
+                <button onClick={() => user ? toggleSaveJob(job.id) : navigate("login")}
                   style={{ background: "none", border: "1px solid #d0d8e4", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600, color: isSaved ? "#1e4a8a" : "#555" }}>
                   {isSaved ? "Salvo" : "Salvar"}
                 </button>
@@ -202,16 +206,10 @@ export default function JobDetailPage({ job, navigate }) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, color: "#1e4a8a", margin: "0 0 8px" }}>{job.title}</h2>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
-                    <span style={{ fontSize: 13, color: "#555" }}>Local: {job.location || 'A definir'}</span>
-                    <span style={{ fontSize: 13, color: "#555" }}>Nível: {job.level}</span>
-                    {job.type && <span style={{ fontSize: 13, color: "#555" }}>Modalidade: {job.type}</span>}
-                    {job.contract && <span style={{ fontSize: 13, color: "#555" }}>Contrato: {job.contract}</span>}
-                    {job.salary && (
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#276749', background: '#f0ffe4', borderRadius: 20, padding: '3px 10px' }}>
-                        💰 {job.salary}
-                      </span>
-                    )}
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
+                    <span style={{ fontSize: 13, color: "#555" }}>Local: {job.location}</span>
+                    <span style={{ fontSize: 13, color: "#555" }}>Nivel: {job.level}</span>
+                    <span style={{ fontSize: 13, color: "#2e7d32", fontWeight: 600 }}>Salario: {job.salary}</span>
                   </div>
                   <p style={{ fontSize: 13.5, color: "#555", lineHeight: 1.6, margin: 0 }}>{job.description}</p>
                 </div>
@@ -257,8 +255,7 @@ export default function JobDetailPage({ job, navigate }) {
                 background: isApplied ? "#38a169" : "linear-gradient(135deg, #1e4a8a, #4a9edd)",
                 color: "white", border: "none", borderRadius: 10,
                 padding: "14px 28px", cursor: isApplied ? "default" : "pointer",
-                fontWeight: 700, fontSize: 14, width: isMobile ? "100%" : "auto",
-                transition: 'background 0.3s ease',
+                fontWeight: 700, fontSize: 14, width: isMobile ? "100%" : "auto"
               }}>
                 {isApplied ? "Candidatura enviada!" : "Aplicar para a Vaga"}
               </button>
@@ -273,8 +270,8 @@ export default function JobDetailPage({ job, navigate }) {
 
       {/* Apply Modal — Screening Questions Flow */}
       {showApplyModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center", zIndex: 2000, padding: isMobile ? 0 : "20px" }}>
-          <div style={{ background: "white", borderRadius: isMobile ? "20px 20px 0 0" : 20, padding: isMobile ? 24 : 36, maxWidth: isMobile ? "100%" : 560, width: "100%", maxHeight: isMobile ? 'calc(100vh - 60px)' : '90vh', overflowY: 'auto', boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "20px" }}>
+          <div style={{ background: "white", borderRadius: 20, padding: isMobile ? 24 : 36, maxWidth: 560, width: "100%", maxHeight: '90vh', overflowY: 'auto', boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
 
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
@@ -402,30 +399,21 @@ export default function JobDetailPage({ job, navigate }) {
                           </div>
                         )}
 
-                        {/* MULTIPLE_CHOICE — múltipla seleção com checkboxes */}
+                        {/* MULTIPLE_CHOICE type — select one for backend compatibility */}
                         {q.type === 'MULTIPLE_CHOICE' && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {(q.options || []).map(opt => {
-                              const selected = answers[q.id]?.optionIds || []
-                              const isChecked = selected.includes(opt.id)
-                              const toggleOption = () => {
-                                const next = isChecked
-                                  ? selected.filter(id => id !== opt.id)
-                                  : [...selected, opt.id]
-                                setAnswer(q.id, { optionIds: next })
-                              }
-                              return (
-                                <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 12px', borderRadius: 8, border: isChecked ? '2px solid #1e4a8a' : '1.5px solid #e8edf2', background: isChecked ? '#e8f2fc' : 'white' }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={toggleOption}
-                                    style={{ accentColor: '#1e4a8a', cursor: 'pointer' }}
-                                  />
-                                  <span style={{ fontSize: 13, color: '#334' }}>{opt.label}</span>
-                                </label>
-                              )
-                            })}
+                            {(q.options || []).map(opt => (
+                              <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 12px', borderRadius: 8, border: answers[q.id]?.optionId === opt.id ? '2px solid #1e4a8a' : '1.5px solid #e8edf2', background: answers[q.id]?.optionId === opt.id ? '#e8f2fc' : 'white' }}>
+                                <input
+                                  type="radio"
+                                  name={`q-${q.id}`}
+                                  checked={answers[q.id]?.optionId === opt.id}
+                                  onChange={() => setAnswer(q.id, { optionId: opt.id })}
+                                  style={{ accentColor: '#1e4a8a' }}
+                                />
+                                <span style={{ fontSize: 13, color: '#334' }}>{opt.label}</span>
+                              </label>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -477,10 +465,20 @@ export default function JobDetailPage({ job, navigate }) {
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#778899', marginBottom: 12, textTransform: 'uppercase' }}>Respostas</div>
                     {questions.map((q, idx) => {
                       const a = answers[q.id];
-                      let answerText = 'Nao respondida';
+                      let answerText = 'Não respondida';
                       if (a) {
-                        if (q.type === 'TEXT') answerText = a.textAnswer || 'Nao respondida';
-                        else if (a.optionId) {
+                        if (q.type === 'TEXT') {
+                          answerText = a.textAnswer || 'Não respondida';
+                        } else if (q.type === 'MULTIPLE_CHOICE') {
+                          // BUG-11: MULTIPLE_CHOICE usa optionIds (array) ou optionId
+                          const selectedIds = a.optionIds?.length ? a.optionIds : (a.optionId ? [a.optionId] : []);
+                          if (selectedIds.length > 0) {
+                            answerText = selectedIds
+                              .map(id => (q.options || []).find(o => o.id === id)?.label)
+                              .filter(Boolean)
+                              .join(', ') || 'Selecionada';
+                          }
+                        } else if (a.optionId) {
                           const opt = (q.options || []).find(o => o.id === a.optionId);
                           answerText = opt?.label || 'Selecionada';
                         }

@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useJobs } from '../context/JobsContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { profileApi, applicationsApi, coursesApi, documentsApi } from '../services/api'
-import { getStageLabel, getStageColor, getStageBackground, getStageProgress, pipelineSteps, getStageStepIndex, PIPELINE_STAGES, normalizeStage } from '../utils/applicationStages'
+import { profileApi, applicationsApi, coursesApi } from '../services/api'
+import { getStageLabel, getStageColor, getStageProgress, pipelineSteps, getStageStepIndex } from '../utils/applicationStages'
 
 const menuItems = [
   { id: 'resumo',       icon: '🏠', label: 'Resumo' },
@@ -12,7 +12,6 @@ const menuItems = [
   { id: 'cv',           icon: '📄', label: 'Meu CV' },
   { id: 'vagas',        icon: '🔍', label: 'Pesquisar Vagas' },
   { id: 'salvas',       icon: '🔖', label: 'Vagas Salvas' },
-  { id: 'documentos',   icon: '📑', label: 'Meus Documentos' },
   { id: 'cursos',       icon: '🎓', label: 'Meus Cursos' },
 ]
 
@@ -24,15 +23,8 @@ function formatDate(iso) {
 
 export default function CandidatoDashboard({ navigate }) {
   const { user, logout, savedJobs, toggleSaveJob } = useAuth()
-  const { jobs, loading: jobsLoading } = useJobs()
+  const { jobs } = useJobs()
   const { isMobile } = useBreakpoint()
-  const timersRef = useRef([])
-  const safeTimeout = useCallback((fn, ms) => {
-    const id = setTimeout(fn, ms)
-    timersRef.current.push(id)
-    return id
-  }, [])
-  useEffect(() => () => timersRef.current.forEach(clearTimeout), [])
   const [activeSection, setActiveSection] = useState('resumo')
   const [keyword, setKeyword] = useState('')
   const [cvUrl, setCvUrl] = useState('')
@@ -49,11 +41,6 @@ export default function CandidatoDashboard({ navigate }) {
   // Cursos matriculados
   const [enrollments, setEnrollments] = useState([])
   const [enrollmentsLoading, setEnrollmentsLoading] = useState(false)
-
-  // Documentos recebidos
-  const [receivedDocs, setReceivedDocs] = useState([])
-  const [receivedDocsLoading, setReceivedDocsLoading] = useState(false)
-  const [receivedDocsLoaded, setReceivedDocsLoaded] = useState(false)
 
   // Campos do formulário de perfil
   const [phone, setPhone] = useState('')
@@ -129,28 +116,6 @@ export default function CandidatoDashboard({ navigate }) {
     [jobs, savedJobs]
   )
 
-  // Declarado antes do useEffect que o usa para evitar Temporal Dead Zone com const
-  const loadReceivedDocs = useCallback(async () => {
-    if (receivedDocsLoaded) return
-    setReceivedDocsLoading(true)
-    try {
-      const data = await documentsApi.listReceived()
-      setReceivedDocs(Array.isArray(data) ? data : [])
-      setReceivedDocsLoaded(true)
-    } catch {
-      setReceivedDocs([])
-    } finally {
-      setReceivedDocsLoading(false)
-    }
-  }, [receivedDocsLoaded])
-
-  // Lazy-load de documentos recebidos ao entrar na seção
-  useEffect(() => {
-    if (activeSection === 'documentos' && !receivedDocsLoaded && !receivedDocsLoading) {
-      loadReceivedDocs()
-    }
-  }, [activeSection, receivedDocsLoaded, receivedDocsLoading, loadReceivedDocs])
-
   const handleSaveProfile = async () => {
     setProfileLoading(true)
     setProfileSaved(false)
@@ -176,7 +141,7 @@ export default function CandidatoDashboard({ navigate }) {
         await profileApi.create(payload)
       }
       setProfileSaved(true)
-      safeTimeout(() => setProfileSaved(false), 3000)
+      setTimeout(() => setProfileSaved(false), 3000)
     } catch (err) {
       console.error('Erro ao salvar perfil:', err)
     } finally {
@@ -185,6 +150,9 @@ export default function CandidatoDashboard({ navigate }) {
   }
 
   const handleWithdraw = async (appId) => {
+    // BUG-12: confirmação antes de desistir
+    const confirmed = window.confirm('Tem certeza que deseja desistir desta vaga? Esta ação não pode ser desfeita.')
+    if (!confirmed) return
     try {
       await applicationsApi.withdraw(appId)
       setApplications(prev => prev.filter(a => a.id !== appId))
@@ -193,23 +161,9 @@ export default function CandidatoDashboard({ navigate }) {
     }
   }
 
-  const handleRespondDoc = async (sentDocumentId, status) => {
-    try {
-      await documentsApi.respond(sentDocumentId, status)
-      setReceivedDocs(prev => prev.map(d => d.id === sentDocumentId ? { ...d, status } : d))
-    } catch (err) {
-      console.error('Erro ao responder documento:', err)
-    }
-  }
-
-  const filteredJobs = jobs.filter(j => {
-    if (!keyword) return true
-    const kw = keyword.toLowerCase()
-    const titleMatch = j.title?.toLowerCase().includes(kw)
-    const companyName = typeof j.company === 'object' ? j.company?.name : (j.company || '')
-    const companyMatch = companyName?.toLowerCase().includes(kw)
-    return titleMatch || companyMatch
-  })
+  const filteredJobs = jobs.filter(j =>
+    !keyword || j.title.toLowerCase().includes(keyword.toLowerCase()) || (typeof j.company === 'object' && j.company ? j.company.name : (j.company || '')).toLowerCase().includes(keyword.toLowerCase())
+  )
 
   const sidebarWidth = 240
 
@@ -257,7 +211,7 @@ export default function CandidatoDashboard({ navigate }) {
           <div style={{ background: 'white', borderRadius: 16, padding: '28px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28, flexWrap: 'wrap' }}>
               <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: 'white', fontWeight: 800, flexShrink: 0 }}>
-                {(user?.name?.[0] || user?.email?.charAt(0) || '?').toUpperCase()}
+                {user?.name?.[0] || user?.email?.[0]?.toUpperCase()}
               </div>
               <div>
                 <div style={{ fontSize: 18, fontWeight: 800, color: '#1e3a6e' }}>{user?.name || user?.email?.split('@')[0]}</div>
@@ -363,7 +317,7 @@ export default function CandidatoDashboard({ navigate }) {
                       await profileApi.create({ fullName: user?.name || '', resumeUrl: formatUrl(cvUrl) })
                     }
                     setCvSaved(true)
-                    safeTimeout(() => setCvSaved(false), 3000)
+                    setTimeout(() => setCvSaved(false), 3000)
                   } catch (err) {
                     console.error('Erro ao salvar CV:', err)
                   } finally {
@@ -444,11 +398,7 @@ export default function CandidatoDashboard({ navigate }) {
       case 'salvas': return (
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Vagas Salvas</h2>
-          {jobsLoading ? (
-            <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center', color: '#778899', fontSize: 13 }}>
-              Carregando vagas...
-            </div>
-          ) : savedJobsList.length === 0 ? (
+          {savedJobsList.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
               <div style={{ fontSize: 48 }}>🔖</div>
               <p style={{ color: '#778899', marginTop: 12 }}>Nenhuma vaga salva ainda.</p>
@@ -494,67 +444,35 @@ export default function CandidatoDashboard({ navigate }) {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {applications.map(c => {
-                const isRejected = normalizeStage(c.stage) === 'REJECTED'
-                const currentStageIdx = getStageStepIndex(c.stage)
-                const stageColor = getStageColor(c.stage)
-                const stageBg = getStageBackground(c.stage)
+                const stepIdx = getStageStepIndex(c.stage)
+                const progress = getStageProgress(c.stage)
                 return (
-                  <div key={c.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)', borderLeft: `3px solid ${isRejected ? '#ef4444' : stageColor}` }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                  <div key={c.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                       <div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 2 }}>{c.title}</div>
-                        <div style={{ fontSize: 12.5, color: '#778899' }}>{c.company} · Inscrito em {c.date}</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 4 }}>{c.title}</div>
+                        <div style={{ fontSize: 13, color: '#778899' }}>{c.company} · Aplicado em {c.date}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, padding: '5px 14px', borderRadius: 20, background: isRejected ? '#fef2f2' : stageBg, color: isRejected ? '#ef4444' : stageColor }}>
-                          {isRejected ? 'Reprovado' : c.status}
-                        </span>
-                        {!isRejected && c.stage !== 'HIRED' && (
-                          <button onClick={() => handleWithdraw(c.id)}
-                            style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '5px 12px', cursor: 'pointer', fontWeight: 600, fontSize: 11 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: '5px 14px', borderRadius: 20, background: `${c.color}18`, color: c.color }}>{c.status}</span>
+                        {c.stage !== 'HIRED' && c.stage !== 'REJECTED' && (
+                          <button onClick={() => handleWithdraw(c.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '5px 12px', cursor: 'pointer', fontWeight: 600, fontSize: 11 }}>
                             Desistir
                           </button>
                         )}
                       </div>
                     </div>
-
-                    {/* 5-step pipeline progress */}
-                    {!isRejected && (
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-                          {PIPELINE_STAGES.map((s, i) => {
-                            const active = i <= currentStageIdx
-                            const isCurrent = i === currentStageIdx
-                            return (
-                              <div key={s.key} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                                  <div style={{
-                                    width: isCurrent ? 18 : 12, height: isCurrent ? 18 : 12,
-                                    borderRadius: '50%',
-                                    background: active ? stageColor : '#e0eaf4',
-                                    border: isCurrent ? `3px solid ${stageColor}` : '2px solid transparent',
-                                    boxShadow: isCurrent ? `0 0 0 3px ${stageBg}` : 'none',
-                                    transition: 'all 0.2s',
-                                    flexShrink: 0,
-                                  }} />
-                                  <span style={{ fontSize: 9, marginTop: 4, color: active ? stageColor : '#b0bec5', fontWeight: isCurrent ? 700 : 400, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                    {s.label}
-                                  </span>
-                                </div>
-                                {i < PIPELINE_STAGES.length - 1 && (
-                                  <div style={{ flex: 1, height: 2, background: i < currentStageIdx ? stageColor : '#e0eaf4', marginBottom: 14, transition: 'background 0.2s' }} />
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
+                    {/* Progress bar */}
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#aabbcc', marginBottom: 6 }}>
+                        {pipelineSteps.map((step, i) => (
+                          <span key={step} style={{ fontWeight: i <= stepIdx ? 700 : 400, color: c.stage === 'REJECTED' ? (i <= stepIdx ? '#ef4444' : '#ccc') : c.stage === 'HIRED' ? '#22c55e' : (i <= stepIdx ? '#1e4a8a' : '#ccc') }}>{step}</span>
+                        ))}
                       </div>
-                    )}
-                    {isRejected && (
-                      <div style={{ fontSize: 12, color: '#ef4444', background: '#fef2f2', borderRadius: 8, padding: '8px 12px' }}>
-                        Sua candidatura não avançou nesta seleção.
+                      <div style={{ height: 4, background: '#e8edf4', borderRadius: 4, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${progress ?? 14}%`, background: c.stage === 'REJECTED' ? '#ef4444' : c.stage === 'HIRED' ? '#22c55e' : '#1e4a8a', borderRadius: 4, transition: 'width 0.3s' }} />
                       </div>
-                    )}
+                    </div>
                   </div>
                 )
               })}
@@ -563,144 +481,160 @@ export default function CandidatoDashboard({ navigate }) {
         </div>
       )
 
-      case 'documentos': {
-        const docStatusLabel = { PENDING: 'Pendente', VIEWED: 'Visualizado', SIGNED: 'Assinado', REJECTED: 'Recusado' }
-        const docStatusColor = {
-          PENDING: ['#fef9c3', '#ca8a04'],
-          VIEWED:  ['#eff6ff', '#3b82f6'],
-          SIGNED:  ['#dcfce7', '#16a34a'],
-          REJECTED: ['#fee2e2', '#dc2626'],
-        }
-        const categoryLabel = {
-          DRESS_CODE: 'Código de Vestimenta',
-          WORK_CONTRACT: 'Contrato de Trabalho',
-          ADMISSION_DOCS: 'Documentos de Admissão',
-          REGISTRATION_INFO: 'Ficha de Registro',
-          OFFER_LETTER: 'Carta Proposta',
-          OTHER: 'Outro',
+      case 'cursos': {
+        const inProgress = enrollments.filter(e => (e.progress || 0) > 0 && (e.progress || 0) < 100)
+        const notStarted = enrollments.filter(e => (e.progress || 0) === 0)
+        const completed  = enrollments.filter(e => (e.progress || 0) >= 100)
+        const highlight  = inProgress[0] || notStarted[0] || null
+        const levelLabel = { BEGINNER: 'Iniciante', INTERMEDIATE: 'Intermediário', ADVANCED: 'Avançado' }
+
+        const CourseCard = ({ enr, isHighlight }) => {
+          const course   = enr.course || {}
+          const progress = enr.progress || 0
+          const isDone   = progress >= 100
+          const courseId = enr.courseId || course.id
+
+          return (
+            <div style={{
+              background: 'white', borderRadius: 16,
+              boxShadow: isHighlight ? '0 4px 20px rgba(30,74,138,0.12)' : '0 2px 8px rgba(30,74,138,0.06)',
+              overflow: 'hidden',
+              border: isHighlight ? '1.5px solid #c8daf0' : '1px solid #f0f4f8',
+              display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+            }}>
+              {/* Thumbnail */}
+              <div style={{
+                width: isMobile ? '100%' : 160, flexShrink: 0,
+                height: isMobile ? 120 : 'auto', minHeight: isMobile ? undefined : 130,
+                background: course.thumbnailUrl ? undefined : 'linear-gradient(135deg, #1e3a6e, #2a5298)',
+                position: 'relative', overflow: 'hidden',
+              }}>
+                {course.thumbnailUrl
+                  ? <img src={course.thumbnailUrl} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>🎓</div>
+                }
+                {isDone && (
+                  <div style={{ position: 'absolute', top: 8, left: 8, background: '#22c55e', color: 'white', fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 10px' }}>
+                    ✓ Concluído
+                  </div>
+                )}
+              </div>
+
+              {/* Conteúdo */}
+              <div style={{ flex: 1, padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  {isHighlight && !isDone && (
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#1a4f8a', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
+                      ▶ Continuar de onde parou
+                    </div>
+                  )}
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 4 }}>{course.title || 'Curso'}</div>
+                  <div style={{ fontSize: 12, color: '#778899' }}>
+                    {[course.category, levelLabel[course.level]].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+
+                {/* Progresso */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: isDone ? '#22c55e' : '#556', marginBottom: 6, fontWeight: 600 }}>
+                    <span>{isDone ? 'Curso concluído!' : `${progress}% concluído`}</span>
+                    {course.lessonsCount > 0 && (
+                      <span style={{ color: '#778899', fontWeight: 400 }}>
+                        {Math.round((progress / 100) * course.lessonsCount)}/{course.lessonsCount} aulas
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ height: 6, background: '#e8edf4', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${progress}%`, background: isDone ? '#22c55e' : 'linear-gradient(90deg, #1a4f8a, #4a9edd)', borderRadius: 3, transition: 'width 0.4s' }} />
+                  </div>
+                </div>
+
+                {/* Ações */}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => navigate(`curso-${courseId}`)}
+                    style={{
+                      background: isDone ? '#f0f4f8' : 'linear-gradient(135deg, #1a4f8a, #2a7ec8)',
+                      color: isDone ? '#556' : 'white',
+                      border: 'none', borderRadius: 24,
+                      padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+                    }}
+                  >
+                    {isDone ? 'Rever curso' : progress > 0 ? '▶ Continuar' : '▶ Iniciar'}
+                  </button>
+                  {isDone && (
+                    <button
+                      onClick={() => navigate(`curso-${courseId}`)}
+                      style={{ background: 'linear-gradient(135deg, #b8860b, #f0a500)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
+                    >
+                      🏆 Certificado
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
         }
 
         return (
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Meus Documentos</h2>
-            {receivedDocsLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 8 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>Meus Cursos</h2>
+              <button onClick={() => navigate('plataforma')} style={{ background: '#e8f2fc', color: '#1a4f8a', border: 'none', borderRadius: 24, padding: '8px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                + Explorar cursos
+              </button>
+            </div>
+
+            {enrollmentsLoading ? (
               <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-                <p style={{ color: '#778899' }}>Carregando documentos...</p>
+                <p style={{ color: '#778899' }}>Carregando cursos...</p>
               </div>
-            ) : receivedDocs.length === 0 ? (
-              <div style={{ background: 'white', borderRadius: 16, padding: 48, textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>📑</div>
-                <p style={{ color: '#778899', fontSize: 13 }}>Nenhum documento recebido ainda.</p>
-                <p style={{ color: '#9ca3af', fontSize: 12 }}>Os documentos enviados pela empresa aparecerão aqui.</p>
+            ) : enrollments.length === 0 ? (
+              <div style={{ background: 'white', borderRadius: 16, padding: '48px 40px', textAlign: 'center', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🎓</div>
+                <h3 style={{ color: '#1e3a6e', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Nenhum curso iniciado</h3>
+                <p style={{ color: '#778899', fontSize: 13, marginBottom: 20 }}>Explore a plataforma e inscreva-se em cursos para o varejo.</p>
+                <button onClick={() => navigate('plataforma')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                  Explorar cursos
+                </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {receivedDocs.map(sd => {
-                  const doc = sd.companyDocument || {}
-                  const company = doc.company || {}
-                  const [sBg, sColor] = docStatusColor[sd.status] || ['#f3f4f6', '#6b7280']
-                  const canRespond = sd.status === 'VIEWED' || sd.status === 'PENDING'
-                  return (
-                    <div key={sd.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            {company.logoUrl ? (
-                              <img src={company.logoUrl} alt={company.name} style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} />
-                            ) : (
-                              <div style={{ width: 28, height: 28, borderRadius: 6, background: '#e8f2fc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#1e4a8a' }}>
-                                {(company.name || 'E').charAt(0)}
-                              </div>
-                            )}
-                            <span style={{ fontSize: 13, color: '#778899' }}>{company.name || 'Empresa'}</span>
-                          </div>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 2 }}>{doc.title || 'Documento'}</div>
-                          <div style={{ fontSize: 12, color: '#778899', marginBottom: 6 }}>
-                            {categoryLabel[doc.category] || doc.category} · {doc.fileName} · Recebido em {new Date(sd.createdAt).toLocaleDateString('pt-BR')}
-                          </div>
-                          {sd.message && (
-                            <div style={{ fontSize: 12, background: '#f8fafc', borderRadius: 8, padding: '8px 12px', color: '#4b5563', marginBottom: 8, borderLeft: '3px solid #3b82f6' }}>
-                              "{sd.message}"
-                            </div>
-                          )}
-                          {doc.description && <div style={{ fontSize: 12, color: '#9ca3af' }}>{doc.description}</div>}
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: sBg, color: sColor }}>
-                            {docStatusLabel[sd.status] || sd.status}
-                          </span>
-                          <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={() => { if (sd.status === 'PENDING') documentsApi.markAsViewed(sd.id).then(() => setReceivedDocs(prev => prev.map(d => d.id === sd.id ? { ...d, status: 'VIEWED' } : d))).catch(() => {}) }}
-                            style={{ background: '#eff6ff', color: '#3b82f6', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12, textDecoration: 'none', display: 'inline-block' }}
-                          >
-                            Abrir documento
-                          </a>
-                          {canRespond && (
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <button onClick={() => handleRespondDoc(sd.id, 'SIGNED')} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Assinar</button>
-                              <button onClick={() => handleRespondDoc(sd.id, 'REJECTED')} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Recusar</button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                {/* Destaque: continuar de onde parou */}
+                {highlight && (
+                  <CourseCard enr={highlight} isHighlight={true} />
+                )}
+
+                {/* Em andamento (exceto o destaque) */}
+                {inProgress.filter(e => e !== highlight).length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#778899', textTransform: 'uppercase', letterSpacing: 1 }}>Em andamento</div>
+                    {inProgress.filter(e => e !== highlight).map(enr => <CourseCard key={enr.id} enr={enr} />)}
+                  </>
+                )}
+
+                {/* Não iniciados */}
+                {notStarted.filter(e => e !== highlight).length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#778899', textTransform: 'uppercase', letterSpacing: 1 }}>Não iniciados</div>
+                    {notStarted.filter(e => e !== highlight).map(enr => <CourseCard key={enr.id} enr={enr} />)}
+                  </>
+                )}
+
+                {/* Concluídos */}
+                {completed.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#778899', textTransform: 'uppercase', letterSpacing: 1 }}>Concluídos 🏆</div>
+                    {completed.map(enr => <CourseCard key={enr.id} enr={enr} />)}
+                  </>
+                )}
+
               </div>
             )}
           </div>
         )
       }
-
-      case 'cursos': return (
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Meus Cursos</h2>
-          {enrollmentsLoading ? (
-            <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <p style={{ color: '#778899' }}>Carregando cursos...</p>
-            </div>
-          ) : enrollments.length === 0 ? (
-            <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>🎓</div>
-              <p style={{ color: '#778899', marginTop: 12 }}>Você ainda não está matriculado em nenhum curso.</p>
-              <button onClick={() => navigate('plataforma')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
-                Explorar cursos
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {enrollments.map(enr => {
-                const course = enr.course || {}
-                const progress = enr.progress || 0
-                return (
-                  <div key={enr.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 4 }}>{course.title || 'Curso'}</div>
-                        <div style={{ fontSize: 13, color: '#778899', marginBottom: 8 }}>
-                          {[course.category, course.level && { BEGINNER: 'Iniciante', INTERMEDIATE: 'Intermediário', ADVANCED: 'Avançado' }[course.level]].filter(Boolean).join(' · ')}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ flex: 1, height: 6, background: '#e8edf4', borderRadius: 3 }}>
-                            <div style={{ height: '100%', background: progress >= 100 ? '#22c55e' : 'linear-gradient(90deg, #1e4a8a, #4a9edd)', borderRadius: 3, width: `${progress}%`, transition: 'width 0.3s' }} />
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: progress >= 100 ? '#22c55e' : '#1e4a8a', flexShrink: 0 }}>{progress}%</span>
-                        </div>
-                      </div>
-                      <button onClick={() => navigate(`curso-${enr.courseId || course.id}`)} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-                        {progress > 0 ? 'Continuar' : 'Iniciar'}
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )
 
       default: return null
     }
