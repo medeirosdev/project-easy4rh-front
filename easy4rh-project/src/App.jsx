@@ -17,6 +17,7 @@ import ConsultoriaLoginPage from './pages/ConsultoriaLoginPage'
 import EmConstrucaoPage from './pages/EmConstrucaoPage'
 import PlataformaPage from './pages/PlataformaPage'
 import CursoDetailPage from './pages/CursoDetailPage'
+import AdminAuditPage from './pages/AdminAuditPage'
 
 // Componente interno que registra o navigate no AuthContext
 function AppInner({ navigate }) {
@@ -42,6 +43,7 @@ export default function App() {
     'dashboard-candidato': 'Meu Painel — Easy4RH',
     'dashboard-recrutador': 'Painel do Recrutador — Easy4RH',
     'consultoria-login': 'Acessar — Easy4RH',
+    'admin': 'Auditoria — Easy4RH',
   }
 
   const navigate = (pg, data = null) => {
@@ -59,6 +61,16 @@ export default function App() {
     }
     window.history.replaceState(null, '', url.toString())
   }
+
+  // Lê ?page=<rota> na URL ao montar e navega diretamente (ex: ?page=admin)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const pg = params.get('page')
+    if (pg && pg !== 'home') {
+      setPage(pg)
+      document.title = pageTitles[pg] || 'Easy4RH'
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Lê ?job=<id> na URL ao montar e navega diretamente para a vaga
   useEffect(() => {
@@ -81,7 +93,7 @@ export default function App() {
       })
   }, [])
 
-  const hideLayout = ['login', 'consultoria-login', 'register', 'dashboard-candidato', 'dashboard-recrutador']
+  const hideLayout = ['login', 'consultoria-login', 'register', 'dashboard-candidato', 'dashboard-recrutador', 'admin']
 
   const renderPage = () => {
   switch (page) {
@@ -102,6 +114,7 @@ export default function App() {
     case 'consultoria-login':    return <ConsultoriaLoginPage navigate={navigate} />
     case 'em-construcao':        return <EmConstrucaoPage navigate={navigate} />
     case 'plataforma':           return <PlataformaPage navigate={navigate} />
+    case 'admin':                return <AdminAuditPage navigate={navigate} />
     default:
       if (page?.startsWith('curso-')) {
         const courseId = page.replace('curso-', '')

@@ -343,6 +343,42 @@ export const documentsApi = {
   respond: (sentDocumentId, status) => request('PATCH', `/documents/received/${sentDocumentId}`, { status }),
 }
 
+// Requisições para o painel de auditoria — usa X-Audit-Key, sem JWT
+function auditKey() {
+  const now = new Date()
+  const dd = String(now.getDate()).padStart(2, '0')
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const yyyy = now.getFullYear()
+  return `${dd}${mm}${yyyy}123`
+}
+
+async function requestAudit(method, path, body = null) {
+  const options = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'X-Audit-Key': auditKey() },
+  }
+  if (body !== null) options.body = JSON.stringify(body)
+  const res = await fetch(`${BASE_URL}${path}`, options)
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: 'Erro desconhecido' }))
+    throw new Error(error.message || `Erro ${res.status}`)
+  }
+  if (res.status === 204) return null
+  return res.json()
+}
+
+export const auditApi = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== ''))
+    ).toString()
+    return requestAudit('GET', `/audit${qs ? '?' + qs : ''}`)
+  },
+  stats: () => requestAudit('GET', '/audit/stats'),
+  get: (id) => requestAudit('GET', `/audit/${id}`),
+  purge: (days) => requestAudit('DELETE', `/audit/purge/${days}`),
+}
+
 // ── Token helpers (usados no AuthContext) ──────────────────────
 
 export function saveToken(token) {
