@@ -109,31 +109,12 @@ async function requestFormData(method, path, formData) {
 // Auth
 
 export const authApi = {
-  /**
-   * Registrar novo usuário (candidato)
-   * POST /users
-   */
   register: (data) => request('POST', '/users', data),
-  // data: { email, password, role?: 'CANDIDATE' | 'RECRUITER' }
-
-  /**
-   * Login — retorna { access_token }
-   * POST /auth/login
-   */
-  login: (email, password) =>
-    request('POST', '/auth/login', { email, password }),
-
-  /**
-   * Buscar perfil do usuário logado
-   * GET /users/:id
-   */
+  login: (email, password) => request('POST', '/auth/login', { email, password }),
   getUser: (id) => request('GET', `/users/${id}`),
-
-  /**
-   * Atualizar usuário
-   * PATCH /users/:id
-   */
   updateUser: (id, data) => request('PATCH', `/users/${id}`, data),
+  requestPasswordReset: (email) => request('POST', '/auth/password-reset/request', { email }),
+  confirmPasswordReset: (token, newPassword) => request('POST', '/auth/password-reset/confirm', { token, newPassword }),
 }
 
 // ── Jobs (Vagas) ──────────────────────────────────────────────

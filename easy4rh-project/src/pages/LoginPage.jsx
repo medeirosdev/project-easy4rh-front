@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { authApi } from "../services/api";
 
 export default function LoginPage({ navigate, initialTab }) {
   const { login, loginRecruiter, loginInstructor } = useAuth();
@@ -8,12 +9,32 @@ export default function LoginPage({ navigate, initialTab }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStep, setForgotStep] = useState("input");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState("");
+
+  const handleForgotSubmit = async () => {
+    if (!forgotEmail) { setForgotError("Informe seu e-mail."); return; }
+    setForgotLoading(true);
+    setForgotError("");
+    try {
+      await authApi.requestPasswordReset(forgotEmail);
+      setForgotStep("sent");
+    } catch (err) {
+      setForgotError(err.message || "Erro ao enviar. Tente novamente.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const closeForgot = () => { setForgotOpen(false); setForgotStep("input"); setForgotEmail(""); setForgotError(""); };
 
   const handleSubmit = async () => {
     setError("");
     if (!email || !password) { setError("Preencha todos os campos."); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 800));
     const fn = tab === "candidate" ? login : tab === "instructor" ? loginInstructor : loginRecruiter;
     const result = await fn(email, password);
     setLoading(false);
@@ -47,10 +68,10 @@ export default function LoginPage({ navigate, initialTab }) {
       {/* Quick nav */}
       <div style={{ background: "white", borderBottom: "1px solid #e8edf2", textAlign: "center", padding: "12px 20px" }}>
         {[
-          { label: "🔐 Login",          action: () => { setTab("candidate"); } },
-          { label: "📝 Registre seu CV", action: () => navigate("register") },
-          { label: "🔍 Recrutamento",    action: () => { setTab("recruiter"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
-          { label: "🎓 Instrutor",       action: () => { setTab("instructor"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
+          { label: "Login",           action: () => { setTab("candidate"); } },
+          { label: "Registre seu CV", action: () => navigate("register") },
+          { label: "Recrutamento",    action: () => { setTab("recruiter"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
+          { label: "Instrutor",       action: () => { setTab("instructor"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
         ].map((item) => (
           <button key={item.label} onClick={item.action} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13.5, fontWeight: 600, margin: "0 16px" }}>
             {item.label}
@@ -100,7 +121,7 @@ export default function LoginPage({ navigate, initialTab }) {
                 style={{ width: "100%", border: "1px solid #d0d8e4", borderRadius: 8, padding: "13px 16px", fontSize: 14, outline: "none", boxSizing: "border-box", background: "white" }}
               />
             </div>
-            <button style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, marginBottom: 20 }}>
+            <button onClick={() => setForgotOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, marginBottom: 20 }}>
               Esqueceu sua senha?
             </button>
             <button onClick={handleSubmit} disabled={loading} style={{
@@ -185,6 +206,44 @@ export default function LoginPage({ navigate, initialTab }) {
           </div>
         </div>
       </div>
+
+      {/* Forgot password modal */}
+      {forgotOpen && (
+        <div onClick={closeForgot} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "white", borderRadius: 16, padding: "36px 32px", width: "100%", maxWidth: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            {forgotStep === "sent" ? (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>✉️</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1e3a6e", marginBottom: 8 }}>E-mail enviado!</h3>
+                <p style={{ fontSize: 14, color: "#556677", marginBottom: 24 }}>Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.</p>
+                <button onClick={closeForgot} style={{ background: "#1e3a6e", color: "white", border: "none", borderRadius: 10, padding: "12px 28px", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>Fechar</button>
+              </div>
+            ) : (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: "#1e3a6e", marginBottom: 8, marginTop: 0 }}>Redefinir senha</h3>
+                <p style={{ fontSize: 13.5, color: "#556677", marginBottom: 20 }}>Informe seu e-mail e enviaremos um link para redefinir sua senha.</p>
+                {forgotError && (
+                  <div style={{ background: "#fee", border: "1px solid #fcc", borderRadius: 8, padding: "10px 14px", color: "#c00", fontSize: 13, marginBottom: 16 }}>{forgotError}</div>
+                )}
+                <input
+                  type="email"
+                  placeholder="Seu e-mail"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleForgotSubmit()}
+                  style={{ width: "100%", border: "1px solid #d0d8e4", borderRadius: 8, padding: "13px 16px", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 16 }}
+                />
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={closeForgot} style={{ flex: 1, background: "#f0f4f8", color: "#556677", border: "none", borderRadius: 10, padding: "12px", cursor: "pointer", fontWeight: 600, fontSize: 14 }}>Cancelar</button>
+                  <button onClick={handleForgotSubmit} disabled={forgotLoading} style={{ flex: 1, background: forgotLoading ? "#aaa" : "#1e3a6e", color: "white", border: "none", borderRadius: 10, padding: "12px", cursor: forgotLoading ? "default" : "pointer", fontWeight: 700, fontSize: 14 }}>
+                    {forgotLoading ? "Enviando..." : "Enviar link"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

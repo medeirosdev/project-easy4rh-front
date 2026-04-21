@@ -7,19 +7,19 @@ import { getStageLabel, getStageColor, getStageBackground, PIPELINE_STAGES, norm
 import JobPosterModal from '../components/JobPosterModal'
 
 const recruiterMenuItems = [
-  { id: 'resumo',      icon: '🏠', label: 'Resumo' },
-  { id: 'empresa',     icon: '🏢', label: 'Minha Empresa' },
-  { id: 'publicar',    icon: '➕', label: 'Publicar Vaga' },
-  { id: 'vagas',       icon: '📢', label: 'Vagas Publicadas' },
-  { id: 'aplicacoes',  icon: '📋', label: 'Aplicações' },
-  { id: 'documentos',  icon: '📄', label: 'Documentos' },
-  { id: 'talentos',    icon: '🌟', label: 'Banco de Talentos' },
-  { id: 'cursos',      icon: '🎓', label: 'Cursos' },
+  { id: 'resumo',      label: 'Resumo' },
+  { id: 'empresa',     label: 'Minha Empresa' },
+  { id: 'publicar',    label: 'Publicar Vaga' },
+  { id: 'vagas',       label: 'Vagas Publicadas' },
+  { id: 'aplicacoes',  label: 'Aplicações' },
+  { id: 'documentos',  label: 'Documentos' },
+  { id: 'talentos',    label: 'Banco de Talentos' },
+  { id: 'cursos',      label: 'Cursos' },
 ]
 
 const instructorMenuItems = [
-  { id: 'resumo',      icon: '🏠', label: 'Resumo' },
-  { id: 'cursos',      icon: '🎓', label: 'Meus Cursos' },
+  { id: 'resumo',      label: 'Resumo' },
+  { id: 'cursos',      label: 'Meus Cursos' },
 ]
 
 const jobTypes = [
@@ -732,19 +732,18 @@ export default function RecrutadorDashboard({ navigate }) {
       case 'resumo': return (
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>
-            Olá, {user?.name?.split(' ')[0]} 👋
+            Olá, {user?.name?.split(' ')[0]}
           </h2>
 
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
             {[
-              { label: 'Vagas ativas', value: vagasAtivas, icon: '📢', color: '#1e4a8a' },
-              { label: 'Total de aplicações', value: totalAplicacoes, icon: '📋', color: '#f0a500' },
-              { label: 'Aprovados', value: aprovados, icon: '✅', color: '#22c55e' },
-              { label: 'Talentos no banco', value: '—', icon: '🌟', color: '#8b5cf6' },
+              { label: 'Vagas ativas', value: vagasAtivas, color: '#1e4a8a' },
+              { label: 'Total de aplicações', value: totalAplicacoes, color: '#f0a500' },
+              { label: 'Aprovados', value: aprovados, color: '#22c55e' },
+              { label: 'Talentos no banco', value: '—', color: '#8b5cf6' },
             ].map((s) => (
               <div key={s.label} style={{ background: 'white', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', borderTop: `3px solid ${s.color}` }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>{s.icon}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
                 <div style={{ fontSize: 12, color: '#778899', marginTop: 2 }}>{s.label}</div>
               </div>
@@ -795,13 +794,13 @@ export default function RecrutadorDashboard({ navigate }) {
         const companySizes = [
           { label: 'Startup', value: 'STARTUP' },
           { label: 'Pequena', value: 'SMALL' },
-          { label: 'Media', value: 'MEDIUM' },
+          { label: 'Média', value: 'MEDIUM' },
           { label: 'Grande', value: 'LARGE' },
           { label: 'Enterprise', value: 'ENTERPRISE' },
         ]
         const legalNatures = [
           { label: 'Privada', value: 'PRIVATE' },
-          { label: 'Publica', value: 'PUBLIC' },
+          { label: 'Pública', value: 'PUBLIC' },
           { label: 'ONG', value: 'NGO' },
           { label: 'Cooperativa', value: 'COOPERATIVE' },
           { label: 'Outra', value: 'OTHER' },
@@ -844,8 +843,8 @@ export default function RecrutadorDashboard({ navigate }) {
                   <input style={inp} value={companyForm.name} onChange={e => setCompanyForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Easy4RH Ltda" />
                 </div>
                 <div>
-                  <label style={lbl}>Razao Social</label>
-                  <input style={inp} value={companyForm.razaoSocial} onChange={e => setCompanyForm(p => ({ ...p, razaoSocial: e.target.value }))} placeholder="Razao social" />
+                  <label style={lbl}>Razão Social</label>
+                  <input style={inp} value={companyForm.razaoSocial} onChange={e => setCompanyForm(p => ({ ...p, razaoSocial: e.target.value }))} placeholder="Razão social" />
                 </div>
                 <div>
                   <label style={lbl}>CNPJ</label>
@@ -876,21 +875,21 @@ export default function RecrutadorDashboard({ navigate }) {
               </div>
 
               <div style={{ marginBottom: 16 }}>
-                <label style={lbl}>Descricao</label>
+                <label style={lbl}>Descrição</label>
                 <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={companyForm.description} onChange={e => setCompanyForm(p => ({ ...p, description: e.target.value }))} placeholder="Descreva a empresa, o que faz, qual o diferencial..." />
               </div>
             </div>
 
-            {/* Endereco */}
+            {/* Endereço */}
             <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Endereco</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Endereço</h3>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 120px 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
                   <label style={lbl}>Rua / Avenida</label>
-                  <input style={inp} value={companyForm.address} onChange={e => setCompanyForm(p => ({ ...p, address: e.target.value }))} placeholder="Endereco" />
+                  <input style={inp} value={companyForm.address} onChange={e => setCompanyForm(p => ({ ...p, address: e.target.value }))} placeholder="Endereço" />
                 </div>
                 <div>
-                  <label style={lbl}>Numero</label>
+                  <label style={lbl}>Número</label>
                   <input style={inp} value={companyForm.addressNumber} onChange={e => setCompanyForm(p => ({ ...p, addressNumber: e.target.value }))} placeholder="123" />
                 </div>
                 <div>
@@ -921,12 +920,12 @@ export default function RecrutadorDashboard({ navigate }) {
               </div>
             </div>
 
-            {/* Missao, Valores */}
+            {/* Missão, Valores */}
             <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8edf2', padding: isMobile ? 20 : 28, marginBottom: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Missao e Valores</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 20 }}>Missão e Valores</h3>
               <div style={{ marginBottom: 16 }}>
-                <label style={lbl}>Missao</label>
-                <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={companyForm.mission} onChange={e => setCompanyForm(p => ({ ...p, mission: e.target.value }))} placeholder="Qual a missao da empresa?" />
+                <label style={lbl}>Missão</label>
+                <textarea style={{ ...inp, resize: 'vertical' }} rows={3} value={companyForm.mission} onChange={e => setCompanyForm(p => ({ ...p, mission: e.target.value }))} placeholder="Qual a missão da empresa?" />
               </div>
               <div>
                 <label style={lbl}>Valores</label>
@@ -1742,12 +1741,11 @@ export default function RecrutadorDashboard({ navigate }) {
                   {/* Stats cards */}
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
                     {[
-                      { label: 'Alunos matriculados', value: courseStats?.totalStudents ?? courseStudents.length, icon: '👥', color: '#1e4a8a' },
-                      { label: 'Taxa de conclusão', value: courseStats?.completionRate != null ? `${Math.round(courseStats.completionRate)}%` : '—', icon: '📊', color: '#22c55e' },
-                      { label: 'Progresso médio', value: courseStats?.averageProgress != null ? `${Math.round(courseStats.averageProgress)}%` : '—', icon: '📈', color: '#f0a500' },
+                      { label: 'Alunos matriculados', value: courseStats?.totalStudents ?? courseStudents.length, color: '#1e4a8a' },
+                      { label: 'Taxa de conclusão', value: courseStats?.completionRate != null ? `${Math.round(courseStats.completionRate)}%` : '—', color: '#22c55e' },
+                      { label: 'Progresso médio', value: courseStats?.averageProgress != null ? `${Math.round(courseStats.averageProgress)}%` : '—', color: '#f0a500' },
                     ].map(s => (
                       <div key={s.label} style={{ background: 'white', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', borderTop: `3px solid ${s.color}` }}>
-                        <div style={{ fontSize: 24, marginBottom: 8 }}>{s.icon}</div>
                         <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
                         <div style={{ fontSize: 12, color: '#778899', marginTop: 2 }}>{s.label}</div>
                       </div>
@@ -1998,8 +1996,7 @@ export default function RecrutadorDashboard({ navigate }) {
         <nav style={{ padding: '12px 10px', flex: 1 }}>
           {menuItems.map(item => (
             <button key={item.id} onClick={() => setActiveSection(item.id)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: activeSection === item.id ? 700 : 500, background: activeSection === item.id ? '#e8f2fc' : 'transparent', color: activeSection === item.id ? '#1e4a8a' : '#556677', marginBottom: 2, transition: 'all 0.15s', textAlign: 'left' }}>
-              <span style={{ fontSize: 16 }}>{item.icon}</span>
+              style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: activeSection === item.id ? 700 : 500, background: activeSection === item.id ? '#e8f2fc' : 'transparent', color: activeSection === item.id ? '#1e4a8a' : '#556677', marginBottom: 2, transition: 'all 0.15s', textAlign: 'left' }}>
               {item.label}
             </button>
           ))}
@@ -2022,7 +2019,7 @@ export default function RecrutadorDashboard({ navigate }) {
             {menuItems.map(item => (
               <button key={item.id} onClick={() => setActiveSection(item.id)}
                 style={{ flexShrink: 0, padding: '8px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: activeSection === item.id ? 700 : 500, background: activeSection === item.id ? '#1e4a8a' : 'white', color: activeSection === item.id ? 'white' : '#556677' }}>
-                {item.icon} {item.label}
+                {item.label}
               </button>
             ))}
           </div>

@@ -1,19 +1,40 @@
 import { useState } from 'react'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 export default function FaleConoscoSection() {
   const { isMobile } = useBreakpoint()
   const [form, setForm] = useState({ nome: '', celular: '', email: '', empresa: '', tipo: '', interesse: '', mensagem: '' })
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [interestOpen, setInterestOpen] = useState(false)
 
   const interesses = ['Estrutura do Curso', 'Formação de liderança', 'Consultoria para empresas', 'Outro/Quero orientação']
 
   const handle = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.nome || !form.email) return
-    setSubmitted(true)
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      const res = await fetch(`${BASE_URL}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || `Erro ${res.status}`)
+      }
+      setSubmitted(true)
+    } catch (err) {
+      setSubmitError(err.message || 'Não foi possível enviar. Tente pelo WhatsApp ou e-mail.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const inputStyle = {
@@ -271,26 +292,33 @@ export default function FaleConoscoSection() {
                 )}
               </div>
 
+              {submitError && (
+                <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', color: '#c00', fontSize: 13 }}>
+                  {submitError}
+                </div>
+              )}
+
               {/* Submit */}
               <button
                 onClick={submit}
+                disabled={submitting}
                 style={{
-                  background: 'linear-gradient(135deg, #1e3a6e, #2a5a9e)',
+                  background: submitting ? '#aaa' : 'linear-gradient(135deg, #1e3a6e, #2a5a9e)',
                   color: 'white',
                   border: 'none',
                   borderRadius: 12,
                   padding: '14px',
-                  cursor: 'pointer',
+                  cursor: submitting ? 'default' : 'pointer',
                   fontWeight: 700,
                   fontSize: 15,
                   width: '100%',
                   marginTop: 4,
                   transition: 'opacity 0.2s',
                 }}
-                onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                onMouseEnter={e => { if (!submitting) e.currentTarget.style.opacity = '0.9' }}
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}
               >
-                Enviar mensagem
+                {submitting ? 'Enviando...' : 'Enviar mensagem'}
               </button>
             </div>
           )}

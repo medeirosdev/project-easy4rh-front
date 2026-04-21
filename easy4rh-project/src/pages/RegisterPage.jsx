@@ -30,11 +30,9 @@ export default function RegisterPage({ navigate }) {
     if (!result.success) { setErrors({ general: result.message }); setLoading(false); return; }
     setLoading(false);
     setSuccess(true);
-    setTimeout(() => {
-      const r = result.user?.role
-      const isRecruiterSide = ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(r)
-      navigate(isRecruiterSide ? 'dashboard-recrutador' : 'dashboard-candidato')
-    }, 1500);
+    const r = result.user?.role
+    const isRecruiterSide = ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(r)
+    navigate(isRecruiterSide ? 'dashboard-recrutador' : 'dashboard-candidato')
   };
 
   const inputStyle = (field) => ({
@@ -76,9 +74,9 @@ export default function RegisterPage({ navigate }) {
                 {/* Role toggle */}
                 <div style={{ display: "flex", background: "#f0f4f8", borderRadius: 10, padding: 4, marginBottom: 20 }}>
                   {[
-                    { value: "CANDIDATE", label: "Candidato", icon: "👤" },
-                    { value: "RECRUITER", label: "Recrutador", icon: "🏢" },
-                    { value: "INSTRUCTOR", label: "Instrutor", icon: "🎓" },
+                    { value: "CANDIDATE", label: "Candidato" },
+                    { value: "RECRUITER", label: "Recrutador" },
+                    { value: "INSTRUCTOR", label: "Instrutor" },
                   ].map(opt => (
                     <button key={opt.value} onClick={() => { setRole(opt.value); setErrors({}); }}
                       style={{
@@ -88,7 +86,7 @@ export default function RegisterPage({ navigate }) {
                         color: role === opt.value ? "#1e4a8a" : "#778899",
                         boxShadow: role === opt.value ? "0 2px 8px rgba(30,74,138,0.1)" : "none",
                       }}>
-                      {opt.icon} {opt.label}
+                      {opt.label}
                     </button>
                   ))}
                 </div>
@@ -138,10 +136,10 @@ export default function RegisterPage({ navigate }) {
                         borderRadius: 8, padding: "10px 20px", cursor: "pointer",
                         background: "white", fontSize: 13.5, color: "#555", fontWeight: 500
                       }}>
-                        📎 Carregue seu CV
+                        Carregue seu CV
                         <input type="file" accept=".pdf,.doc,.docx" style={{ display: "none" }} onChange={e => update("cv", e.target.files[0])} />
                       </label>
-                      {form.cv && <span style={{ fontSize: 12.5, color: "#38a169", marginLeft: 10 }}>✅ {form.cv.name}</span>}
+                      {form.cv && <span style={{ fontSize: 12.5, color: "#38a169", marginLeft: 10 }}>{form.cv.name}</span>}
                     </div>
                   </>
                 )}
@@ -149,7 +147,7 @@ export default function RegisterPage({ navigate }) {
                 {role === "RECRUITER" && (
                   <div style={{ background: "#f0f8ff", borderRadius: 10, padding: "16px", marginBottom: 20, border: "1px solid #d0e4f4" }}>
                     <p style={{ fontSize: 13, color: "#1e4a8a", margin: 0, fontWeight: 600 }}>
-                      🏢 Após o cadastro, você poderá vincular ou criar sua empresa no painel do recrutador.
+                      Após o cadastro, você poderá vincular ou criar sua empresa no painel do recrutador.
                     </p>
                   </div>
                 )}
@@ -157,7 +155,7 @@ export default function RegisterPage({ navigate }) {
                 {role === "INSTRUCTOR" && (
                   <div style={{ background: "#f0fff4", borderRadius: 10, padding: "16px", marginBottom: 20, border: "1px solid #b2e4c8" }}>
                     <p style={{ fontSize: 13, color: "#276749", margin: 0, fontWeight: 600 }}>
-                      🎓 Como instrutor, você poderá criar cursos, adicionar aulas com vídeos e acompanhar o progresso dos alunos.
+                      Como instrutor, você poderá criar cursos, adicionar aulas com vídeos e acompanhar o progresso dos alunos.
                     </p>
                   </div>
                 )}

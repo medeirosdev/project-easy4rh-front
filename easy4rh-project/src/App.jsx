@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { JobsProvider, normalizeJob } from './context/JobsContext'
 import { jobsApi } from './services/api'
@@ -19,11 +19,84 @@ import PlataformaPage from './pages/PlataformaPage'
 import CursoDetailPage from './pages/CursoDetailPage'
 import AdminAuditPage from './pages/AdminAuditPage'
 
-// Componente interno que registra o navigate no AuthContext
-function AppInner({ navigate }) {
-  const { setNavigate } = useAuth()
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 60, textAlign: 'center', fontFamily: 'inherit' }}>
+          <h2 style={{ color: '#c00', marginBottom: 12 }}>Algo deu errado</h2>
+          <p style={{ color: '#556677', marginBottom: 24 }}>{this.state.error?.message}</p>
+          <button onClick={() => this.setState({ hasError: false, error: null })} style={{ background: '#1e3a6e', color: 'white', border: 'none', borderRadius: 10, padding: '12px 28px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+            Tentar novamente
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+// Componente interno que acessa AuthContext, protege rotas e registra o navigate
+function AppContent({ page, navigate, selectedJob }) {
+  const { user, setNavigate } = useAuth()
   useEffect(() => { setNavigate(navigate) }, [navigate, setNavigate])
-  return null
+
+  const PROTECTED = ['dashboard-candidato', 'dashboard-recrutador']
+  const needsAuth = PROTECTED.includes(page) && !user
+  useEffect(() => {
+    if (needsAuth) navigate('login')
+  }, [needsAuth, navigate])
+
+  if (needsAuth) return null
+
+  const hideLayout = ['login', 'consultoria-login', 'register', 'dashboard-candidato', 'dashboard-recrutador', 'admin']
+
+  const renderPage = () => {
+    switch (page) {
+      case 'home':             return <HomePage navigate={navigate} />
+      case 'login':            return <ConsultoriaLoginPage navigate={navigate} />
+      case 'register':         return <RegisterPage navigate={navigate} />
+      case 'vagas':            return <VagasPage navigate={navigate} />
+      case 'job-detail':       return <JobDetailPage job={selectedJob} navigate={navigate} />
+      case 'treinamentos':     return <TreinamentosPage navigate={navigate} />
+      case 'sobre':            return <SobreNosPage navigate={navigate} />
+      case 'faq':              return <FAQPage navigate={navigate} />
+      case 'pessoas':          return <EmConstrucaoPage navigate={navigate} />
+      case 'processos':        return <EmConstrucaoPage navigate={navigate} />
+      case 'performance':      return <EmConstrucaoPage navigate={navigate} />
+      case 'prevencao':        return <EmConstrucaoPage navigate={navigate} />
+      case 'dashboard-candidato':  return <CandidatoDashboard navigate={navigate} />
+      case 'dashboard-recrutador': return <RecrutadorDashboard navigate={navigate} />
+      case 'consultoria-login':    return <ConsultoriaLoginPage navigate={navigate} />
+      case 'em-construcao':        return <EmConstrucaoPage navigate={navigate} />
+      case 'plataforma':           return <PlataformaPage navigate={navigate} />
+      case 'admin':                return <AdminAuditPage navigate={navigate} />
+      default:
+        if (page?.startsWith('curso-')) {
+          const courseId = page.replace('curso-', '')
+          if (!courseId) return <HomePage navigate={navigate} />
+          return <CursoDetailPage navigate={navigate} courseId={courseId} />
+        }
+        return <HomePage navigate={navigate} />
+    }
+  }
+
+  return (
+    <div style={{ fontFamily: "'Plus Jakarta Sans', 'Segoe UI', sans-serif", minHeight: '100vh', background: '#f8fafc' }}>
+      {!hideLayout.includes(page) && <Navbar navigate={navigate} page={page} />}
+      <ErrorBoundary key={page}>
+        {renderPage()}
+      </ErrorBoundary>
+      {!hideLayout.includes(page) && <Footer navigate={navigate} />}
+    </div>
+  )
 }
 
 export default function App() {
@@ -93,48 +166,10 @@ export default function App() {
       })
   }, [])
 
-  const hideLayout = ['login', 'consultoria-login', 'register', 'dashboard-candidato', 'dashboard-recrutador', 'admin']
-
-  const renderPage = () => {
-  switch (page) {
-    case 'home':             return <HomePage navigate={navigate} />
-    case 'login':            return <ConsultoriaLoginPage navigate={navigate} />
-    case 'register':         return <RegisterPage navigate={navigate} />
-    case 'vagas':            return <VagasPage navigate={navigate} />
-    case 'job-detail':       return <JobDetailPage job={selectedJob} navigate={navigate} />
-    case 'treinamentos':     return <TreinamentosPage navigate={navigate} />
-    case 'sobre':            return <SobreNosPage navigate={navigate} />
-    case 'faq':              return <FAQPage navigate={navigate} />
-    case 'pessoas':          return <EmConstrucaoPage navigate={navigate} />
-    case 'processos':        return <EmConstrucaoPage navigate={navigate} />
-    case 'performance':      return <EmConstrucaoPage navigate={navigate} />
-    case 'prevencao':        return <EmConstrucaoPage navigate={navigate} />
-    case 'dashboard-candidato':  return <CandidatoDashboard navigate={navigate} />
-    case 'dashboard-recrutador': return <RecrutadorDashboard navigate={navigate} />
-    case 'consultoria-login':    return <ConsultoriaLoginPage navigate={navigate} />
-    case 'em-construcao':        return <EmConstrucaoPage navigate={navigate} />
-    case 'plataforma':           return <PlataformaPage navigate={navigate} />
-    case 'admin':                return <AdminAuditPage navigate={navigate} />
-    default:
-      if (page?.startsWith('curso-')) {
-        const courseId = page.replace('curso-', '')
-        if (!courseId) return <HomePage navigate={navigate} />
-        return <CursoDetailPage navigate={navigate} courseId={courseId} />
-      }
-      return <HomePage navigate={navigate} />
-  }
-}
-
-
   return (
     <AuthProvider>
       <JobsProvider>
-        <div style={{ fontFamily: "'Plus Jakarta Sans', 'Segoe UI', sans-serif", minHeight: '100vh', background: '#f8fafc' }}>
-          <AppInner navigate={navigate} />
-          {!hideLayout.includes(page) && <Navbar navigate={navigate} page={page} />}
-          {renderPage()}
-          {!hideLayout.includes(page) && <Footer navigate={navigate} />}
-        </div>
+        <AppContent page={page} navigate={navigate} selectedJob={selectedJob} />
       </JobsProvider>
     </AuthProvider>
   )

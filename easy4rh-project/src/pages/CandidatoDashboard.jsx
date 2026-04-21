@@ -6,14 +6,14 @@ import { profileApi, applicationsApi, coursesApi, documentsApi } from '../servic
 import { getStageLabel, getStageColor, getStageBackground, getStageProgress, pipelineSteps, getStageStepIndex, PIPELINE_STAGES, normalizeStage } from '../utils/applicationStages'
 
 const menuItems = [
-  { id: 'resumo',       icon: '🏠', label: 'Resumo' },
-  { id: 'perfil',       icon: '👤', label: 'Meu Perfil' },
-  { id: 'candidaturas', icon: '📋', label: 'Candidaturas' },
-  { id: 'cv',           icon: '📄', label: 'Meu CV' },
-  { id: 'vagas',        icon: '🔍', label: 'Pesquisar Vagas' },
-  { id: 'salvas',       icon: '🔖', label: 'Vagas Salvas' },
-  { id: 'documentos',   icon: '📑', label: 'Meus Documentos' },
-  { id: 'cursos',       icon: '🎓', label: 'Meus Cursos' },
+  { id: 'resumo',       label: 'Resumo' },
+  { id: 'perfil',       label: 'Meu Perfil' },
+  { id: 'candidaturas', label: 'Candidaturas' },
+  { id: 'cv',           label: 'Meu CV' },
+  { id: 'vagas',        label: 'Pesquisar Vagas' },
+  { id: 'salvas',       label: 'Vagas Salvas' },
+  { id: 'documentos',   label: 'Meus Documentos' },
+  { id: 'cursos',       label: 'Meus Cursos' },
 ]
 
 function formatDate(iso) {
@@ -41,6 +41,8 @@ export default function CandidatoDashboard({ navigate }) {
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
+
+  const [loadError, setLoadError] = useState('')
 
   // Candidaturas reais
   const [applications, setApplications] = useState([])
@@ -74,8 +76,8 @@ export default function CandidatoDashboard({ navigate }) {
         setLinkedin(data.linkedinUrl || '')
         setBio(data.about || '')
         if (data.resumeUrl) setCvUrl(data.resumeUrl)
-      } catch {
-        // perfil ainda não existe
+      } catch (err) {
+        if (err?.message && !err.message.includes('404')) setLoadError(err.message)
       }
     }
     loadProfile()
@@ -97,8 +99,9 @@ export default function CandidatoDashboard({ navigate }) {
           color: getStageColor(app.stage),
           stage: app.stage,
         })))
-      } catch {
+      } catch (err) {
         setApplications([])
+        setLoadError(err?.message || 'Erro ao carregar candidaturas')
       } finally {
         setApplicationsLoading(false)
       }
@@ -114,8 +117,9 @@ export default function CandidatoDashboard({ navigate }) {
         const data = await coursesApi.myEnrollments()
         const list = Array.isArray(data) ? data : (data.data || [])
         setEnrollments(list)
-      } catch {
+      } catch (err) {
         setEnrollments([])
+        setLoadError(err?.message || 'Erro ao carregar cursos')
       } finally {
         setEnrollmentsLoading(false)
       }
@@ -137,8 +141,9 @@ export default function CandidatoDashboard({ navigate }) {
       const data = await documentsApi.listReceived()
       setReceivedDocs(Array.isArray(data) ? data : [])
       setReceivedDocsLoaded(true)
-    } catch {
+    } catch (err) {
       setReceivedDocs([])
+      setLoadError(err?.message || 'Erro ao carregar documentos')
     } finally {
       setReceivedDocsLoading(false)
     }
@@ -220,20 +225,24 @@ export default function CandidatoDashboard({ navigate }) {
 
       case 'resumo': return (
         <div>
+          {loadError && (
+            <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', color: '#c00', fontSize: 13, marginBottom: 20 }}>
+              {loadError}
+            </div>
+          )}
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>
-            Olá, {user?.name?.split(' ')[0]} 👋
+            Olá, {user?.name?.split(' ')[0]}
           </h2>
 
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
             {[
-              { label: 'Candidaturas', value: applications.length, icon: '📋', color: '#1e4a8a' },
-              { label: 'Em análise', value: applications.filter(a => a.stage === 'SCREENING').length, icon: '⏳', color: '#f0a500' },
-              { label: 'Aprovações', value: applications.filter(a => ['HIRED', 'OFFER'].includes(a.stage)).length, icon: '✅', color: '#22c55e' },
-              { label: 'Vagas salvas', value: savedJobs.length, icon: '🔖', color: '#8b5cf6' },
+              { label: 'Candidaturas', value: applications.length, color: '#1e4a8a' },
+              { label: 'Em análise', value: applications.filter(a => a.stage === 'SCREENING').length, color: '#f0a500' },
+              { label: 'Aprovações', value: applications.filter(a => ['HIRED', 'OFFER'].includes(a.stage)).length, color: '#22c55e' },
+              { label: 'Vagas salvas', value: savedJobs.length, color: '#8b5cf6' },
             ].map((s) => (
               <div key={s.label} style={{ background: 'white', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', borderTop: `3px solid ${s.color}` }}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>{s.icon}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
                 <div style={{ fontSize: 12, color: '#778899', marginTop: 2 }}>{s.label}</div>
               </div>
@@ -724,8 +733,7 @@ export default function CandidatoDashboard({ navigate }) {
         <nav style={{ padding: '12px 10px', flex: 1 }}>
           {menuItems.map(item => (
             <button key={item.id} onClick={() => setActiveSection(item.id)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: activeSection === item.id ? 700 : 500, background: activeSection === item.id ? '#e8f2fc' : 'transparent', color: activeSection === item.id ? '#1e4a8a' : '#556677', marginBottom: 2, transition: 'all 0.15s', textAlign: 'left' }}>
-              <span style={{ fontSize: 16 }}>{item.icon}</span>
+              style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: activeSection === item.id ? 700 : 500, background: activeSection === item.id ? '#e8f2fc' : 'transparent', color: activeSection === item.id ? '#1e4a8a' : '#556677', marginBottom: 2, transition: 'all 0.15s', textAlign: 'left' }}>
               {item.label}
             </button>
           ))}
@@ -748,7 +756,7 @@ export default function CandidatoDashboard({ navigate }) {
             {menuItems.map(item => (
               <button key={item.id} onClick={() => setActiveSection(item.id)}
                 style={{ flexShrink: 0, padding: '8px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: activeSection === item.id ? 700 : 500, background: activeSection === item.id ? '#1e4a8a' : 'white', color: activeSection === item.id ? 'white' : '#556677' }}>
-                {item.icon} {item.label}
+                {item.label}
               </button>
             ))}
           </div>
