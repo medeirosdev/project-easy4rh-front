@@ -48,7 +48,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
     setRegLoading(false)
     if (result.success) {
       const r = result.user?.role
-      navigate((r === 'RECRUITER' || r === 'INSTRUCTOR' || r === 'RECRUITER_INSTRUCTOR') ? 'dashboard-recrutador' : 'dashboard-candidato')
+      navigate(['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(r) ? 'dashboard-recrutador' : 'dashboard-candidato')
     } else setRegError(result.message || 'Erro ao criar conta.')
   }
 

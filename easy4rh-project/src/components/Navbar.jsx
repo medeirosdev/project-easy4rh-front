@@ -189,7 +189,7 @@ export default function Navbar({ navigate, page }) {
                 {userMenu && (
                   <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', background: 'white', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #e8edf2', minWidth: 170, overflow: 'hidden', zIndex: 100 }}>
                     {[
-                      { icon: '👤', label: 'Meu Painel',   page: (user?.role === 'RECRUITER' || user?.role === 'INSTRUCTOR') ? 'dashboard-recrutador' : 'dashboard-candidato' },
+                      { icon: '👤', label: 'Meu Painel',   page: ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(user?.role) ? 'dashboard-recrutador' : 'dashboard-candidato' },
                       { icon: '🎓', label: 'Treinamentos', page: 'treinamentos' },
                       ...(user?.role === 'CANDIDATE' ? [
                         { icon: '🔖', label: 'Vagas Salvas', page: 'dashboard-candidato' },
