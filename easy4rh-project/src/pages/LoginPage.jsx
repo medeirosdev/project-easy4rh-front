@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { Lock, Search, GraduationCap, AlertTriangle, FileText, BarChart2, Trophy, Users } from "../utils/icons.jsx";
 
 export default function LoginPage({ navigate, initialTab }) {
   const { login, loginRecruiter, loginInstructor } = useAuth();
@@ -47,12 +48,13 @@ export default function LoginPage({ navigate, initialTab }) {
       {/* Quick nav */}
       <div style={{ background: "white", borderBottom: "1px solid #e8edf2", textAlign: "center", padding: "12px 20px" }}>
         {[
-          { label: "🔐 Login",          action: () => { setTab("candidate"); } },
-          { label: "📝 Registre seu CV", action: () => navigate("register") },
-          { label: "🔍 Recrutamento",    action: () => { setTab("recruiter"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
-          { label: "🎓 Instrutor",       action: () => { setTab("instructor"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
+          { label: "Login",          icon: <Lock size={13} />,          action: () => { setTab("candidate"); } },
+          { label: "Registre seu CV", icon: <FileText size={13} />,     action: () => navigate("register") },
+          { label: "Recrutamento",   icon: <Search size={13} />,        action: () => { setTab("recruiter"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
+          { label: "Instrutor",      icon: <GraduationCap size={13} />, action: () => { setTab("instructor"); window.scrollTo({ top: 0, behavior: 'smooth' }) } },
         ].map((item) => (
-          <button key={item.label} onClick={item.action} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13.5, fontWeight: 600, margin: "0 16px" }}>
+          <button key={item.label} onClick={item.action} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13.5, fontWeight: 600, margin: "0 16px", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            {item.icon} {item.label}
             {item.label}
           </button>
         ))}
@@ -84,7 +86,7 @@ export default function LoginPage({ navigate, initialTab }) {
           <div>
             {error && (
               <div style={{ background: "#fee", border: "1px solid #fcc", borderRadius: 8, padding: "10px 14px", color: "#c00", fontSize: 13, marginBottom: 16 }}>
-                ⚠️ {error}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><AlertTriangle size={14} /> {error}</div>
               </div>
             )}
             <div style={{ marginBottom: 14 }}>
@@ -127,8 +129,8 @@ export default function LoginPage({ navigate, initialTab }) {
             {tab === "candidate" ? (
               <>
                 {[
-                  { icon: "🔍", title: "Busque vagas com facilidade", desc: "Encontre oportunidades de acordo com seu perfil." },
-                  { icon: "📄", title: "Cadastre seu currículo uma única vez", desc: "Candidate-se a várias vagas em poucos cliques." },
+                  { icon: <Search size={20} />, title: "Busque vagas com facilidade", desc: "Encontre oportunidades de acordo com seu perfil." },
+                  { icon: <FileText size={20} />, title: "Cadastre seu currículo uma única vez", desc: "Candidate-se a várias vagas em poucos cliques." },
                   { icon: "🔔", title: "Receba alertas de vagas", desc: "Seja avisado quando surgirem novas oportunidades." },
                 ].map(item => (
                   <div key={item.title} style={{ marginBottom: 18 }}>
@@ -146,9 +148,9 @@ export default function LoginPage({ navigate, initialTab }) {
             ) : tab === "instructor" ? (
               <>
                 {[
-                  { icon: "🎓", title: "Crie cursos completos", desc: "Monte seções, aulas e faça upload de vídeos." },
-                  { icon: "📊", title: "Acompanhe seus alunos", desc: "Veja progresso, taxas de conclusão e matrículas." },
-                  { icon: "🏆", title: "Emita certificados", desc: "Alunos recebem certificado digital ao concluir." },
+                  { icon: <GraduationCap size={20} />, title: "Crie cursos completos", desc: "Monte seções, aulas e faça upload de vídeos." },
+                  { icon: <BarChart2 size={20} />, title: "Acompanhe seus alunos", desc: "Veja progresso, taxas de conclusão e matrículas." },
+                  { icon: <Trophy size={20} />, title: "Emita certificados", desc: "Alunos recebem certificado digital ao concluir." },
                 ].map(item => (
                   <div key={item.title} style={{ marginBottom: 18 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: "#333", marginBottom: 2 }}>{item.icon} {item.title}</div>
@@ -166,7 +168,7 @@ export default function LoginPage({ navigate, initialTab }) {
               <>
                 {[
                   { icon: "📢", title: "Publique vagas gratuitamente", desc: "Alcance candidatos qualificados do setor varejista." },
-                  { icon: "👥", title: "Gerencie candidaturas", desc: "Acompanhe todos os candidatos em um só lugar." },
+                  { icon: <Users size={20} />, title: "Gerencie candidaturas", desc: "Acompanhe todos os candidatos em um só lugar." },
                   { icon: "⚡", title: "Contrate mais rápido", desc: "Filtros inteligentes para encontrar o perfil certo." },
                 ].map(item => (
                   <div key={item.title} style={{ marginBottom: 18 }}>

@@ -179,7 +179,7 @@ export default function Footer({ navigate }) {
                     {items.map((item, i) => (
                       <div key={i} style={{ display: 'flex', gap: 7, alignItems: 'flex-start' }}>
                         <span style={{ color: '#4a9edd', fontSize: 9, marginTop: 5, flexShrink: 0 }}>•</span>
-                        <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>{item}</span>
+                        <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>{item}</span>
                       </div>
                     ))}
                   </div>

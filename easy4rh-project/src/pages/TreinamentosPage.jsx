@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useJobs } from "../context/JobsContext";
 import { useAuth } from "../context/AuthContext";
+import { Search, Target, Building2, X, Clock, Users, Star } from "../utils/icons.jsx";
 
 const categoryColors = {
   Gestão: "#1e4a8a", Marketing: "#9b2c8a", Operações: "#c05621", Vendas: "#276749",
@@ -17,7 +18,6 @@ export default function TreinamentosPage({ navigate }) {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterLevel, setFilterLevel] = useState("");
 
-  // Categorias e níveis disponíveis a partir dos cursos reais
   const categories = useMemo(() => [...new Set(courses.map(c => c.category).filter(Boolean))], [courses]);
   const levels = useMemo(() => [...new Set(courses.map(c => c.level).filter(Boolean))], [courses]);
 
@@ -31,6 +31,7 @@ export default function TreinamentosPage({ navigate }) {
   }, [courses, search, filterCategory, filterLevel]);
 
   const hasFilters = search || filterCategory || filterLevel;
+  const clearFilters = () => { setSearch(""); setFilterCategory(""); setFilterLevel(""); };
 
   const inputStyle = {
     border: "1.5px solid #e0eaf4", borderRadius: 10, padding: "10px 14px",
@@ -50,7 +51,9 @@ export default function TreinamentosPage({ navigate }) {
 
           {/* Busca no hero */}
           <div style={{ maxWidth: 520, margin: "0 auto", position: "relative" }}>
-            <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: "#aaa" }}>🔍</span>
+            <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "#aaa", display: "flex" }}>
+              <Search size={16} />
+            </span>
             <input
               type="text"
               placeholder="Buscar cursos..."
@@ -62,7 +65,7 @@ export default function TreinamentosPage({ navigate }) {
         </div>
       </div>
 
-      {/* Opções Individual/Empresa */}
+      {/* Conteúdo */}
       <div style={{ background: "#f8fafc", padding: "48px 20px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, color: "#1e3a6e", marginBottom: 8 }}>Escolha o Caminho ideal para você.</h2>
@@ -70,15 +73,15 @@ export default function TreinamentosPage({ navigate }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 48 }}>
             {[
-              { title: "Consultoria para Empresas", icon: "🏢", items: ["Diagnóstico de RH completo", "Estruturação de processos seletivos", "Políticas de gestão de pessoas", "Acompanhamento mensal de KPIs"], cta: "Fale com um especialista", dark: true },
-              { title: "Desenvolvimento Pessoal", icon: "🎯", items: ["Cursos 100% online", "Certificado digital ao concluir", "Conteúdo prático do varejo", "Acesso vitalício ao material"], cta: "Ver cursos disponíveis", dark: false }
+              { title: "Consultoria para Empresas", icon: <Building2 size={36} color="white" />, items: ["Diagnóstico de RH completo", "Estruturação de processos seletivos", "Políticas de gestão de pessoas", "Acompanhamento mensal de KPIs"], cta: "Fale com um especialista", dark: true },
+              { title: "Desenvolvimento Pessoal", icon: <Target size={36} color="#1e4a8a" />, items: ["Cursos 100% online", "Certificado digital ao concluir", "Conteúdo prático do varejo", "Acesso vitalício ao material"], cta: "Ver cursos disponíveis", dark: false }
             ].map(card => (
               <div key={card.title} style={{ background: card.dark ? "linear-gradient(135deg, #1e3a6e, #2a5298)" : "white", borderRadius: 20, padding: "32px 28px", border: card.dark ? "none" : "1px solid #e8edf2", boxShadow: "0 4px 20px rgba(30,74,138,0.08)" }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>{card.icon}</div>
+                <div style={{ marginBottom: 12 }}>{card.icon}</div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: card.dark ? "white" : "#1e3a6e", marginBottom: 16 }}>{card.title}</h3>
                 <ul style={{ margin: "0 0 24px", paddingLeft: 20 }}>
                   {card.items.map(item => (
-                    <li key={item} style={{ color: card.dark ? "rgba(255,255,255,0.8)" : "#555", fontSize: 13.5, marginBottom: 8, lineHeight: 1.5 }}>{item}</li>
+                    <li key={item} style={{ color: card.dark ? "rgba(255,255,255,0.8)" : "#555", fontSize: 13.5, marginBottom: 10, lineHeight: 1.5 }}>{item}</li>
                   ))}
                 </ul>
                 <button onClick={() => navigate("login")} style={{ background: card.dark ? "rgba(255,255,255,0.15)" : "linear-gradient(135deg, #1e4a8a, #4a9edd)", color: "white", border: card.dark ? "1px solid rgba(255,255,255,0.3)" : "none", borderRadius: 10, padding: "11px 22px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
@@ -88,18 +91,19 @@ export default function TreinamentosPage({ navigate }) {
             ))}
           </div>
 
-          {/* Header dos cursos + filtros */}
+          {/* Header + filtros */}
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 24 }}>
             <div>
               <h2 style={{ fontSize: 24, fontWeight: 800, color: "#1e3a6e", margin: 0 }}>Cursos Disponíveis</h2>
               {!coursesLoading && (
-                <p style={{ fontSize: 13, color: "#778899", margin: "4px 0 0" }}>
-                  {hasFilters ? `${filtered.length} resultado${filtered.length !== 1 ? "s" : ""} encontrado${filtered.length !== 1 ? "s" : ""}` : `${courses.length} curso${courses.length !== 1 ? "s" : ""} disponível`}
+                <p style={{ fontSize: 13, color: "#555", margin: "4px 0 0" }}>
+                  {hasFilters
+                    ? `${filtered.length} resultado${filtered.length !== 1 ? "s" : ""} encontrado${filtered.length !== 1 ? "s" : ""}`
+                    : `${courses.length} curso${courses.length !== 1 ? "s" : ""} disponível`}
                 </p>
               )}
             </div>
 
-            {/* Filtros */}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
               {categories.length > 0 && (
                 <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ ...inputStyle, minWidth: 150 }}>
@@ -114,8 +118,11 @@ export default function TreinamentosPage({ navigate }) {
                 </select>
               )}
               {hasFilters && (
-                <button onClick={() => { setSearch(""); setFilterCategory(""); setFilterLevel(""); }} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 10, padding: "10px 16px", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-                  ✕ Limpar filtros
+                <button
+                  onClick={clearFilters}
+                  style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 10, padding: "10px 16px", cursor: "pointer", fontWeight: 600, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  <X size={13} /> Limpar filtros
                 </button>
               )}
             </div>
@@ -126,29 +133,35 @@ export default function TreinamentosPage({ navigate }) {
             <div style={{ textAlign: "center", padding: "48px 20px", color: "#778899", fontSize: 14 }}>Carregando cursos...</div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: "48px 20px", color: "#778899" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+              <div style={{ display: "flex", justifyContent: "center", color: "#aab", marginBottom: 12 }}>
+                <Search size={48} />
+              </div>
               <p style={{ fontSize: 15, fontWeight: 600, color: "#334" }}>Nenhum curso encontrado</p>
               <p style={{ fontSize: 13, marginTop: 4 }}>
-                {search ? `Nenhum resultado para "${search}"` : 'Tente outros termos ou remova os filtros.'}
+                {search ? `Nenhum resultado para "${search}"` : "Tente outros termos ou remova os filtros."}
               </p>
               {hasFilters && (
-                <div style={{ fontSize: 12, color: '#778899', marginTop: 8, display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  {search && <span style={{ background: '#f0f4f8', borderRadius: 20, padding: '3px 10px' }}>Busca: "{search}"</span>}
-                  {filterCategory && <span style={{ background: '#f0f4f8', borderRadius: 20, padding: '3px 10px' }}>Categoria: {filterCategory}</span>}
-                  {filterLevel && <span style={{ background: '#f0f4f8', borderRadius: 20, padding: '3px 10px' }}>Nível: {levelLabel[filterLevel] || filterLevel}</span>}
+                <div style={{ fontSize: 12, color: "#778899", marginTop: 8, display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+                  {search && <span style={{ background: "#f0f4f8", borderRadius: 20, padding: "3px 10px" }}>Busca: "{search}"</span>}
+                  {filterCategory && <span style={{ background: "#f0f4f8", borderRadius: 20, padding: "3px 10px" }}>Categoria: {filterCategory}</span>}
+                  {filterLevel && <span style={{ background: "#f0f4f8", borderRadius: 20, padding: "3px 10px" }}>Nível: {levelLabel[filterLevel] || filterLevel}</span>}
                 </div>
               )}
-              <button onClick={() => { setSearch(""); setFilterCategory(""); setFilterLevel(""); }} style={{ marginTop: 16, background: "#1e4a8a", color: "white", border: "none", borderRadius: 10, padding: "10px 20px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-                Limpar filtros
+              <button onClick={clearFilters} style={{ marginTop: 16, background: "#1e4a8a", color: "white", border: "none", borderRadius: 10, padding: "10px 20px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
+                Ver todos os cursos
               </button>
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
               {filtered.map(course => (
-                <div key={course.id} style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", overflow: "hidden", boxShadow: "0 4px 16px rgba(30,74,138,0.06)", transition: "all 0.2s", cursor: "pointer" }}
+                <div
+                  key={course.id}
+                  style={{ background: "white", borderRadius: 16, border: "1px solid #e8edf2", overflow: "hidden", boxShadow: "0 4px 16px rgba(30,74,138,0.06)", transition: "all 0.2s", cursor: "pointer" }}
                   onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 28px rgba(30,74,138,0.12)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(30,74,138,0.06)"; }}>
-
+                  onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(30,74,138,0.06)"; e.currentTarget.style.opacity = "1"; }}
+                  onMouseDown={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.opacity = "0.92"; }}
+                  onMouseUp={e => { e.currentTarget.style.opacity = "1"; }}
+                >
                   <div style={{ background: `linear-gradient(135deg, ${categoryColors[course.category] || "#1e4a8a"}22, ${categoryColors[course.category] || "#1e4a8a"}11)`, padding: "24px 20px 20px", borderBottom: "1px solid #e8edf2" }}>
                     <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
                       {course.category && (
@@ -169,10 +182,20 @@ export default function TreinamentosPage({ navigate }) {
                   </div>
 
                   <div style={{ padding: "16px 20px" }}>
-                    <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-                      {course.duration && <span style={{ fontSize: 12, color: "#555" }}>⏱️ {course.duration}</span>}
-                      <span style={{ fontSize: 12, color: "#555" }}>👥 {(course.students || 0).toLocaleString()} alunos</span>
-                      {course.rating > 0 && <span style={{ fontSize: 12, color: "#f59e0b" }}>{"⭐".repeat(Math.floor(course.rating))} {course.rating}</span>}
+                    <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+                      {course.duration && (
+                        <span style={{ fontSize: 12, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
+                          <Clock size={12} /> {course.duration}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 12, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
+                        <Users size={12} /> {(course.students || 0).toLocaleString()} alunos
+                      </span>
+                      {course.rating > 0 && (
+                        <span style={{ fontSize: 12, color: "#f59e0b", display: "flex", alignItems: "center", gap: 4 }}>
+                          <Star size={12} fill="#f59e0b" /> {course.rating}
+                        </span>
+                      )}
                     </div>
                     <div style={{ display: "flex", justifyContent: "flex-end" }}>
                       <button

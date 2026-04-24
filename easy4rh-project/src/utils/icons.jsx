@@ -1,0 +1,146 @@
+/**
+ * Central icon exports — Lucide React
+ * Import from here to keep icon usage consistent across the project.
+ */
+export {
+  // Navigation & UI
+  Home,
+  Menu,
+  X,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
+  ChevronLeft,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+  Minus,
+  Check,
+  Search,
+  Filter,
+  Settings,
+  LogOut,
+  LogIn,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  RotateCcw,
+  Loader2,
+  Bell,
+  AlertTriangle,
+  AlertCircle,
+  Info,
+  HelpCircle,
+  CheckCircle,
+  XCircle,
+
+  // People & Identity
+  User,
+  Users,
+  UserPlus,
+  UserCheck,
+  UserX,
+  Crown,
+  Shield,
+
+  // Business & Work
+  Briefcase,
+  Building2,
+  Landmark,
+  Globe,
+  TrendingUp,
+  TrendingDown,
+  BarChart2,
+  PieChart,
+  Target,
+  Handshake,
+  Award,
+  Trophy,
+  Star,
+  Zap,
+  Scale,
+
+  // Documents & Content
+  FileText,
+  File,
+  Files,
+  FilePlus,
+  ClipboardList,
+  Clipboard,
+  BookOpen,
+  Book,
+  GraduationCap,
+  Paperclip,
+  Tag,
+  Receipt,
+
+  // Communication
+  MessageSquare,
+  MessageCircle,
+  Mail,
+  Send,
+  Megaphone,
+  Phone,
+
+  // Media
+  Play,
+  Pause,
+  Video,
+  Image,
+  Film,
+  Mic,
+  Volume2,
+
+  // Time & Date
+  Clock,
+  Calendar,
+  Timer,
+  Hourglass,
+
+  // Location & Map
+  MapPin,
+  Map,
+  Route,
+  Navigation,
+
+  // Money
+  DollarSign,
+  Banknote,
+  CreditCard,
+  Wallet,
+  ShoppingCart,
+  Package,
+  Gift,
+
+  // Storage & Data
+  Folder,
+  FolderOpen,
+  Database,
+  Download,
+  Upload,
+  Save,
+  Trash2,
+  Archive,
+  Bookmark,
+
+  // Tools & System
+  Wrench,
+  Tool,
+  Cpu,
+  Lock,
+  Unlock,
+  Key,
+  Link,
+  ExternalLink,
+  Copy,
+  Pencil,
+  Edit3,
+  Layers,
+  Puzzle,
+  Heart,
+  Sparkles,
+  Printer,
+
+} from 'lucide-react'

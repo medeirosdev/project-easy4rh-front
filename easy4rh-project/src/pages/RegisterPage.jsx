@@ -100,20 +100,20 @@ export default function RegisterPage({ navigate }) {
                 )}
 
                 <div style={{ marginBottom: 14 }}>
-                  <input type="email" placeholder="Endereço de email" value={form.email} onChange={e => update("email", e.target.value)} style={inputStyle("email")} />
+                  <input aria-label="Endereço de email" type="email" placeholder="Endereço de email" value={form.email} onChange={e => update("email", e.target.value)} style={inputStyle("email")} />
                   {errors.email && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.email}</div>}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
                   <div>
-                    <input placeholder="Primeiro nome" value={form.firstName} onChange={e => update("firstName", e.target.value)} style={inputStyle("firstName")} />
+                    <input aria-label="Primeiro nome" placeholder="Primeiro nome" value={form.firstName} onChange={e => update("firstName", e.target.value)} style={inputStyle("firstName")} />
                     {errors.firstName && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.firstName}</div>}
                   </div>
-                  <input placeholder="Sobrenome" value={form.lastName} onChange={e => update("lastName", e.target.value)} style={inputStyle("lastName")} />
+                  <input aria-label="Sobrenome" placeholder="Sobrenome" value={form.lastName} onChange={e => update("lastName", e.target.value)} style={inputStyle("lastName")} />
                 </div>
 
                 <div style={{ marginBottom: 14 }}>
-                  <input type="password" placeholder="Criar senha (mínimo 8 caracteres)" value={form.password} onChange={e => update("password", e.target.value)} style={inputStyle("password")} />
+                  <input aria-label="Criar senha" type="password" placeholder="Criar senha (mínimo 8 caracteres)" value={form.password} onChange={e => update("password", e.target.value)} style={inputStyle("password")} />
                   {errors.password && <div style={{ color: "#e53e3e", fontSize: 12, marginTop: 4 }}>{errors.password}</div>}
                 </div>
 

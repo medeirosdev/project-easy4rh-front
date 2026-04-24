@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useJobs } from '../context/JobsContext'
-import { useBreakpoint } from '../hooks/useBreakpoint'
+import { Home, User, ClipboardList, FileText, Search, Bookmark, Files, GraduationCap, Globe, LogOut, Hourglass, CheckCircle, Clock, BookOpen, Globe2 } from '../utils/icons.jsx'
 import { profileApi, applicationsApi, coursesApi, documentsApi } from '../services/api'
 import { getStageLabel, getStageColor, getStageBackground, getStageProgress, pipelineSteps, getStageStepIndex, PIPELINE_STAGES, normalizeStage } from '../utils/applicationStages'
 
 const menuItems = [
-  { id: 'resumo',       icon: '🏠', label: 'Resumo' },
-  { id: 'perfil',       icon: '👤', label: 'Meu Perfil' },
-  { id: 'candidaturas', icon: '📋', label: 'Candidaturas' },
-  { id: 'cv',           icon: '📄', label: 'Meu CV' },
-  { id: 'vagas',        icon: '🔍', label: 'Pesquisar Vagas' },
-  { id: 'salvas',       icon: '🔖', label: 'Vagas Salvas' },
-  { id: 'documentos',   icon: '📑', label: 'Meus Documentos' },
-  { id: 'cursos',       icon: '🎓', label: 'Meus Cursos' },
+  { id: 'resumo',       icon: <Home size={16} />,         label: 'Resumo' },
+  { id: 'perfil',       icon: <User size={16} />,         label: 'Meu Perfil' },
+  { id: 'candidaturas', icon: <ClipboardList size={16} />, label: 'Candidaturas' },
+  { id: 'cv',           icon: <FileText size={16} />,     label: 'Meu CV' },
+  { id: 'vagas',        icon: <Search size={16} />,       label: 'Pesquisar Vagas' },
+  { id: 'salvas',       icon: <Bookmark size={16} />,     label: 'Vagas Salvas' },
+  { id: 'documentos',   icon: <Files size={16} />,        label: 'Meus Documentos' },
+  { id: 'cursos',       icon: <GraduationCap size={16} />, label: 'Meus Cursos' },
 ]
 
 function formatDate(iso) {
@@ -221,16 +221,16 @@ export default function CandidatoDashboard({ navigate }) {
       case 'resumo': return (
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>
-            Olá, {user?.name?.split(' ')[0]} 👋
+            Olá, {user?.name?.split(' ')[0]}!
           </h2>
 
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
             {[
-              { label: 'Candidaturas', value: applications.length, icon: '📋', color: '#1e4a8a' },
-              { label: 'Em análise', value: applications.filter(a => a.stage === 'SCREENING').length, icon: '⏳', color: '#f0a500' },
-              { label: 'Aprovações', value: applications.filter(a => ['HIRED', 'OFFER'].includes(a.stage)).length, icon: '✅', color: '#22c55e' },
-              { label: 'Vagas salvas', value: savedJobs.length, icon: '🔖', color: '#8b5cf6' },
+              { label: 'Candidaturas', value: applications.length, icon: <ClipboardList size={20} />, color: '#1e4a8a' },
+              { label: 'Em análise', value: applications.filter(a => a.stage === 'SCREENING').length, icon: <Hourglass size={20} />, color: '#f0a500' },
+              { label: 'Aprovações', value: applications.filter(a => ['HIRED', 'OFFER'].includes(a.stage)).length, icon: <CheckCircle size={20} />, color: '#22c55e' },
+              { label: 'Vagas salvas', value: savedJobs.length, icon: <Bookmark size={20} />, color: '#8b5cf6' },
             ].map((s) => (
               <div key={s.label} style={{ background: 'white', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', borderTop: `3px solid ${s.color}` }}>
                 <div style={{ fontSize: 24, marginBottom: 8 }}>{s.icon}</div>
@@ -314,7 +314,7 @@ export default function CandidatoDashboard({ navigate }) {
 
             {cvUrl ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px', background: '#f4f8ff', borderRadius: 12, marginBottom: 20 }}>
-                <span style={{ fontSize: 36 }}>📄</span>
+                <span style={{ color: "#1e4a8a", display: "flex" }}><FileText size={36} /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e', marginBottom: 2 }}>Currículo vinculado</div>
                   <a href={cvUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#1e4a8a', wordBreak: 'break-all' }}>{cvUrl}</a>
@@ -323,7 +323,7 @@ export default function CandidatoDashboard({ navigate }) {
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '24px 0 20px' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
+                <div style={{ color: "#1e4a8a", display: "flex", justifyContent: "center", marginBottom: 12 }}><FileText size={48} /></div>
                 <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e3a6e', marginBottom: 6 }}>Nenhum CV vinculado</h3>
                 <p style={{ fontSize: 13, color: '#778899', maxWidth: 400, margin: '0 auto' }}>
                   Cole abaixo o link do seu currículo (Google Drive, Dropbox, LinkedIn, etc.)
@@ -418,7 +418,7 @@ export default function CandidatoDashboard({ navigate }) {
           <p style={{ fontSize: 13, color: '#778899', marginBottom: 16 }}><strong style={{ color: '#1e3a6e' }}>{filteredJobs.length}</strong> vagas encontradas</p>
           {filteredJobs.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>🔍</div>
+              <div style={{ color: "#aab", display: "flex", justifyContent: "center" }}><Search size={48} /></div>
               <p style={{ color: '#778899', marginTop: 12 }}>Nenhuma vaga encontrada.</p>
             </div>
           ) : (
@@ -452,7 +452,7 @@ export default function CandidatoDashboard({ navigate }) {
             </div>
           ) : savedJobsList.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>🔖</div>
+              <div style={{ color: "#aab", display: "flex", justifyContent: "center" }}><Bookmark size={48} /></div>
               <p style={{ color: '#778899', marginTop: 12 }}>Nenhuma vaga salva ainda.</p>
               <button onClick={() => setActiveSection('vagas')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
                 Pesquisar vagas
@@ -487,7 +487,7 @@ export default function CandidatoDashboard({ navigate }) {
             </div>
           ) : applications.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>📋</div>
+              <div style={{ color: "#aab", display: "flex", justifyContent: "center" }}><ClipboardList size={48} /></div>
               <p style={{ color: '#778899', marginTop: 12 }}>Você ainda não se candidatou a nenhuma vaga.</p>
               <button onClick={() => setActiveSection('vagas')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
                 Pesquisar vagas
@@ -591,7 +591,7 @@ export default function CandidatoDashboard({ navigate }) {
               </div>
             ) : receivedDocs.length === 0 ? (
               <div style={{ background: 'white', borderRadius: 16, padding: 48, textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>📑</div>
+                <div style={{ color: "#aab", display: "flex", justifyContent: "center", marginBottom: 12 }}><Files size={48} /></div>
                 <p style={{ color: '#778899', fontSize: 13 }}>Nenhum documento recebido ainda.</p>
                 <p style={{ color: '#9ca3af', fontSize: 12 }}>Os documentos enviados pela empresa aparecerão aqui.</p>
               </div>
@@ -666,7 +666,7 @@ export default function CandidatoDashboard({ navigate }) {
             </div>
           ) : enrollments.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>🎓</div>
+              <div style={{ color: "#aab", display: "flex", justifyContent: "center" }}><GraduationCap size={48} /></div>
               <p style={{ color: '#778899', marginTop: 12 }}>Você ainda não está matriculado em nenhum curso.</p>
               <button onClick={() => navigate('plataforma')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
                 Explorar cursos
@@ -733,10 +733,10 @@ export default function CandidatoDashboard({ navigate }) {
 
         <div style={{ padding: '12px 10px', borderTop: '1px solid #f0f4f8' }}>
           <button onClick={() => navigate('vagas')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#556677', marginBottom: 2 }}>
-            <span>🌐</span> Ver site
+            <span style={{ display: 'flex', alignItems: 'center' }}><Globe size={14} /></span> Ver site
           </button>
           <button onClick={() => { logout(); navigate('home') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#ef4444' }}>
-            <span>🚪</span> Sair
+            <span style={{ display: 'flex', alignItems: 'center' }}><LogOut size={14} /></span> Sair
           </button>
         </div>
       </div>

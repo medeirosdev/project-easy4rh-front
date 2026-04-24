@@ -5,21 +5,22 @@ import { jobsApi, companiesApi, applicationsApi, jobQuestionsApi, coursesApi, se
 import { locationTypeMap } from '../context/JobsContext'
 import { getStageLabel, getStageColor, getStageBackground, PIPELINE_STAGES, normalizeStage } from '../utils/applicationStages'
 import JobPosterModal from '../components/JobPosterModal'
+import { Home, Building2, Plus, Megaphone, ClipboardList, FileText, GraduationCap, Users, BarChart2, TrendingUp, CheckCircle, Sparkles, AlertTriangle, Calendar, Folder, Globe, LogOut, Edit3, Trash2, BookOpen } from '../utils/icons.jsx'
 
 const recruiterMenuItems = [
-  { id: 'resumo',      icon: '🏠', label: 'Resumo' },
-  { id: 'empresa',     icon: '🏢', label: 'Minha Empresa' },
-  { id: 'publicar',    icon: '➕', label: 'Publicar Vaga' },
-  { id: 'vagas',       icon: '📢', label: 'Vagas Publicadas' },
-  { id: 'aplicacoes',  icon: '📋', label: 'Aplicações' },
-  { id: 'documentos',  icon: '📄', label: 'Documentos' },
-  { id: 'talentos',    icon: '🌟', label: 'Banco de Talentos' },
-  { id: 'cursos',      icon: '🎓', label: 'Cursos' },
+  { id: 'resumo',      icon: <Home size={16} />,       label: 'Resumo' },
+  { id: 'empresa',     icon: <Building2 size={16} />, label: 'Minha Empresa' },
+  { id: 'publicar',    icon: <Plus size={16} />,       label: 'Publicar Vaga' },
+  { id: 'vagas',       icon: <Megaphone size={16} />, label: 'Vagas Publicadas' },
+  { id: 'aplicacoes',  icon: <ClipboardList size={16} />, label: 'Aplicações' },
+  { id: 'documentos',  icon: <FileText size={16} />,  label: 'Documentos' },
+  { id: 'talentos',    icon: <Users size={16} />,       label: 'Banco de Talentos' },
+  { id: 'cursos',      icon: <GraduationCap size={16} />, label: 'Cursos' },
 ]
 
 const instructorMenuItems = [
-  { id: 'resumo',      icon: '🏠', label: 'Resumo' },
-  { id: 'cursos',      icon: '🎓', label: 'Meus Cursos' },
+  { id: 'resumo',      icon: <Home size={16} />,          label: 'Resumo' },
+  { id: 'cursos',      icon: <GraduationCap size={16} />, label: 'Meus Cursos' },
 ]
 
 const jobTypes = [
@@ -738,9 +739,9 @@ export default function RecrutadorDashboard({ navigate }) {
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
             {[
-              { label: 'Vagas ativas', value: vagasAtivas, icon: '📢', color: '#1e4a8a' },
-              { label: 'Total de aplicações', value: totalAplicacoes, icon: '📋', color: '#f0a500' },
-              { label: 'Aprovados', value: aprovados, icon: '✅', color: '#22c55e' },
+              { label: 'Vagas ativas', value: vagasAtivas, icon: <Megaphone size={20} />, color: '#1e4a8a' },
+              { label: 'Total de aplicações', value: totalAplicacoes, icon: <ClipboardList size={20} />, color: '#f0a500' },
+              { label: 'Aprovados', value: aprovados, icon: <CheckCircle size={20} />, color: '#22c55e' },
               { label: 'Talentos no banco', value: '—', icon: '🌟', color: '#8b5cf6' },
             ].map((s) => (
               <div key={s.label} style={{ background: 'white', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', borderTop: `3px solid ${s.color}` }}>
@@ -1007,7 +1008,7 @@ export default function RecrutadorDashboard({ navigate }) {
 
           {vagaPublicada ? (
             <div style={{ background: 'white', borderRadius: 16, padding: '48px', textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-              <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
+              <div style={{ color: "#22c55e", display: "flex", justifyContent: "center", marginBottom: 16 }}><Sparkles size={56} /></div>
               <h3 style={{ color: '#22c55e', fontSize: 18, fontWeight: 800 }}>Vaga publicada com sucesso!</h3>
               <p style={{ color: '#778899', marginTop: 8 }}>Redirecionando para suas vagas...</p>
             </div>
@@ -1024,7 +1025,7 @@ export default function RecrutadorDashboard({ navigate }) {
                 <>
                   {!myCompany && (
                     <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 18 }}>⚠️</span>
+                      <span style={{ display: "flex", color: "#f0a500" }}><AlertTriangle size={18} /></span>
                       <div>
                         <span style={{ fontSize: 13.5, color: '#9a3412', fontWeight: 600 }}>Empresa não cadastrada. </span>
                         <span style={{ fontSize: 13, color: '#9a3412' }}>Você precisa cadastrar sua empresa antes de publicar vagas. </span>
@@ -1306,11 +1307,11 @@ export default function RecrutadorDashboard({ navigate }) {
                         </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: statusBg, color: statusColor }}>{v.status}</span>
-                          <span style={{ fontSize: 12, color: '#778899' }}>📋 {v.aplicacoes} aplicação(ões)</span>
+                          <span style={{ fontSize: 12, color: '#778899', display: 'flex', alignItems: 'center', gap: 4 }}><ClipboardList size={12} /> {v.aplicacoes} aplicação(ões)</span>
                           {experienceLevelLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0f9ff', color: '#0369a1', fontWeight: 600 }}>{experienceLevelLabel}</span>}
                           {contractTypeLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', fontWeight: 600 }}>{contractTypeLabel}</span>}
                           {timeSincePublished && <span style={{ fontSize: 12, color: '#778899' }}>⏱ Publicada há {timeSincePublished}</span>}
-                          {slaText && <span style={{ fontSize: 12, color: '#778899' }}>📅 SLA: {slaText}</span>}
+                          {slaText && <span style={{ fontSize: 12, color: '#778899', display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> SLA: {slaText}</span>}
                           {openingReasonLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#3b82f6', fontWeight: 600 }}>{openingReasonLabel}</span>}
                         </div>
                       </div>
@@ -1557,7 +1558,7 @@ export default function RecrutadorDashboard({ navigate }) {
                 <div style={{ background: 'white', borderRadius: 14, padding: 48, textAlign: 'center', color: '#778899', fontSize: 13 }}>Carregando biblioteca...</div>
               ) : docLibrary.length === 0 ? (
                 <div style={{ background: 'white', borderRadius: 14, padding: 48, textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>📂</div>
+                  <div style={{ color: "#aab", display: "flex", justifyContent: "center", marginBottom: 12 }}><Folder size={40} /></div>
                   <p style={{ color: '#778899', fontSize: 13 }}>Sua biblioteca está vazia. Adicione documentos para enviar aos candidatos.</p>
                 </div>
               ) : (
@@ -1566,7 +1567,7 @@ export default function RecrutadorDashboard({ navigate }) {
                     <div key={doc.id} style={{ background: 'white', borderRadius: 14, padding: '18px 20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: 20 }}>📄</span>
+                          <span style={{ display: "flex", color: "#1e4a8a" }}><FileText size={20} /></span>
                           <span style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e' }}>{doc.title}</span>
                         </div>
                         <div style={{ fontSize: 12, color: '#778899' }}>
@@ -1742,9 +1743,9 @@ export default function RecrutadorDashboard({ navigate }) {
                   {/* Stats cards */}
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
                     {[
-                      { label: 'Alunos matriculados', value: courseStats?.totalStudents ?? courseStudents.length, icon: '👥', color: '#1e4a8a' },
-                      { label: 'Taxa de conclusão', value: courseStats?.completionRate != null ? `${Math.round(courseStats.completionRate)}%` : '—', icon: '📊', color: '#22c55e' },
-                      { label: 'Progresso médio', value: courseStats?.averageProgress != null ? `${Math.round(courseStats.averageProgress)}%` : '—', icon: '📈', color: '#f0a500' },
+                      { label: 'Alunos matriculados', value: courseStats?.totalStudents ?? courseStudents.length, icon: <Users size={20} />, color: '#1e4a8a' },
+                      { label: 'Taxa de conclusão', value: courseStats?.completionRate != null ? `${Math.round(courseStats.completionRate)}%` : '—', icon: <BarChart2 size={20} />, color: '#22c55e' },
+                      { label: 'Progresso médio', value: courseStats?.averageProgress != null ? `${Math.round(courseStats.averageProgress)}%` : '—', icon: <TrendingUp size={20} />, color: '#f0a500' },
                     ].map(s => (
                       <div key={s.label} style={{ background: 'white', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', borderTop: `3px solid ${s.color}` }}>
                         <div style={{ fontSize: 24, marginBottom: 8 }}>{s.icon}</div>
@@ -1803,7 +1804,7 @@ export default function RecrutadorDashboard({ navigate }) {
 
             {courseSuccess ? (
               <div style={{ background: 'white', borderRadius: 16, padding: '48px', textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-                <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
+                <div style={{ color: "#22c55e", display: "flex", justifyContent: "center", marginBottom: 16 }}><Sparkles size={56} /></div>
                 <h3 style={{ color: '#22c55e', fontSize: 18, fontWeight: 800 }}>{courseSuccess}</h3>
               </div>
             ) : (
@@ -1933,7 +1934,7 @@ export default function RecrutadorDashboard({ navigate }) {
               <div style={{ background: 'white', borderRadius: 14, padding: '32px', textAlign: 'center', color: '#778899', fontSize: 13 }}>Carregando cursos...</div>
             ) : myCourses.length === 0 ? (
               <div style={{ background: 'white', borderRadius: 16, padding: '48px', textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🎓</div>
+                <div style={{ color: "#aab", display: "flex", justifyContent: "center", marginBottom: 16 }}><GraduationCap size={48} /></div>
                 <h3 style={{ color: '#1e3a6e', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Nenhum curso criado</h3>
                 <p style={{ color: '#778899', fontSize: 13 }}>Crie seu primeiro curso para compartilhar conhecimento.</p>
               </div>
@@ -1952,7 +1953,7 @@ export default function RecrutadorDashboard({ navigate }) {
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: st.bg, color: st.color }}>{st.label}</span>
                             {course._count?.enrollments > 0 && (
-                              <span style={{ fontSize: 12, color: '#778899' }}>👥 {course._count.enrollments} alunos</span>
+                              <span style={{ fontSize: 12, color: '#778899', display: 'flex', alignItems: 'center', gap: 4 }}><Users size={12} /> {course._count.enrollments} alunos</span>
                             )}
                           </div>
                         </div>
@@ -2007,10 +2008,10 @@ export default function RecrutadorDashboard({ navigate }) {
 
         <div style={{ padding: '12px 10px', borderTop: '1px solid #f0f4f8' }}>
           <button onClick={() => navigate('home')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#556677', marginBottom: 2 }}>
-            <span>🌐</span> Ver site
+            <span style={{ display: 'flex', alignItems: 'center' }}><Globe size={14} /></span> Ver site
           </button>
           <button onClick={() => { logout(); navigate('home') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#ef4444' }}>
-            <span>🚪</span> Sair
+            <span style={{ display: 'flex', alignItems: 'center' }}><LogOut size={14} /></span> Sair
           </button>
         </div>
       </div>

@@ -314,7 +314,7 @@ export default function JobDetailPage({ job, navigate }) {
             </div>
 
             {submitError && (
-              <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>{submitError}</div>
+              <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>⚠️ {submitError}</div>
             )}
 
             {/* Step 1 — Cover Letter */}

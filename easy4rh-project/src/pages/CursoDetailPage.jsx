@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { coursesApi, lessonsApi } from '../services/api'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { GraduationCap, ArrowLeft, Video, Check, Play, Lock, BookOpen, Trophy, Printer, CheckCircle } from '../utils/icons.jsx'
 
 export default function CursoDetailPage({ navigate, courseId }) {
   const { user } = useAuth()
@@ -122,7 +123,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f4f8' }}>
       <div style={{ textAlign: 'center', color: '#778' }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🎓</div>
+        <div style={{ display: "flex", justifyContent: "center", color: "#aab", marginBottom: 12 }}><GraduationCap size={40} /></div>
         <p>Carregando curso...</p>
       </div>
     </div>
@@ -175,7 +176,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
                   />
                 ) : (
                   <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
-                    <div style={{ fontSize: 48, marginBottom: 12 }}>🎬</div>
+                    <div style={{ display: "flex", justifyContent: "center", color: "rgba(255,255,255,0.4)", marginBottom: 12 }}><Video size={48} /></div>
                     <p style={{ fontSize: 14 }}>Vídeo não disponível ainda</p>
                   </div>
                 )}
@@ -187,7 +188,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
                 )}
                 {completedLessons.has(activeLesson.id) ? (
                   <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, color: '#2a7a4e', fontWeight: 700, fontSize: 13 }}>
-                    <span style={{ fontSize: 18 }}>✓</span> Aula concluida!
+                    <span style={{ display: 'flex' }}><Check size={18} /></span> Aula concluida!
                   </div>
                 ) : (
                   <>
@@ -196,7 +197,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
                       disabled={markingComplete}
                       style={{ marginTop: 16, background: markingComplete ? '#aaa' : '#2a7a4e', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: markingComplete ? 'default' : 'pointer', fontWeight: 700, fontSize: 13 }}
                     >
-                      {markingComplete ? 'Salvando...' : '✓ Marcar como concluida'}
+                      {markingComplete ? 'Salvando...' : 'Marcar como concluída'}
                     </button>
                     {progressError && (
                       <p style={{ marginTop: 8, fontSize: 12.5, color: '#dc2626' }}>{progressError}</p>
@@ -239,7 +240,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
                 </div>
               ) : (
                 <div style={{ background: '#f0fff4', borderRadius: 12, padding: '16px 20px', border: '1px solid #b2e4c8', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 24 }}>✅</span>
+                  <span style={{ display: "flex", color: "#22c55e" }}><CheckCircle size={24} /></span>
                   <div>
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#2a7a4e', margin: 0 }}>Você está matriculado!</p>
                     <p style={{ fontSize: 13, color: '#557', margin: 0, marginTop: 2 }}>Clique em uma aula ao lado para começar.</p>
@@ -299,7 +300,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
                       const isDone = completedLessons.has(lesson.id)
                       return (
                         <div style={{ width: 28, height: 28, borderRadius: '50%', background: isDone ? '#2a7a4e' : isActive ? '#1e4a8a' : '#e8edf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0, color: (isDone || isActive) ? 'white' : '#778' }}>
-                          {isLocked ? '🔒' : isDone ? '✓' : isActive ? '▶' : li + 1}
+                          {isLocked ? <Lock size={12} /> : isDone ? <Check size={12} /> : isActive ? <Play size={12} /> : li + 1}
                         </div>
                       )
                     })()}

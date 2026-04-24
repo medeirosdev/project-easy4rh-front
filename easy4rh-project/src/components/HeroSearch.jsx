@@ -107,7 +107,7 @@ export default function HeroSearch({ navigate }) {
 
       {!isMobile && (
         <div style={{ position: 'absolute', right: 0, top: '80px', width: isTablet ? '55%' : '62%', height: '100%', zIndex: 1 }}>
-          <img src={heroImage} alt="Hero" style={{ width: '85%', height: '85%', objectFit: 'contain', objectPosition: 'right bottom', display: 'block' }} />
+          <img src={heroImage} alt="Profissional de RH trabalhando com a plataforma Easy4RH" style={{ width: '85%', height: '85%', objectFit: 'contain', objectPosition: 'right bottom', display: 'block' }} />
         </div>
       )}
 

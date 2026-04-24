@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useJobs } from '../context/JobsContext'
 import { useAuth } from '../context/AuthContext'
+import { Search, Lock, FileText, Home, ClipboardList } from '../utils/icons.jsx'
 import JobCard from '../components/JobCard'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
@@ -168,14 +169,14 @@ export default function VagasPage({ navigate }) {
                 { title: 'Nível', key: 'levels', options: levels },
               ].map(section => (
                 <div key={section.key}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>{section.title}</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>{section.title}</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {section.options.map(opt => (
                       <div
                         key={opt}
                         onClick={() => toggleFilter(section.key, opt)}
                         style={{
-                          padding: '5px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 12.5, fontWeight: 600,
+                          padding: '8px 16px', borderRadius: 20, cursor: 'pointer', fontSize: 12.5, fontWeight: 600,
                           background: filters[section.key].includes(opt) ? 'white' : 'rgba(255,255,255,0.15)',
                           color: filters[section.key].includes(opt) ? '#1e4a8a' : 'white',
                           border: '1px solid rgba(255,255,255,0.3)',
@@ -218,26 +219,26 @@ export default function VagasPage({ navigate }) {
           {!user ? (
             <div style={{ display: 'flex', gap: isMobile ? 12 : 32, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
-                { label: '🔐 Entrar', action: () => navigate('login') },
-                { label: '📝 Criar conta', action: () => navigate('register') },
-                { label: '🔍 Recrutamento', action: () => navigate('login') },
+                { icon: <Lock size={13} />, label: 'Entrar', action: () => navigate('login') },
+                { icon: <FileText size={13} />, label: 'Criar conta', action: () => navigate('register') },
+                { icon: <Search size={13} />, label: 'Recrutamento', action: () => navigate('login') },
               ].map((item) => (
                 <button key={item.label} onClick={item.action}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
-                  {item.label}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {item.icon} {item.label}
                 </button>
               ))}
             </div>
           ) : (
             <div style={{ display: 'flex', gap: isMobile ? 12 : 24, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
               <button onClick={() => navigate(isRecruiter ? 'dashboard-recrutador' : 'dashboard-candidato')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
-                🏠 Meu Painel
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Home size={13} /> Meu Painel
               </button>
               {!isRecruiter && (
                 <button onClick={() => navigate('dashboard-candidato')}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
-                  📋 Minhas Candidaturas
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ClipboardList size={13} /> Minhas Candidaturas
                 </button>
               )}
             </div>
@@ -311,7 +312,7 @@ export default function VagasPage({ navigate }) {
                 { title: 'LOCALIZAÇÃO', key: 'locations', options: locations },
               ].map(section => (
                 <div key={section.title} style={{ borderBottom: '1px solid #e8edf2', paddingBottom: 16, marginBottom: 16 }}>
-                  <h4 style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: 1, margin: '0 0 12px', textTransform: 'uppercase' }}>{section.title}</h4>
+                  <h4 style={{ fontSize: 12.5, fontWeight: 700, color: '#666', letterSpacing: 1, margin: '0 0 12px', textTransform: 'uppercase' }}>{section.title}</h4>
                   {section.options.map(opt => (
                     <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 10, fontSize: 13 }}>
                       <input type="checkbox" checked={filters[section.key].includes(opt)} onChange={() => toggleFilter(section.key, opt)} style={{ cursor: 'pointer', accentColor: '#1e4a8a', width: 16, height: 16 }} />
@@ -344,7 +345,7 @@ export default function VagasPage({ navigate }) {
               { title: 'LOCALIZAÇÃO', key: 'locations', options: locations },
             ].map(section => (
               <div key={section.title} style={{ background: 'white', border: '1px solid #e8edf2', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h4 style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: 1, margin: '0 0 12px', textTransform: 'uppercase' }}>{section.title}</h4>
+                <h4 style={{ fontSize: 12.5, fontWeight: 700, color: '#666', letterSpacing: 1, margin: '0 0 12px', textTransform: 'uppercase' }}>{section.title}</h4>
                 {section.options.map(opt => (
                   <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8, fontSize: 13 }}>
                     <input type="checkbox" checked={filters[section.key].includes(opt)} onChange={() => toggleFilter(section.key, opt)} style={{ cursor: 'pointer', accentColor: '#1e4a8a' }} />
@@ -369,7 +370,7 @@ export default function VagasPage({ navigate }) {
               ))
             ) : filtered.length === 0 ? (
               <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center', border: '1px solid #e8edf2' }}>
-                <div style={{ fontSize: 48 }}>🔍</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16, color: '#aab' }}><Search size={48} /></div>
                 <h3 style={{ color: '#1e3a6e' }}>Nenhuma vaga encontrada</h3>
                 <p style={{ color: '#666' }}>
                   {appliedKeyword ? `Nenhuma vaga para "${appliedKeyword}"` : 'Tente ajustar seus filtros ou busca'}
