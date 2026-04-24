@@ -231,7 +231,7 @@ export default function JobPosterModal({ job, company, onClose }) {
           )}
 
           {/* ── Freelance ── */}
-          {job.isFreelance && (job.freelanceDuration || job.freelancePaymentType || job.freelanceHoursPerWeek) && (
+          {(job.isFreelance || job.contractType === 'FREELANCE') && (job.freelanceDuration || job.freelancePaymentType || job.freelanceHoursPerWeek) && (
             <div style={{ padding: '14px 40px 0' }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ width: 18, height: 2, background: '#7c3aed', borderRadius: 2 }} />

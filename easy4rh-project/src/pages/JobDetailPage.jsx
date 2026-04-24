@@ -223,14 +223,14 @@ export default function JobDetailPage({ job, navigate }) {
                         💰 {job.salary}
                       </span>
                     )}
-                    {job.isFreelance && (
+                    {(job.isFreelance || job.contract === 'Freelance') && (
                       <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed' }}>
                         Freelance
                       </span>
                     )}
                   </div>
 
-                  {job.isFreelance && (job.freelanceDuration || job.freelancePaymentType || job.freelanceHoursPerWeek) && (
+                  {(job.isFreelance || job.contract === 'Freelance') && (job.freelanceDuration || job.freelancePaymentType || job.freelanceHoursPerWeek) && (
                     <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '12px 16px', marginBottom: 12, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                       {job.freelanceDuration && (
                         <div style={{ fontSize: 12.5 }}>

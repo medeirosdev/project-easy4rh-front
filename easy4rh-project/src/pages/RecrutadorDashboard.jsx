@@ -1086,7 +1086,7 @@ export default function RecrutadorDashboard({ navigate }) {
                     </div>
                     <div>
                       <label style={labelStyle}>Tipo de contrato</label>
-                      <select value={novaVaga.contractType} onChange={e => setNovaVaga(prev => ({ ...prev, contractType: e.target.value }))} style={selectBase}>
+                      <select value={novaVaga.contractType} onChange={e => setNovaVaga(prev => ({ ...prev, contractType: e.target.value, isFreelance: e.target.value === 'FREELANCE' ? true : (e.target.value !== '' ? false : prev.isFreelance) }))} style={selectBase}>
                         <option value="">Selecione</option>
                         {contractTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                       </select>

@@ -53,7 +53,7 @@ export default function VagasPage({ navigate }) {
       if (filters.types.length && !filters.types.includes(job.type)) return false
       if (filters.levels.length && !filters.levels.includes(job.level)) return false
       if (filters.locations.length && !filters.locations.some(l => job.location.includes(l.split(',')[0]))) return false
-      if (filters.freelanceOnly && !job.isFreelance) return false
+      if (filters.freelanceOnly && !job.isFreelance && job.contract !== 'Freelance') return false
       if (appliedKeyword) {
         const kw = appliedKeyword.toLowerCase()
         const companyName = typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')
