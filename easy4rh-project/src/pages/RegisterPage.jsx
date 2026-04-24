@@ -29,7 +29,6 @@ export default function RegisterPage({ navigate }) {
     const result = await register({ email: form.email, password: form.password, role, name: `${form.firstName} ${form.lastName}`.trim(), phone: form.phone });
     if (!result.success) { setErrors({ general: result.message }); setLoading(false); return; }
     setLoading(false);
-    setSuccess(true);
     const r = result.user?.role
     const isRecruiterSide = ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(r)
     navigate(isRecruiterSide ? 'dashboard-recrutador' : 'dashboard-candidato')

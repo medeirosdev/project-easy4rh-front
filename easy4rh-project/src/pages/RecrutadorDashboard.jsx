@@ -2003,11 +2003,16 @@ export default function RecrutadorDashboard({ navigate }) {
         </nav>
 
         <div style={{ padding: '12px 10px', borderTop: '1px solid #f0f4f8' }}>
-          <button onClick={() => navigate('home')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#556677', marginBottom: 2 }}>
-            <span>🌐</span> Ver site
+          {user?.role === 'ADMIN' && (
+            <button onClick={() => navigate('admin')} style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 700, background: '#fef2f2', color: '#b91c1c', marginBottom: 6 }}>
+              Painel Admin
+            </button>
+          )}
+          <button onClick={() => navigate('home')} style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#556677', marginBottom: 2 }}>
+            Ver site
           </button>
-          <button onClick={() => { logout(); navigate('home') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#ef4444' }}>
-            <span>🚪</span> Sair
+          <button onClick={() => { logout(); navigate('home') }} style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#ef4444' }}>
+            Sair
           </button>
         </div>
       </div>

@@ -324,6 +324,36 @@ export const documentsApi = {
   respond: (sentDocumentId, status) => request('PATCH', `/documents/received/${sentDocumentId}`, { status }),
 }
 
+// ── Admin Management (ADMIN only, uses JWT) ───────────────────
+
+function buildQs(params) {
+  return new URLSearchParams(
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''))
+  ).toString()
+}
+
+export const adminApi = {
+  stats: () => requestAudit('GET', '/admin/stats'),
+
+  listJobs: (params = {}) => {
+    const qs = buildQs(params)
+    return requestAudit('GET', `/admin/jobs${qs ? '?' + qs : ''}`)
+  },
+  deleteJob: (id) => requestAudit('DELETE', `/admin/jobs/${id}`),
+
+  listCourses: (params = {}) => {
+    const qs = buildQs(params)
+    return requestAudit('GET', `/admin/courses${qs ? '?' + qs : ''}`)
+  },
+  deleteCourse: (id) => requestAudit('DELETE', `/admin/courses/${id}`),
+
+  listUsers: (params = {}) => {
+    const qs = buildQs(params)
+    return requestAudit('GET', `/admin/users${qs ? '?' + qs : ''}`)
+  },
+  deleteUser: (id) => requestAudit('DELETE', `/admin/users/${id}`),
+}
+
 // Requisições para o painel de auditoria — usa X-Audit-Key, sem JWT
 function auditKey() {
   const now = new Date()

@@ -56,7 +56,7 @@ function AppContent({ page, navigate, selectedJob }) {
 
   if (needsAuth) return null
 
-  const hideLayout = ['login', 'consultoria-login', 'register', 'dashboard-candidato', 'dashboard-recrutador', 'admin']
+  const hideLayout = ['login', 'consultoria-login', 'register', 'dashboard-candidato', 'dashboard-recrutador', 'admin', 'admin-dashboard']
 
   const renderPage = () => {
     switch (page) {
@@ -78,6 +78,7 @@ function AppContent({ page, navigate, selectedJob }) {
       case 'em-construcao':        return <EmConstrucaoPage navigate={navigate} />
       case 'plataforma':           return <PlataformaPage navigate={navigate} />
       case 'admin':                return <AdminAuditPage navigate={navigate} />
+      case 'admin-dashboard':      return <AdminAuditPage navigate={navigate} />
       default:
         if (page?.startsWith('curso-')) {
           const courseId = page.replace('curso-', '')
@@ -117,6 +118,7 @@ export default function App() {
     'dashboard-recrutador': 'Painel do Recrutador — Easy4RH',
     'consultoria-login': 'Acessar — Easy4RH',
     'admin': 'Auditoria — Easy4RH',
+    'admin-dashboard': 'Admin — Easy4RH',
   }
 
   const navigate = (pg, data = null) => {

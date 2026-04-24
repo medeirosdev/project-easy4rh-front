@@ -40,8 +40,8 @@ export default function LoginPage({ navigate, initialTab }) {
     setLoading(false);
     if (result.success) {
       const r = result.user?.role
-      if (r === 'RECRUITER' || r === 'INSTRUCTOR') navigate('dashboard-recrutador')
-      else navigate('dashboard-candidato')
+      const isRecruiterSide = ['RECRUITER', 'RECRUITER_INSTRUCTOR', 'INSTRUCTOR', 'ADMIN'].includes(r)
+      navigate(isRecruiterSide ? 'dashboard-recrutador' : 'dashboard-candidato')
     } else {
       setError(result.message);
     }
