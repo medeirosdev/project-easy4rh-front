@@ -25,7 +25,7 @@ function formatDate(iso) {
 export default function CandidatoDashboard({ navigate }) {
   const { user, logout, savedJobs, toggleSaveJob } = useAuth()
   const { jobs, loading: jobsLoading } = useJobs()
-  const { isMobile } = useBreakpoint()
+  const { isMobile, isDesktop } = useBreakpoint()
   const timersRef = useRef([])
   const safeTimeout = useCallback((fn, ms) => {
     const id = setTimeout(fn, ms)
@@ -718,50 +718,76 @@ export default function CandidatoDashboard({ navigate }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 64px)', background: '#f4f7fb' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f4f7fb' }}>
 
-      {/* Sidebar */}
-      <div style={{ width: sidebarWidth, background: 'white', borderRight: '1px solid #e8edf2', display: isMobile ? 'none' : 'flex', flexDirection: 'column', flexShrink: 0, position: 'sticky', top: 64, height: 'calc(100vh - 64px)', overflowY: 'auto' }}>
-        <div style={{ padding: '24px 20px', borderBottom: '1px solid #f0f4f8' }}>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'white', fontWeight: 800, marginBottom: 10 }}>
-            {user?.name?.[0]}
+      {/* Sidebar — desktop only */}
+      {isDesktop && (
+        <div style={{ width: sidebarWidth, background: 'white', borderRight: '1px solid #e8edf2', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
+          <div style={{ padding: '24px 20px', borderBottom: '1px solid #f0f4f8' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'white', fontWeight: 800, marginBottom: 10 }}>
+              {user?.name?.[0]}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e' }}>{user?.name}</div>
+            <div style={{ fontSize: 11, color: '#778899', marginTop: 2 }}>Candidato</div>
           </div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e' }}>{user?.name}</div>
-          <div style={{ fontSize: 11, color: '#778899', marginTop: 2 }}>Candidato</div>
-        </div>
 
-        <nav style={{ padding: '12px 10px', flex: 1 }}>
-          {menuItems.map(item => (
-            <button key={item.id} onClick={() => setActiveSection(item.id)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: activeSection === item.id ? 700 : 500, background: activeSection === item.id ? '#e8f2fc' : 'transparent', color: activeSection === item.id ? '#1e4a8a' : '#556677', marginBottom: 2, transition: 'all 0.15s', textAlign: 'left' }}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        <div style={{ padding: '12px 10px', borderTop: '1px solid #f0f4f8' }}>
-          <button onClick={() => navigate('vagas')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#556677', marginBottom: 2 }}>
-            <span>🌐</span> Ver site
-          </button>
-          <button onClick={() => { logout(); navigate('home') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#ef4444' }}>
-            <span>🚪</span> Sair
-          </button>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div style={{ flex: 1, padding: isMobile ? '24px 16px' : '36px 40px', overflowY: 'auto' }}>
-        {isMobile && (
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 24, paddingBottom: 4 }}>
+          <nav style={{ padding: '12px 10px', flex: 1 }}>
             {menuItems.map(item => (
               <button key={item.id} onClick={() => setActiveSection(item.id)}
-                style={{ flexShrink: 0, padding: '8px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: activeSection === item.id ? 700 : 500, background: activeSection === item.id ? '#1e4a8a' : 'white', color: activeSection === item.id ? 'white' : '#556677' }}>
+                style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: activeSection === item.id ? 700 : 500, background: activeSection === item.id ? '#e8f2fc' : 'transparent', color: activeSection === item.id ? '#1e4a8a' : '#556677', marginBottom: 2, transition: 'all 0.15s', textAlign: 'left' }}>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <div style={{ padding: '12px 10px', borderTop: '1px solid #f0f4f8' }}>
+            <button onClick={() => navigate('vagas')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#556677', marginBottom: 2 }}>
+              <span>🌐</span> Ver site
+            </button>
+            <button onClick={() => { logout(); navigate('home') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#ef4444' }}>
+              <span>🚪</span> Sair
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main content */}
+      <div style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
+
+        {/* Mobile / tablet top bar */}
+        {!isDesktop && (
+          <div style={{ background: 'white', borderBottom: '1px solid #e8edf2', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'white', fontWeight: 800, flexShrink: 0 }}>
+                {user?.name?.[0]}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1e3a6e', lineHeight: 1.2 }}>{user?.name?.split(' ')[0]}</div>
+                <div style={{ fontSize: 11, color: '#778899' }}>Candidato</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => navigate('vagas')} style={{ background: '#f0f6ff', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12, color: '#1e4a8a' }}>Vagas</button>
+              <button onClick={() => { logout(); navigate('home') }} style={{ background: '#fff1f1', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12, color: '#ef4444' }}>Sair</button>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation tabs — mobile/tablet */}
+        {!isDesktop && (
+          <div style={{ background: 'white', borderBottom: '1px solid #e8edf2', padding: '0 16px', display: 'flex', gap: 0, overflowX: 'auto' }}>
+            {menuItems.map(item => (
+              <button key={item.id} onClick={() => setActiveSection(item.id)}
+                style={{ flexShrink: 0, padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: activeSection === item.id ? 700 : 500, color: activeSection === item.id ? '#1e4a8a' : '#6b7280', borderBottom: activeSection === item.id ? '2.5px solid #1e4a8a' : '2.5px solid transparent', whiteSpace: 'nowrap' }}>
                 {item.label}
               </button>
             ))}
           </div>
         )}
-        {renderSection()}
+
+        <div style={{ padding: isMobile ? '20px 16px' : '28px 24px', maxWidth: isDesktop ? 'none' : 900, margin: isDesktop ? 0 : '0 auto' }}>
+          {renderSection()}
+        </div>
       </div>
     </div>
   )

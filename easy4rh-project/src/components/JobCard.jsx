@@ -18,12 +18,29 @@ export default function JobCard({ job, navigate }) {
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          <div style={{ width: 54, height: 54, borderRadius: 12, background: job.logoColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: 'white', fontSize: 12, flexShrink: 0, boxShadow: `0 4px 12px ${job.logoColor}44` }}>
-            {job.logo}
+          <div
+            onClick={e => {
+              const co = typeof job.company === 'object' && job.company ? job.company : null
+              if (co?.id) { e.stopPropagation(); navigate('empresa', co) }
+            }}
+            style={{ width: 54, height: 54, borderRadius: 12, background: job.logoColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: 'white', fontSize: 12, flexShrink: 0, boxShadow: `0 4px 12px ${job.logoColor}44`, cursor: typeof job.company === 'object' && job.company?.id ? 'pointer' : 'default', overflow: 'hidden' }}
+          >
+            {job.logo && (job.logo.startsWith('http') || job.logo.startsWith('/'))
+              ? <img src={job.logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : job.logo
+            }
           </div>
           <div>
             <div style={{ fontSize: 15.5, fontWeight: 700, color: '#1e3a6e', marginBottom: 2 }}>{job.title}</div>
-            <div style={{ fontSize: 13, color: '#666' }}>{typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')}</div>
+            <div
+              onClick={e => {
+                const co = typeof job.company === 'object' && job.company ? job.company : null
+                if (co?.id) { e.stopPropagation(); navigate('empresa', co) }
+              }}
+              style={{ fontSize: 13, color: typeof job.company === 'object' && job.company?.id ? '#1a4f8a' : '#666', cursor: typeof job.company === 'object' && job.company?.id ? 'pointer' : 'default', fontWeight: typeof job.company === 'object' && job.company?.id ? 600 : 400 }}
+            >
+              {typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')}
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>

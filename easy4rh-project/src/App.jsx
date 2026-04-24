@@ -18,6 +18,7 @@ import EmConstrucaoPage from './pages/EmConstrucaoPage'
 import PlataformaPage from './pages/PlataformaPage'
 import CursoDetailPage from './pages/CursoDetailPage'
 import AdminAuditPage from './pages/AdminAuditPage'
+import EmpresaPage from './pages/EmpresaPage'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -44,7 +45,7 @@ class ErrorBoundary extends React.Component {
 }
 
 // Componente interno que acessa AuthContext, protege rotas e registra o navigate
-function AppContent({ page, navigate, selectedJob }) {
+function AppContent({ page, navigate, selectedJob, selectedCompany }) {
   const { user, setNavigate } = useAuth()
   useEffect(() => { setNavigate(navigate) }, [navigate, setNavigate])
 
@@ -79,6 +80,7 @@ function AppContent({ page, navigate, selectedJob }) {
       case 'plataforma':           return <PlataformaPage navigate={navigate} />
       case 'admin':                return <AdminAuditPage navigate={navigate} />
       case 'admin-dashboard':      return <AdminAuditPage navigate={navigate} />
+      case 'empresa':              return <EmpresaPage company={selectedCompany} navigate={navigate} />
       default:
         if (page?.startsWith('curso-')) {
           const courseId = page.replace('curso-', '')
@@ -103,6 +105,7 @@ function AppContent({ page, navigate, selectedJob }) {
 export default function App() {
   const [page, setPage] = useState('home')
   const [selectedJob, setSelectedJob] = useState(null)
+  const [selectedCompany, setSelectedCompany] = useState(null)
 
   const pageTitles = {
     home: 'Easy4RH — Plataforma de RH',
@@ -119,13 +122,20 @@ export default function App() {
     'consultoria-login': 'Acessar — Easy4RH',
     'admin': 'Auditoria — Easy4RH',
     'admin-dashboard': 'Admin — Easy4RH',
+    'empresa': 'Empresa — Easy4RH',
   }
 
   const navigate = (pg, data = null) => {
     setPage(pg)
-    if (data) setSelectedJob(data)
+    if (pg === 'empresa' && data) {
+      setSelectedCompany(data)
+    } else if (data) {
+      setSelectedJob(data)
+    }
     window.scrollTo(0, 0)
-    const title = pageTitles[pg] || (pg?.startsWith('curso-') ? 'Curso — Easy4RH' : 'Easy4RH')
+    const title = pg === 'empresa' && data?.name
+      ? `${data.name} — Easy4RH`
+      : (pageTitles[pg] || (pg?.startsWith('curso-') ? 'Curso — Easy4RH' : 'Easy4RH'))
     document.title = title
     // Atualiza URL sem recarregar: limpa ?job= quando sai da vaga
     const url = new URL(window.location.href)
@@ -171,7 +181,7 @@ export default function App() {
   return (
     <AuthProvider>
       <JobsProvider>
-        <AppContent page={page} navigate={navigate} selectedJob={selectedJob} />
+        <AppContent page={page} navigate={navigate} selectedJob={selectedJob} selectedCompany={selectedCompany} />
       </JobsProvider>
     </AuthProvider>
   )

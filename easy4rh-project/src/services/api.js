@@ -137,6 +137,7 @@ export const jobsApi = {
       salaryMin:       'salaryMin',
       salaryMax:       'salaryMax',
       isFreelance:     'isFreelance',
+      companyId:       'companyId',
       page:            'page',
       limit:           'limit',
     }

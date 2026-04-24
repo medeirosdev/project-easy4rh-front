@@ -212,7 +212,15 @@ export default function JobDetailPage({ job, navigate }) {
               {/* Job header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, color: "#1e4a8a", margin: "0 0 8px" }}>{job.title}</h2>
+                  <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, color: "#1e4a8a", margin: "0 0 4px" }}>{job.title}</h2>
+                  {typeof job.company === 'object' && job.company?.id && (
+                    <button
+                      onClick={() => navigate('empresa', job.company)}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: '#2a7ec8', fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      🏢 {job.company.name} <span style={{ fontSize: 11, color: '#9ca3af' }}>→ ver empresa</span>
+                    </button>
+                  )}
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
                     <span style={{ fontSize: 13, color: "#555" }}>Local: {job.location || 'A definir'}</span>
                     <span style={{ fontSize: 13, color: "#555" }}>Nível: {job.level}</span>
@@ -254,8 +262,14 @@ export default function JobDetailPage({ job, navigate }) {
                   )}
                 </div>
                 {!isMobile && (
-                  <div style={{ width: 72, height: 72, borderRadius: 12, background: job.logoColor, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "white", fontSize: 14, flexShrink: 0 }}>
-                    {job.logo}
+                  <div
+                    onClick={() => { const co = typeof job.company === 'object' && job.company; if (co?.id) navigate('empresa', co) }}
+                    style={{ width: 72, height: 72, borderRadius: 12, background: job.logoColor, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "white", fontSize: 14, flexShrink: 0, overflow: 'hidden', cursor: typeof job.company === 'object' && job.company?.id ? 'pointer' : 'default' }}
+                  >
+                    {job.logo && (job.logo.startsWith('http') || job.logo.startsWith('/'))
+                      ? <img src={job.logo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : job.logo
+                    }
                   </div>
                 )}
               </div>
