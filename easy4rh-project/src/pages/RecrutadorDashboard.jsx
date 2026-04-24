@@ -54,7 +54,12 @@ const questionTypes = [
   { label: 'Sim / Não', value: 'YES_NO' },
   { label: 'Texto livre', value: 'TEXT' },
 ]
-const emptyVaga = { title: '', companyId: '', city: '', state: '', locationType: '', experienceLevel: '', contractType: '', description: '', requirements: '', responsibilities: '', area: '', salaryMin: '', salaryMax: '', hideSalary: false, expiresAt: '', isConfidential: false, openingReason: '' }
+const freelancePaymentTypes = [
+  { label: 'Por hora', value: 'POR_HORA' },
+  { label: 'Valor fixo', value: 'VALOR_FIXO' },
+  { label: 'Por entrega', value: 'POR_ENTREGA' },
+]
+const emptyVaga = { title: '', companyId: '', city: '', state: '', locationType: '', experienceLevel: '', contractType: '', description: '', requirements: '', responsibilities: '', area: '', salaryMin: '', salaryMax: '', hideSalary: false, expiresAt: '', isConfidential: false, openingReason: '', isFreelance: false, freelanceDuration: '', freelancePaymentType: '', freelanceHoursPerWeek: '' }
 const emptyQuestion = { question: '', type: 'SINGLE_CHOICE', required: true, options: [{ label: '', score: 0 }, { label: '', score: 0 }] }
 const courseLevels = [
   { label: 'Iniciante', value: 'BEGINNER' },
@@ -228,6 +233,10 @@ export default function RecrutadorDashboard({ navigate }) {
         expiresAt: job.expiresAt || null,
         isConfidential: job.isConfidential || false,
         openingReason: job.openingReason || null,
+        isFreelance: job.isFreelance || false,
+        freelanceDuration: job.freelanceDuration || null,
+        freelancePaymentType: job.freelancePaymentType || null,
+        freelanceHoursPerWeek: job.freelanceHoursPerWeek ?? null,
       })))
     } catch (err) {
       console.error('Erro ao carregar vagas:', err)
@@ -430,6 +439,10 @@ export default function RecrutadorDashboard({ navigate }) {
         expiresAt: novaVaga.expiresAt || undefined,
         isConfidential: novaVaga.isConfidential || false,
         openingReason: novaVaga.openingReason || undefined,
+        isFreelance: novaVaga.isFreelance || false,
+        freelanceDuration: novaVaga.isFreelance && novaVaga.freelanceDuration ? novaVaga.freelanceDuration : undefined,
+        freelancePaymentType: novaVaga.isFreelance && novaVaga.freelancePaymentType ? novaVaga.freelancePaymentType : undefined,
+        freelanceHoursPerWeek: novaVaga.isFreelance && novaVaga.freelanceHoursPerWeek ? Number(novaVaga.freelanceHoursPerWeek) : undefined,
       }
       const created = await jobsApi.create(payload)
       setCreatedJobId(created.id)
@@ -1098,6 +1111,29 @@ export default function RecrutadorDashboard({ navigate }) {
                       <input type="checkbox" checked={novaVaga.isConfidential} onChange={e => setNovaVaga(prev => ({ ...prev, isConfidential: e.target.checked }))} style={{ accentColor: '#1e4a8a' }} />
                       <label style={{ fontSize: 13, color: '#556677' }}>Vaga confidencial (empresa não divulgada)</label>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input type="checkbox" checked={novaVaga.isFreelance} onChange={e => setNovaVaga(prev => ({ ...prev, isFreelance: e.target.checked, contractType: e.target.checked ? 'FREELANCE' : prev.contractType }))} style={{ accentColor: '#7c3aed' }} />
+                      <label style={{ fontSize: 13, color: '#556677' }}>Vaga freelance / projeto</label>
+                    </div>
+                    {novaVaga.isFreelance && (
+                      <>
+                        <div>
+                          <label style={labelStyle}>Duração estimada do projeto</label>
+                          <input value={novaVaga.freelanceDuration} onChange={e => setNovaVaga(prev => ({ ...prev, freelanceDuration: e.target.value }))} placeholder="Ex: 3 meses, 6 semanas" style={inputBase} />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Forma de pagamento</label>
+                          <select value={novaVaga.freelancePaymentType} onChange={e => setNovaVaga(prev => ({ ...prev, freelancePaymentType: e.target.value }))} style={selectBase}>
+                            <option value=''>Selecione (opcional)</option>
+                            {freelancePaymentTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Horas estimadas por semana</label>
+                          <input type="number" min="1" value={novaVaga.freelanceHoursPerWeek} onChange={e => setNovaVaga(prev => ({ ...prev, freelanceHoursPerWeek: e.target.value }))} placeholder="20" style={inputBase} />
+                        </div>
+                      </>
+                    )}
                     <div>
                       <label style={labelStyle}>Data de encerramento prevista</label>
                       <input type="date" value={novaVaga.expiresAt} onChange={e => setNovaVaga(prev => ({ ...prev, expiresAt: e.target.value }))} style={inputBase} />
@@ -1229,6 +1265,12 @@ export default function RecrutadorDashboard({ navigate }) {
                         { l: 'Contrato', v: contractTypes.find(t => t.value === novaVaga.contractType)?.label || '—' },
                         { l: 'Área', v: novaVaga.area || '—' },
                         { l: 'Salário', v: novaVaga.hideSalary ? 'Oculto' : novaVaga.salaryMin ? `R$ ${novaVaga.salaryMin}${novaVaga.salaryMax ? ` – R$ ${novaVaga.salaryMax}` : ''}` : 'A combinar' },
+                        { l: 'Freelance', v: novaVaga.isFreelance ? 'Sim' : 'Não' },
+                        ...(novaVaga.isFreelance ? [
+                          { l: 'Duração', v: novaVaga.freelanceDuration || '—' },
+                          { l: 'Pagamento', v: freelancePaymentTypes.find(t => t.value === novaVaga.freelancePaymentType)?.label || '—' },
+                          { l: 'Horas/semana', v: novaVaga.freelanceHoursPerWeek ? `${novaVaga.freelanceHoursPerWeek}h` : '—' },
+                        ] : []),
                         { l: 'Perguntas', v: `${questions.length} pergunta${questions.length !== 1 ? 's' : ''} de triagem` },
                       ].map(item => (
                         <div key={item.l} style={{ fontSize: 13 }}>
@@ -1308,6 +1350,7 @@ export default function RecrutadorDashboard({ navigate }) {
                           <span style={{ fontSize: 12, color: '#778899' }}>📋 {v.aplicacoes} aplicação(ões)</span>
                           {experienceLevelLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0f9ff', color: '#0369a1', fontWeight: 600 }}>{experienceLevelLabel}</span>}
                           {contractTypeLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', fontWeight: 600 }}>{contractTypeLabel}</span>}
+                          {v.isFreelance && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed', fontWeight: 600 }}>Freelance</span>}
                           {timeSincePublished && <span style={{ fontSize: 12, color: '#778899' }}>⏱ Publicada há {timeSincePublished}</span>}
                           {slaText && <span style={{ fontSize: 12, color: '#778899' }}>📅 SLA: {slaText}</span>}
                           {openingReasonLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#3b82f6', fontWeight: 600 }}>{openingReasonLabel}</span>}

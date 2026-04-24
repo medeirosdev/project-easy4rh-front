@@ -44,6 +44,9 @@ export default function JobCard({ job, navigate }) {
         <span style={{ fontSize: 12.5, color: '#555' }}>📍 {job.location}</span>
         <span style={{ fontSize: 12.5, color: '#555' }}>🎓 {job.level}</span>
         <span style={{ fontSize: 12.5, color: '#2e7d32', fontWeight: 600 }}>💰 {job.salary}</span>
+        {job.isFreelance && (
+          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed' }}>Freelance</span>
+        )}
         <span style={{ fontSize: 12, color: '#999', marginLeft: 'auto' }}>🕐 Há {job.posted}</span>
       </div>
 

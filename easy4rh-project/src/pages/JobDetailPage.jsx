@@ -223,7 +223,35 @@ export default function JobDetailPage({ job, navigate }) {
                         💰 {job.salary}
                       </span>
                     )}
+                    {job.isFreelance && (
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed' }}>
+                        Freelance
+                      </span>
+                    )}
                   </div>
+
+                  {job.isFreelance && (job.freelanceDuration || job.freelancePaymentType || job.freelanceHoursPerWeek) && (
+                    <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10, padding: '12px 16px', marginBottom: 12, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                      {job.freelanceDuration && (
+                        <div style={{ fontSize: 12.5 }}>
+                          <span style={{ color: '#7c3aed', fontWeight: 700 }}>Duração: </span>
+                          <span style={{ color: '#4c1d95' }}>{job.freelanceDuration}</span>
+                        </div>
+                      )}
+                      {job.freelancePaymentType && (
+                        <div style={{ fontSize: 12.5 }}>
+                          <span style={{ color: '#7c3aed', fontWeight: 700 }}>Pagamento: </span>
+                          <span style={{ color: '#4c1d95' }}>{{ POR_HORA: 'Por hora', VALOR_FIXO: 'Valor fixo', POR_ENTREGA: 'Por entrega' }[job.freelancePaymentType] || job.freelancePaymentType}</span>
+                        </div>
+                      )}
+                      {job.freelanceHoursPerWeek && (
+                        <div style={{ fontSize: 12.5 }}>
+                          <span style={{ color: '#7c3aed', fontWeight: 700 }}>Horas/semana: </span>
+                          <span style={{ color: '#4c1d95' }}>{job.freelanceHoursPerWeek}h</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {!isMobile && (
                   <div style={{ width: 72, height: 72, borderRadius: 12, background: job.logoColor, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "white", fontSize: 14, flexShrink: 0 }}>

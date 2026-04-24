@@ -14,7 +14,7 @@ export default function VagasPage({ navigate }) {
   const { user } = useAuth()
   const { isMobile } = useBreakpoint()
 
-  const [filters, setFilters] = useState({ types: [], levels: [], locations: [] })
+  const [filters, setFilters] = useState({ types: [], levels: [], locations: [], freelanceOnly: false })
   const [showFilterDrawer, setShowFilterDrawer] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [keywordInput, setKeywordInput] = useState('')
@@ -36,7 +36,7 @@ export default function VagasPage({ navigate }) {
   }
 
   const handleClearAll = () => {
-    setFilters({ types: [], levels: [], locations: [] })
+    setFilters({ types: [], levels: [], locations: [], freelanceOnly: false })
     setKeywordInput('')
     setLocationInput('')
     setAppliedKeyword('')
@@ -53,6 +53,7 @@ export default function VagasPage({ navigate }) {
       if (filters.types.length && !filters.types.includes(job.type)) return false
       if (filters.levels.length && !filters.levels.includes(job.level)) return false
       if (filters.locations.length && !filters.locations.some(l => job.location.includes(l.split(',')[0]))) return false
+      if (filters.freelanceOnly && !job.isFreelance) return false
       if (appliedKeyword) {
         const kw = appliedKeyword.toLowerCase()
         const companyName = typeof job.company === 'object' && job.company ? job.company.name : (job.company || '')
@@ -76,7 +77,7 @@ export default function VagasPage({ navigate }) {
   }, [jobs, filters, appliedKeyword, appliedLocation, sortBy])
 
   const isRecruiter = user && ['RECRUITER', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(user.role)
-  const hasActiveFilters = filters.types.length || filters.levels.length || filters.locations.length || appliedKeyword || appliedLocation
+  const hasActiveFilters = filters.types.length || filters.levels.length || filters.locations.length || filters.freelanceOnly || appliedKeyword || appliedLocation
 
   const inputStyle = {
     border: '1.5px solid #d0dcea',
@@ -186,6 +187,20 @@ export default function VagasPage({ navigate }) {
                   </div>
                 </div>
               ))}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Tipo de projeto</div>
+                <div
+                  onClick={() => setFilters(prev => ({ ...prev, freelanceOnly: !prev.freelanceOnly }))}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '5px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 12.5, fontWeight: 600,
+                    background: filters.freelanceOnly ? 'white' : 'rgba(255,255,255,0.15)',
+                    color: filters.freelanceOnly ? '#7c3aed' : 'white',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    transition: 'all 0.15s',
+                  }}
+                >Somente Freelance</div>
+              </div>
               {hasActiveFilters ? (
                 <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                   <button
@@ -320,6 +335,13 @@ export default function VagasPage({ navigate }) {
                   ))}
                 </div>
               ))}
+              <div style={{ borderBottom: '1px solid #e8edf2', paddingBottom: 16, marginBottom: 16 }}>
+                <h4 style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: 1, margin: '0 0 12px', textTransform: 'uppercase' }}>TIPO DE PROJETO</h4>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 10, fontSize: 13 }}>
+                  <input type="checkbox" checked={filters.freelanceOnly} onChange={() => setFilters(prev => ({ ...prev, freelanceOnly: !prev.freelanceOnly }))} style={{ cursor: 'pointer', accentColor: '#7c3aed', width: 16, height: 16 }} />
+                  <span style={{ color: '#444' }}>Somente Freelance</span>
+                </label>
+              </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
                 {hasActiveFilters && (
                   <button onClick={() => { handleClearAll(); setShowFilterDrawer(false) }} style={{ flex: 1, background: '#fee', border: '1px solid #fcc', color: '#c00', borderRadius: 10, padding: '12px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
@@ -353,6 +375,13 @@ export default function VagasPage({ navigate }) {
                 ))}
               </div>
             ))}
+            <div style={{ background: 'white', border: '1px solid #e8edf2', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+              <h4 style={{ fontSize: 11, fontWeight: 700, color: '#888', letterSpacing: 1, margin: '0 0 12px', textTransform: 'uppercase' }}>TIPO DE PROJETO</h4>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 8, fontSize: 13 }}>
+                <input type="checkbox" checked={filters.freelanceOnly} onChange={() => setFilters(prev => ({ ...prev, freelanceOnly: !prev.freelanceOnly }))} style={{ cursor: 'pointer', accentColor: '#7c3aed' }} />
+                <span style={{ color: '#444' }}>Somente Freelance</span>
+              </label>
+            </div>
             {hasActiveFilters ? (
               <button onClick={handleClearAll}
                 style={{ background: '#fee', border: '1px solid #fcc', color: '#c00', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, width: '100%' }}>

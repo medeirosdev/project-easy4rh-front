@@ -22,6 +22,10 @@ function formatContract(contract) {
   return { CLT: 'CLT', PJ: 'PJ', INTERNSHIP: 'Estágio', TEMPORARY: 'Temporário', FREELANCE: 'Freelance' }[contract] || contract
 }
 
+function formatPaymentType(type) {
+  return { POR_HORA: 'Por hora', VALOR_FIXO: 'Valor fixo', POR_ENTREGA: 'Por entrega' }[type] || type
+}
+
 // Normaliza campo que pode vir como string ou array (responsabilidades/requisitos)
 function toText(value) {
   if (!value) return ''
@@ -224,6 +228,33 @@ export default function JobPosterModal({ job, company, onClose }) {
                 {truncate(requirements, 300)}
               </p>
             </Section>
+          )}
+
+          {/* ── Freelance ── */}
+          {job.isFreelance && (job.freelanceDuration || job.freelancePaymentType || job.freelanceHoursPerWeek) && (
+            <div style={{ padding: '14px 40px 0' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 18, height: 2, background: '#7c3aed', borderRadius: 2 }} />
+                Detalhes Freelance
+              </div>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                {job.freelanceDuration && (
+                  <span style={{ fontSize: 12, background: '#f5f3ff', color: '#6d28d9', borderRadius: 20, padding: '4px 10px', fontWeight: 600 }}>
+                    {job.freelanceDuration}
+                  </span>
+                )}
+                {job.freelancePaymentType && (
+                  <span style={{ fontSize: 12, background: '#f5f3ff', color: '#6d28d9', borderRadius: 20, padding: '4px 10px', fontWeight: 600 }}>
+                    {formatPaymentType(job.freelancePaymentType)}
+                  </span>
+                )}
+                {job.freelanceHoursPerWeek && (
+                  <span style={{ fontSize: 12, background: '#f5f3ff', color: '#6d28d9', borderRadius: 20, padding: '4px 10px', fontWeight: 600 }}>
+                    {job.freelanceHoursPerWeek}h/semana
+                  </span>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Spacer */}
