@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import QRCode from 'react-qr-code'
 import logoImg from '../assets/logo.png'
 
@@ -32,6 +32,18 @@ function toText(value) {
 export default function JobPosterModal({ job, company, onClose }) {
   const posterRef = useRef(null)
   const jobUrl = getJobUrl(job.id)
+
+  const [scale, setScale] = useState(1)
+  useEffect(() => {
+    function update() {
+      const sw = (window.innerWidth - 48) / 595
+      const sh = (window.innerHeight - 96) / 842
+      setScale(Math.max(Math.min(sw, sh, 1), 0.35))
+    }
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
 
   function handlePrint() {
     window.print()
@@ -85,38 +97,42 @@ export default function JobPosterModal({ job, company, onClose }) {
         className="poster-modal-overlay"
         style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', padding: '48px 16px 16px', overflowY: 'auto',
         }}
         onClick={e => { if (e.target === e.currentTarget) onClose() }}
       >
         {/* Action bar */}
         <div
           className="poster-modal-actions"
-          style={{ position: 'fixed', top: 20, right: 20, display: 'flex', gap: 10, zIndex: 1001 }}
+          style={{ position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, zIndex: 1001, flexWrap: 'wrap', justifyContent: 'center' }}
         >
-          <button onClick={handleDownload} style={{ background: '#1a4f8a', color: 'white', border: 'none', borderRadius: 10, padding: '10px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+          <button onClick={handleDownload} style={{ background: '#1a4f8a', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
             Baixar PNG
           </button>
-          <button onClick={handlePrint} style={{ background: '#22c55e', color: 'white', border: 'none', borderRadius: 10, padding: '10px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+          <button onClick={handlePrint} style={{ background: '#22c55e', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
             Imprimir
           </button>
-          <button onClick={onClose} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 10, padding: '10px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+          <button onClick={onClose} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
             Fechar
           </button>
         </div>
 
-        {/* Poster — A4 proportions */}
-        <div
-          className="poster-modal-box"
-          ref={posterRef}
-          style={{
-            width: 595, minHeight: 842, background: 'white', borderRadius: 18,
-            boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
-            display: 'flex', flexDirection: 'column',
-            overflow: 'hidden', maxHeight: '95vh', overflowY: 'auto',
-            fontFamily: "'Segoe UI', system-ui, sans-serif",
-          }}
-        >
+        {/* Wrapper que ocupa o espaço correto depois do scale */}
+        <div style={{ width: 595 * scale, flexShrink: 0 }}>
+          {/* Poster — dimensões A4 fixas, escalonado via transform para a tela */}
+          <div
+            className="poster-modal-box"
+            ref={posterRef}
+            style={{
+              width: 595, minHeight: 842, background: 'white', borderRadius: 18,
+              boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
+              display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              fontFamily: "'Segoe UI', system-ui, sans-serif",
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+            }}
+          >
           {/* ── Header ── */}
           <div style={{ background: 'linear-gradient(135deg, #1a4f8a 0%, #2a7ec8 100%)', padding: '32px 40px 28px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
@@ -239,6 +255,7 @@ export default function JobPosterModal({ job, company, onClose }) {
               <img src={logoImg} alt="Easy4RH" style={{ width: 32, height: 32, objectFit: 'contain' }} />
               <span style={{ fontSize: 9, color: '#1e3a6e', fontWeight: 700, letterSpacing: 0.5 }}>EASY4RH</span>
             </div>
+          </div>
           </div>
         </div>
       </div>
