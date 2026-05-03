@@ -684,6 +684,13 @@ export default function RecrutadorDashboard({ navigate }) {
     setEditingCourseId(course.id)
     setCourseError('')
     setCourseSuccess('')
+    // Switch to edit view immediately so the loading indicator is visible
+    setNovoCurso({ ...emptyCurso })
+    setCourseSections([])
+    setDeletedSectionIds([])
+    setDeletedLessonIds([])
+    setLessonUploadProgress({})
+    setCourseView('edit')
     setCourseEditLoading(true)
     try {
       const data = await coursesApi.get(course.id)
@@ -708,12 +715,9 @@ export default function RecrutadorDashboard({ navigate }) {
         })),
       }))
       setCourseSections(secs)
-      setDeletedSectionIds([])
-      setDeletedLessonIds([])
-      setLessonUploadProgress({})
-      setCourseView('edit')
     } catch (err) {
       setCourseError(err.message || 'Erro ao carregar curso')
+      setCourseView('list')
     } finally {
       setCourseEditLoading(false)
     }
@@ -2172,8 +2176,8 @@ export default function RecrutadorDashboard({ navigate }) {
                   </button>
                   <button
                     onClick={isEditMode ? handleUpdateCourse : handleCreateCourse}
-                    disabled={coursePublishing || !novoCurso.title || !novoCurso.description}
-                    style={{ background: coursePublishing || !novoCurso.title || !novoCurso.description ? '#ccc' : 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '13px 32px', cursor: coursePublishing ? 'default' : 'pointer', fontWeight: 700, fontSize: 15 }}>
+                    disabled={coursePublishing || courseEditLoading || !novoCurso.title || !novoCurso.description}
+                    style={{ background: coursePublishing || courseEditLoading || !novoCurso.title || !novoCurso.description ? '#ccc' : 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '13px 32px', cursor: coursePublishing || courseEditLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15 }}>
                     {coursePublishing ? (isEditMode ? 'Salvando...' : 'Criando curso...') : (isEditMode ? 'Salvar alterações' : 'Criar curso (rascunho)')}
                   </button>
                 </div>

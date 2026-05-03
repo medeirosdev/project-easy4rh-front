@@ -126,8 +126,15 @@ export default function CursoDetailPage({ navigate, courseId }) {
   const activeLessonIdx = activeLesson ? flatLessons.findIndex(l => l.id === activeLesson.id) : -1
   const nextLesson = activeLessonIdx >= 0 && activeLessonIdx < flatLessons.length - 1 ? flatLessons[activeLessonIdx + 1] : null
 
+  // Computed progress from local state — updates in real-time as user completes lessons
+  const computedProgress = totalLessons > 0 ? Math.round((completedLessons.size / totalLessons) * 100) : (enrollment?.progress ?? 0)
+
   const handleNextLesson = () => {
-    if (nextLesson) handleLessonClick(nextLesson)
+    if (!nextLesson) return
+    // Expand the section that contains the next lesson so it's visible in the sidebar
+    const containingSection = sections.find(s => (s.lessons || []).some(l => l.id === nextLesson.id))
+    if (containingSection) setOpenSections(prev => ({ ...prev, [containingSection.id]: true }))
+    handleLessonClick(nextLesson)
   }
 
   const handleGenerateCert = async () => {
@@ -281,7 +288,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
                       <p style={{ fontSize: 13, color: '#557', margin: 0, marginTop: 2 }}>Clique em uma aula ao lado para começar.</p>
                     </div>
                   </div>
-                  {enrollment?.progress >= 100 && (
+                  {computedProgress >= 100 && (
                     certData ? (
                       <div style={{ background: '#fefce8', borderRadius: 12, padding: '16px 20px', border: '1px solid #fde047' }}>
                         <p style={{ fontSize: 14, fontWeight: 700, color: '#854d0e', margin: 0, marginBottom: 8 }}>🏆 Certificado emitido!</p>
