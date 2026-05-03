@@ -271,6 +271,7 @@ export const coursesApi = {
   publish: (id) => request('POST', `/courses/${id}/publish`),
   archive: (id) => request('POST', `/courses/${id}/archive`),
   myCourses: () => request('GET', '/courses/instructor/my-courses'),
+  unpublish: (id) => request('POST', `/courses/${id}/unpublish`),
   enroll: (id) => request('POST', `/courses/${id}/enroll`),
   myEnrollments: () => request('GET', '/me/enrollments'),
   enrollmentDetail: (id) => request('GET', `/enrollments/${id}`),
@@ -390,6 +391,13 @@ export const auditApi = {
   stats: () => requestAudit('GET', '/audit/stats'),
   get: (id) => requestAudit('GET', `/audit/${id}`),
   purge: (days) => requestAudit('DELETE', `/audit/purge/${days}`),
+}
+
+// ── Certificates ──────────────────────────────────────────────
+
+export const certificatesApi = {
+  generate: (enrollmentId) => request('POST', `/enrollments/${enrollmentId}/certificate`),
+  my: () => request('GET', '/certificates/my'),
 }
 
 // ── Token helpers (usados no AuthContext) ──────────────────────

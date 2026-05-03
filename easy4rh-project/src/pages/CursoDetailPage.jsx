@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { coursesApi, lessonsApi } from '../services/api'
+import { coursesApi, lessonsApi, certificatesApi } from '../services/api'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
 export default function CursoDetailPage({ navigate, courseId }) {
@@ -18,6 +18,8 @@ export default function CursoDetailPage({ navigate, courseId }) {
   const [completedLessons, setCompletedLessons] = useState(new Set())
   const [markingComplete, setMarkingComplete] = useState(false)
   const [progressError, setProgressError] = useState('')
+  const [certLoading, setCertLoading] = useState(false)
+  const [certData, setCertData] = useState(null)
   // BUG-M03: ref to video element so we can read currentTime for watchedSeconds
   const videoRef = useRef(null)
 
@@ -119,6 +121,29 @@ export default function CursoDetailPage({ navigate, courseId }) {
 
   const totalLessons = sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0)
 
+  // Flat ordered list of all lessons for prev/next navigation
+  const flatLessons = sections.flatMap(s => s.lessons || [])
+  const activeLessonIdx = activeLesson ? flatLessons.findIndex(l => l.id === activeLesson.id) : -1
+  const nextLesson = activeLessonIdx >= 0 && activeLessonIdx < flatLessons.length - 1 ? flatLessons[activeLessonIdx + 1] : null
+
+  const handleNextLesson = () => {
+    if (nextLesson) handleLessonClick(nextLesson)
+  }
+
+  const handleGenerateCert = async () => {
+    if (!enrollment) return
+    setCertLoading(true)
+    try {
+      const cert = await certificatesApi.generate(enrollment.id)
+      setCertData(cert)
+    } catch (err) {
+      console.error('Erro ao emitir certificado:', err)
+      alert(err.message || 'Erro ao emitir certificado')
+    } finally {
+      setCertLoading(false)
+    }
+  }
+
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f4f8' }}>
       <div style={{ textAlign: 'center', color: '#778' }}>
@@ -185,24 +210,34 @@ export default function CursoDetailPage({ navigate, courseId }) {
                 {lessonData?.description && (
                   <p style={{ fontSize: 14, color: '#556', lineHeight: 1.7 }}>{lessonData.description}</p>
                 )}
-                {completedLessons.has(activeLesson.id) ? (
-                  <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 8, color: '#2a7a4e', fontWeight: 700, fontSize: 13 }}>
-                    <span style={{ fontSize: 18 }}>✓</span> Aula concluida!
-                  </div>
-                ) : (
-                  <>
+                <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  {completedLessons.has(activeLesson.id) ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#2a7a4e', fontWeight: 700, fontSize: 13 }}>
+                      <span style={{ fontSize: 18 }}>✓</span> Aula concluida!
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleProgress(true)}
+                        disabled={markingComplete}
+                        style={{ background: markingComplete ? '#aaa' : '#2a7a4e', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: markingComplete ? 'default' : 'pointer', fontWeight: 700, fontSize: 13 }}
+                      >
+                        {markingComplete ? 'Salvando...' : '✓ Marcar como concluida'}
+                      </button>
+                      {progressError && (
+                        <p style={{ margin: 0, fontSize: 12.5, color: '#dc2626' }}>{progressError}</p>
+                      )}
+                    </>
+                  )}
+                  {nextLesson && (enrollment || nextLesson.isFree) && (
                     <button
-                      onClick={() => handleProgress(true)}
-                      disabled={markingComplete}
-                      style={{ marginTop: 16, background: markingComplete ? '#aaa' : '#2a7a4e', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: markingComplete ? 'default' : 'pointer', fontWeight: 700, fontSize: 13 }}
+                      onClick={handleNextLesson}
+                      style={{ background: '#1e4a8a', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
                     >
-                      {markingComplete ? 'Salvando...' : '✓ Marcar como concluida'}
+                      Próxima aula →
                     </button>
-                    {progressError && (
-                      <p style={{ marginTop: 8, fontSize: 12.5, color: '#dc2626' }}>{progressError}</p>
-                    )}
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ) : (
@@ -238,12 +273,40 @@ export default function CursoDetailPage({ navigate, courseId }) {
                   </button>
                 </div>
               ) : (
-                <div style={{ background: '#f0fff4', borderRadius: 12, padding: '16px 20px', border: '1px solid #b2e4c8', display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 24 }}>✅</span>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: '#2a7a4e', margin: 0 }}>Você está matriculado!</p>
-                    <p style={{ fontSize: 13, color: '#557', margin: 0, marginTop: 2 }}>Clique em uma aula ao lado para começar.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ background: '#f0fff4', borderRadius: 12, padding: '16px 20px', border: '1px solid #b2e4c8', display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 24 }}>✅</span>
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: '#2a7a4e', margin: 0 }}>Você está matriculado!</p>
+                      <p style={{ fontSize: 13, color: '#557', margin: 0, marginTop: 2 }}>Clique em uma aula ao lado para começar.</p>
+                    </div>
                   </div>
+                  {enrollment?.progress >= 100 && (
+                    certData ? (
+                      <div style={{ background: '#fefce8', borderRadius: 12, padding: '16px 20px', border: '1px solid #fde047' }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: '#854d0e', margin: 0, marginBottom: 8 }}>🏆 Certificado emitido!</p>
+                        {certData.certificateUrl && (
+                          <a href={certData.certificateUrl} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: 13, color: '#1e4a8a', fontWeight: 600 }}>
+                            Baixar certificado
+                          </a>
+                        )}
+                        {certData.verificationCode && (
+                          <p style={{ fontSize: 12, color: '#778', margin: '6px 0 0', fontFamily: 'monospace' }}>
+                            Código: {certData.verificationCode}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleGenerateCert}
+                        disabled={certLoading}
+                        style={{ background: certLoading ? '#aaa' : 'linear-gradient(135deg, #854d0e, #b45309)', color: 'white', border: 'none', borderRadius: 10, padding: '13px 24px', cursor: certLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 14 }}
+                      >
+                        {certLoading ? 'Gerando...' : '🏆 Emitir Certificado'}
+                      </button>
+                    )
+                  )}
                 </div>
               )}
             </div>

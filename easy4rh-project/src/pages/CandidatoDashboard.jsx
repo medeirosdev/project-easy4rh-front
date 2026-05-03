@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useJobs } from '../context/JobsContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { profileApi, applicationsApi, coursesApi, documentsApi } from '../services/api'
+import { profileApi, applicationsApi, coursesApi, documentsApi, certificatesApi } from '../services/api'
 import { getStageLabel, getStageColor, getStageBackground, getStageProgress, pipelineSteps, getStageStepIndex, PIPELINE_STAGES, normalizeStage } from '../utils/applicationStages'
 
 const menuItems = [
@@ -51,6 +51,8 @@ export default function CandidatoDashboard({ navigate }) {
   // Cursos matriculados
   const [enrollments, setEnrollments] = useState([])
   const [enrollmentsLoading, setEnrollmentsLoading] = useState(false)
+  const [certGenerating, setCertGenerating] = useState({}) // { enrollmentId: bool }
+  const [certResults, setCertResults] = useState({}) // { enrollmentId: certData }
 
   // Documentos recebidos
   const [receivedDocs, setReceivedDocs] = useState([])
@@ -206,6 +208,19 @@ export default function CandidatoDashboard({ navigate }) {
       setReceivedDocs(prev => prev.map(d => d.id === sentDocumentId ? { ...d, status } : d))
     } catch (err) {
       console.error('Erro ao responder documento:', err)
+    }
+  }
+
+  const handleGenerateCert = async (enrollmentId) => {
+    setCertGenerating(prev => ({ ...prev, [enrollmentId]: true }))
+    try {
+      const cert = await certificatesApi.generate(enrollmentId)
+      setCertResults(prev => ({ ...prev, [enrollmentId]: cert }))
+    } catch (err) {
+      console.error('Erro ao emitir certificado:', err)
+      alert(err.message || 'Erro ao emitir certificado')
+    } finally {
+      setCertGenerating(prev => ({ ...prev, [enrollmentId]: false }))
     }
   }
 
@@ -701,9 +716,30 @@ export default function CandidatoDashboard({ navigate }) {
                           <span style={{ fontSize: 12, fontWeight: 700, color: progress >= 100 ? '#22c55e' : '#1e4a8a', flexShrink: 0 }}>{progress}%</span>
                         </div>
                       </div>
-                      <button onClick={() => navigate(`curso-${enr.courseId || course.id}`)} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-                        {progress > 0 ? 'Continuar' : 'Iniciar'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        {progress >= 100 && (
+                          certResults[enr.id] ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: '#854d0e' }}>🏆 Certificado</span>
+                              {certResults[enr.id].certificateUrl && (
+                                <a href={certResults[enr.id].certificateUrl} target="_blank" rel="noopener noreferrer"
+                                  style={{ fontSize: 12, color: '#1e4a8a', fontWeight: 600 }}>Baixar</a>
+                              )}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleGenerateCert(enr.id)}
+                              disabled={certGenerating[enr.id]}
+                              style={{ background: certGenerating[enr.id] ? '#aaa' : '#fef3c7', color: certGenerating[enr.id] ? 'white' : '#854d0e', border: 'none', borderRadius: 24, padding: '9px 16px', cursor: certGenerating[enr.id] ? 'default' : 'pointer', fontWeight: 700, fontSize: 12 }}
+                            >
+                              {certGenerating[enr.id] ? 'Gerando...' : '🏆 Certificado'}
+                            </button>
+                          )
+                        )}
+                        <button onClick={() => navigate(`curso-${enr.courseId || course.id}`)} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                          {progress > 0 ? 'Continuar' : 'Iniciar'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )

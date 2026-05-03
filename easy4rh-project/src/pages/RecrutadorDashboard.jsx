@@ -68,6 +68,31 @@ const courseLevels = [
 ]
 const emptyCurso = { title: '', description: '', thumbnailUrl: '', level: 'BEGINNER', category: '' }
 
+function uploadVideoWithProgress(lessonId, file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const token = localStorage.getItem('access_token')
+    const xhr = new XMLHttpRequest()
+    const fd = new FormData()
+    fd.append('file', file)
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)) } catch { resolve(null) }
+      } else {
+        try { reject(new Error(JSON.parse(xhr.responseText)?.message || `Erro ${xhr.status}`)) }
+        catch { reject(new Error(`Erro ${xhr.status}`)) }
+      }
+    }
+    xhr.onerror = () => reject(new Error('Erro de rede'))
+    const base = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+    xhr.open('POST', `${base}/lessons/${lessonId}/upload-video`)
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    xhr.send(fd)
+  })
+}
+
 export default function RecrutadorDashboard({ navigate }) {
   const { user, logout } = useAuth()
   const { isMobile, isDesktop } = useBreakpoint()
@@ -132,6 +157,10 @@ export default function RecrutadorDashboard({ navigate }) {
   const [courseError, setCourseError] = useState('')
   const [courseSuccess, setCourseSuccess] = useState('')
   const [courseStats, setCourseStats] = useState(null)
+  const [deletedSectionIds, setDeletedSectionIds] = useState([])
+  const [deletedLessonIds, setDeletedLessonIds] = useState([])
+  const [courseEditLoading, setCourseEditLoading] = useState(false)
+  const [lessonUploadProgress, setLessonUploadProgress] = useState({})
   const [courseStudents, setCourseStudents] = useState([])
   const [courseStatsLoading, setCourseStatsLoading] = useState(false)
 
@@ -565,7 +594,11 @@ export default function RecrutadorDashboard({ navigate }) {
           })
           if (les.videoFile) {
             try {
-              await lessonsApi.uploadVideo(createdLesson.id, les.videoFile)
+              setLessonUploadProgress(prev => ({ ...prev, [`${si}-${li}`]: 0 }))
+              await uploadVideoWithProgress(createdLesson.id, les.videoFile, (pct) => {
+                setLessonUploadProgress(prev => ({ ...prev, [`${si}-${li}`]: pct }))
+              })
+              setLessonUploadProgress(prev => { const n = { ...prev }; delete n[`${si}-${li}`]; return n })
             } catch (err) {
               console.error('Erro ao enviar vídeo:', err)
             }
@@ -644,6 +677,143 @@ export default function RecrutadorDashboard({ navigate }) {
       setCourseStudents([])
     } finally {
       setCourseStatsLoading(false)
+    }
+  }
+
+  const handleEditCourse = async (course) => {
+    setEditingCourseId(course.id)
+    setCourseError('')
+    setCourseSuccess('')
+    setCourseEditLoading(true)
+    try {
+      const data = await coursesApi.get(course.id)
+      setNovoCurso({
+        title: data.title || '',
+        description: data.description || '',
+        thumbnailUrl: data.thumbnailUrl || '',
+        level: data.level || 'BEGINNER',
+        category: data.category || '',
+      })
+      const secs = (data.sections || []).map(sec => ({
+        id: sec.id,
+        title: sec.title,
+        lessons: (sec.lessons || []).map(l => ({
+          id: l.id,
+          title: l.title,
+          description: l.description || '',
+          videoUrl: l.videoUrl || '',
+          duration: l.duration || '',
+          isFree: l.isFree || false,
+          videoFile: null,
+        })),
+      }))
+      setCourseSections(secs)
+      setDeletedSectionIds([])
+      setDeletedLessonIds([])
+      setLessonUploadProgress({})
+      setCourseView('edit')
+    } catch (err) {
+      setCourseError(err.message || 'Erro ao carregar curso')
+    } finally {
+      setCourseEditLoading(false)
+    }
+  }
+
+  const handleUpdateCourse = async () => {
+    if (!novoCurso.title || !novoCurso.description) return
+    setCoursePublishing(true)
+    setCourseError('')
+    try {
+      await coursesApi.update(editingCourseId, {
+        title: novoCurso.title,
+        description: novoCurso.description,
+        thumbnailUrl: novoCurso.thumbnailUrl || undefined,
+        level: novoCurso.level,
+        category: novoCurso.category || 'Geral',
+      })
+
+      for (const id of deletedLessonIds) {
+        try { await lessonsApi.delete(id) } catch {}
+      }
+      for (const id of deletedSectionIds) {
+        try { await sectionsApi.delete(id) } catch {}
+      }
+
+      for (let si = 0; si < courseSections.length; si++) {
+        const sec = courseSections[si]
+        if (!sec.title.trim()) continue
+        let sectionId = sec.id
+        if (sectionId) {
+          await sectionsApi.update(sectionId, { title: sec.title, order: si })
+        } else {
+          const created = await sectionsApi.create(editingCourseId, { title: sec.title, order: si })
+          sectionId = created.id
+        }
+        for (let li = 0; li < (sec.lessons || []).length; li++) {
+          const les = sec.lessons[li]
+          if (!les.title.trim()) continue
+          let lessonId = les.id
+          if (lessonId) {
+            await lessonsApi.update(lessonId, {
+              title: les.title,
+              description: les.description || undefined,
+              videoUrl: les.videoUrl || undefined,
+              duration: les.duration ? Number(les.duration) : undefined,
+              isFree: les.isFree || false,
+              order: li,
+            })
+          } else {
+            const created = await lessonsApi.create(sectionId, {
+              title: les.title,
+              description: les.description || undefined,
+              videoUrl: les.videoUrl || undefined,
+              duration: les.duration ? Number(les.duration) : undefined,
+              isFree: les.isFree || false,
+              order: li,
+            })
+            lessonId = created.id
+          }
+          if (les.videoFile) {
+            try {
+              setLessonUploadProgress(prev => ({ ...prev, [`${si}-${li}`]: 0 }))
+              await uploadVideoWithProgress(lessonId, les.videoFile, (pct) => {
+                setLessonUploadProgress(prev => ({ ...prev, [`${si}-${li}`]: pct }))
+              })
+              setLessonUploadProgress(prev => { const n = { ...prev }; delete n[`${si}-${li}`]; return n })
+            } catch (err) {
+              console.error('Erro ao enviar vídeo:', err)
+            }
+          }
+        }
+      }
+
+      const sectionIds = courseSections.filter(s => s.id && s.title.trim()).map(s => s.id)
+      if (sectionIds.length > 1) {
+        try { await sectionsApi.reorder(editingCourseId, sectionIds) } catch {}
+      }
+
+      setCourseSuccess('Curso atualizado com sucesso!')
+      safeTimeout(() => {
+        setCourseSuccess('')
+        setCourseView('list')
+        fetchMyCourses()
+      }, 2000)
+    } catch (err) {
+      setCourseError(err.message || 'Erro ao atualizar curso')
+    } finally {
+      setCoursePublishing(false)
+    }
+  }
+
+  const handleUnpublishCourse = async (courseId) => {
+    setCourseError('')
+    try {
+      await coursesApi.unpublish(courseId)
+      setMyCourses(prev => prev.map(c => c.id === courseId ? { ...c, status: 'DRAFT' } : c))
+      setCourseSuccess('Curso despublicado.')
+      safeTimeout(() => setCourseSuccess(''), 3000)
+    } catch (err) {
+      setCourseError(err.message || 'Erro ao despublicar curso.')
     }
   }
 
@@ -728,10 +898,39 @@ export default function RecrutadorDashboard({ navigate }) {
 
   // Section/lesson helpers for course builder
   const addSection = () => setCourseSections(prev => [...prev, { title: '', lessons: [] }])
-  const removeSection = (idx) => setCourseSections(prev => prev.filter((_, i) => i !== idx))
+  const removeSection = (idx) => {
+    const sec = courseSections[idx]
+    if (sec?.id) setDeletedSectionIds(prev => [...prev, sec.id])
+    setCourseSections(prev => prev.filter((_, i) => i !== idx))
+  }
   const updateSectionTitle = (idx, title) => setCourseSections(prev => prev.map((s, i) => i === idx ? { ...s, title } : s))
+  const moveSectionUp = (idx) => {
+    if (idx === 0) return
+    setCourseSections(prev => { const a = [...prev]; [a[idx - 1], a[idx]] = [a[idx], a[idx - 1]]; return a })
+  }
+  const moveSectionDown = (idx) => setCourseSections(prev => {
+    if (idx >= prev.length - 1) return prev
+    const a = [...prev]; [a[idx], a[idx + 1]] = [a[idx + 1], a[idx]]; return a
+  })
   const addLesson = (secIdx) => setCourseSections(prev => prev.map((s, i) => i === secIdx ? { ...s, lessons: [...s.lessons, { title: '', description: '', videoUrl: '', duration: '', isFree: false, videoFile: null }] } : s))
-  const removeLesson = (secIdx, lesIdx) => setCourseSections(prev => prev.map((s, i) => i === secIdx ? { ...s, lessons: s.lessons.filter((_, j) => j !== lesIdx) } : s))
+  const removeLesson = (secIdx, lesIdx) => {
+    const les = courseSections[secIdx]?.lessons?.[lesIdx]
+    if (les?.id) setDeletedLessonIds(prev => [...prev, les.id])
+    setCourseSections(prev => prev.map((s, i) => i === secIdx ? { ...s, lessons: s.lessons.filter((_, j) => j !== lesIdx) } : s))
+  }
+  const moveLessonUp = (secIdx, lesIdx) => {
+    if (lesIdx === 0) return
+    setCourseSections(prev => prev.map((s, i) => {
+      if (i !== secIdx) return s
+      const lessons = [...s.lessons]; [lessons[lesIdx - 1], lessons[lesIdx]] = [lessons[lesIdx], lessons[lesIdx - 1]]; return { ...s, lessons }
+    }))
+  }
+  const moveLessonDown = (secIdx, lesIdx) => setCourseSections(prev => prev.map((s, i) => {
+    if (i !== secIdx) return s
+    const lessons = [...s.lessons]
+    if (lesIdx >= lessons.length - 1) return s
+    ;[lessons[lesIdx], lessons[lesIdx + 1]] = [lessons[lesIdx + 1], lessons[lesIdx]]; return { ...s, lessons }
+  }))
   const updateLesson = (secIdx, lesIdx, field, value) => setCourseSections(prev => prev.map((s, i) => i === secIdx ? { ...s, lessons: s.lessons.map((l, j) => j === lesIdx ? { ...l, [field]: value } : l) } : s))
 
   // Stats
@@ -1835,11 +2034,14 @@ export default function RecrutadorDashboard({ navigate }) {
           )
         }
 
-        if (courseView === 'create') return (
+        if (courseView === 'create' || courseView === 'edit') {
+          const isEditMode = courseView === 'edit'
+          return (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
               <button onClick={() => { setCourseView('list'); setCourseError(''); setCourseSuccess('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#1e4a8a' }}>←</button>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>Criar Novo Curso</h2>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>{isEditMode ? 'Editar Curso' : 'Criar Novo Curso'}</h2>
+              {isEditMode && courseEditLoading && <span style={{ fontSize: 13, color: '#778899' }}>Carregando...</span>}
             </div>
 
             {courseSuccess ? (
@@ -1887,7 +2089,11 @@ export default function RecrutadorDashboard({ navigate }) {
                 {courseSections.map((sec, si) => (
                   <div key={si} style={{ background: '#f8fafc', border: '1px solid #e0eaf4', borderRadius: 12, padding: '20px', marginBottom: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#1e3a6e' }}>Seção {si + 1}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#1e3a6e' }}>Seção {si + 1}</span>
+                        <button onClick={() => moveSectionUp(si)} disabled={si === 0} style={{ background: 'none', border: 'none', cursor: si === 0 ? 'default' : 'pointer', color: si === 0 ? '#ccc' : '#1e4a8a', fontSize: 14, padding: '0 4px' }} title="Mover para cima">↑</button>
+                        <button onClick={() => moveSectionDown(si)} disabled={si === courseSections.length - 1} style={{ background: 'none', border: 'none', cursor: si === courseSections.length - 1 ? 'default' : 'pointer', color: si === courseSections.length - 1 ? '#ccc' : '#1e4a8a', fontSize: 14, padding: '0 4px' }} title="Mover para baixo">↓</button>
+                      </div>
                       <button onClick={() => removeSection(si)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Remover seção</button>
                     </div>
                     <input value={sec.title} onChange={e => updateSectionTitle(si, e.target.value)} placeholder="Título da seção" style={{ ...inputBase, marginBottom: 16 }} />
@@ -1896,7 +2102,11 @@ export default function RecrutadorDashboard({ navigate }) {
                     {(sec.lessons || []).map((les, li) => (
                       <div key={li} style={{ background: 'white', border: '1px solid #e8edf2', borderRadius: 10, padding: '16px', marginBottom: 10 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#556677' }}>Aula {li + 1}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#556677' }}>Aula {li + 1}</span>
+                            <button onClick={() => moveLessonUp(si, li)} disabled={li === 0} style={{ background: 'none', border: 'none', cursor: li === 0 ? 'default' : 'pointer', color: li === 0 ? '#ccc' : '#1e4a8a', fontSize: 13, padding: '0 3px' }} title="Mover para cima">↑</button>
+                            <button onClick={() => moveLessonDown(si, li)} disabled={li === (sec.lessons?.length || 0) - 1} style={{ background: 'none', border: 'none', cursor: li === (sec.lessons?.length || 0) - 1 ? 'default' : 'pointer', color: li === (sec.lessons?.length || 0) - 1 ? '#ccc' : '#1e4a8a', fontSize: 13, padding: '0 3px' }} title="Mover para baixo">↓</button>
+                          </div>
                           <button onClick={() => removeLesson(si, li)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: 14 }}>×</button>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -1927,6 +2137,17 @@ export default function RecrutadorDashboard({ navigate }) {
                             }} style={{ fontSize: 12 }} />
                           </div>
                         </div>
+                        {lessonUploadProgress[`${si}-${li}`] !== undefined && (
+                          <div style={{ marginTop: 10 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#556677', marginBottom: 4 }}>
+                              <span>Enviando vídeo...</span>
+                              <span>{lessonUploadProgress[`${si}-${li}`]}%</span>
+                            </div>
+                            <div style={{ height: 6, background: '#e8edf4', borderRadius: 3 }}>
+                              <div style={{ height: '100%', background: 'linear-gradient(90deg, #1e4a8a, #4a9edd)', borderRadius: 3, width: `${lessonUploadProgress[`${si}-${li}`]}%`, transition: 'width 0.2s' }} />
+                            </div>
+                          </div>
+                        )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
                           <input type="checkbox" checked={les.isFree} onChange={e => updateLesson(si, li, 'isFree', e.target.checked)} style={{ accentColor: '#1e4a8a' }} />
                           <label style={{ fontSize: 12, color: '#556677' }}>Aula gratuita (amostra)</label>
@@ -1944,31 +2165,43 @@ export default function RecrutadorDashboard({ navigate }) {
                   + Adicionar seção
                 </button>
 
-                {/* Create button */}
+                {/* Save button */}
                 <div style={{ display: 'flex', gap: 12 }}>
                   <button onClick={() => setCourseView('list')} style={{ background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 24, padding: '13px 28px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
                     Cancelar
                   </button>
-                  <button onClick={handleCreateCourse} disabled={coursePublishing || !novoCurso.title || !novoCurso.description}
+                  <button
+                    onClick={isEditMode ? handleUpdateCourse : handleCreateCourse}
+                    disabled={coursePublishing || !novoCurso.title || !novoCurso.description}
                     style={{ background: coursePublishing || !novoCurso.title || !novoCurso.description ? '#ccc' : 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '13px 32px', cursor: coursePublishing ? 'default' : 'pointer', fontWeight: 700, fontSize: 15 }}>
-                    {coursePublishing ? 'Criando curso...' : 'Criar curso (rascunho)'}
+                    {coursePublishing ? (isEditMode ? 'Salvando...' : 'Criando curso...') : (isEditMode ? 'Salvar alterações' : 'Criar curso (rascunho)')}
                   </button>
                 </div>
               </div>
             )}
           </div>
         )
+        }
 
         // Course list view
         return (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>Meus Cursos</h2>
-              <button onClick={() => { setCourseView('create'); setNovoCurso({ ...emptyCurso }); setCourseSections([]); setCourseError(''); setCourseSuccess('') }}
+              <button onClick={() => { setCourseView('create'); setNovoCurso({ ...emptyCurso }); setCourseSections([]); setCourseError(''); setCourseSuccess(''); setDeletedSectionIds([]); setDeletedLessonIds([]) }}
                 style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                 + Novo curso
               </button>
             </div>
+            {courseSuccess && (
+              <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 16px', color: '#15803d', fontSize: 13, marginBottom: 16 }}>{courseSuccess}</div>
+            )}
+            {courseError && (
+              <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '10px 16px', color: '#c00', fontSize: 13, marginBottom: 16 }}>
+                {courseError}
+                <button onClick={() => setCourseError('')} style={{ float: 'right', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#c00' }}>×</button>
+              </div>
+            )}
 
             {myCoursesLoading ? (
               <div style={{ background: 'white', borderRadius: 14, padding: '32px', textAlign: 'center', color: '#778899', fontSize: 13 }}>Carregando cursos...</div>
@@ -1999,11 +2232,15 @@ export default function RecrutadorDashboard({ navigate }) {
                         </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <button onClick={() => handleViewCourseStats(course)} style={{ background: '#e8f2fc', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Ver alunos</button>
+                          <button onClick={() => handleEditCourse(course)} style={{ background: '#f0f4f8', color: '#334', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Editar</button>
                           {course.status === 'DRAFT' && (
                             <button onClick={() => handlePublishCourse(course.id)} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Publicar</button>
                           )}
                           {course.status === 'PUBLISHED' && (
-                            <button onClick={() => handleArchiveCourse(course.id)} style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Arquivar</button>
+                            <>
+                              <button onClick={() => handleUnpublishCourse(course.id)} style={{ background: '#f3f4f6', color: '#6b7280', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Despublicar</button>
+                              <button onClick={() => handleArchiveCourse(course.id)} style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Arquivar</button>
+                            </>
                           )}
                           {course.status === 'DRAFT' && (
                             <button onClick={() => handleDeleteCourse(course.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}>Excluir</button>
