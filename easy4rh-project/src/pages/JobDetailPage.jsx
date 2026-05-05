@@ -16,6 +16,11 @@ export default function JobDetailPage({ job, navigate }) {
   const { isMobile } = useBreakpoint();
   const [showModal, setShowModal] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [isDuplicateApply, setIsDuplicateApply] = useState(false);
+
+  // Hero search state
+  const [heroKeyword, setHeroKeyword] = useState('');
+  const [heroLocation, setHeroLocation] = useState('');
 
   // Application flow state
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -91,6 +96,8 @@ export default function JobDetailPage({ job, navigate }) {
       } else if (result.isDuplicate) {
         setApplied(true);
         setShowApplyModal(false);
+        setIsDuplicateApply(true);
+        setShowModal(true);
       } else {
         setSubmitError(result.message || 'Erro ao enviar candidatura.');
       }
@@ -135,11 +142,27 @@ export default function JobDetailPage({ job, navigate }) {
       <div style={{ background: "linear-gradient(135deg, #1e3a6e, #2a5298, #4a9edd)", padding: "30px 20px 50px" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
           {!isMobile && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 4, background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: 4, maxWidth: 700, marginBottom: 16 }}>
-              <input placeholder="Palavras-chave/cargo" style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }} />
-              <input placeholder="Localidade" style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }} />
-              <input placeholder="Distancia" style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }} />
-              <button onClick={() => navigate("vagas")} style={{ background: "#1e3a6e", color: "white", border: "none", borderRadius: 8, padding: "10px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}>Procurar</button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 4, background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: 4, maxWidth: 600, marginBottom: 16 }}>
+              <input
+                placeholder="Palavras-chave/cargo"
+                value={heroKeyword}
+                onChange={e => setHeroKeyword(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { const kw = heroKeyword.trim(); const loc = heroLocation.trim(); navigate('vagas', kw || loc ? { keyword: kw, location: loc } : null); } }}
+                style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }}
+              />
+              <input
+                placeholder="Localidade"
+                value={heroLocation}
+                onChange={e => setHeroLocation(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { const kw = heroKeyword.trim(); const loc = heroLocation.trim(); navigate('vagas', kw || loc ? { keyword: kw, location: loc } : null); } }}
+                style={{ border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, outline: "none" }}
+              />
+              <button
+                onClick={() => { const kw = heroKeyword.trim(); const loc = heroLocation.trim(); navigate('vagas', kw || loc ? { keyword: kw, location: loc } : null); }}
+                style={{ background: "#1e3a6e", color: "white", border: "none", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontWeight: 700, fontSize: 13 }}
+              >
+                Procurar
+              </button>
             </div>
           )}
           <h1 style={{ color: "rgba(255,255,255,0.9)", fontSize: isMobile ? 24 : 36, fontWeight: 800, marginTop: 16 }}>
@@ -164,7 +187,18 @@ export default function JobDetailPage({ job, navigate }) {
               Meu Painel
             </button>
           )}
-          <button onClick={() => navigate("login")} style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}>Recrutamento</button>
+          <button
+            onClick={() => {
+              if (user && ['RECRUITER', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(user.role)) {
+                navigate(user.role === 'ADMIN' ? 'admin' : 'dashboard-recrutador');
+              } else {
+                navigate('login');
+              }
+            }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#1e4a8a", fontSize: 13, fontWeight: 600 }}
+          >
+            Portal do Recrutador
+          </button>
         </div>
       </div>
 
@@ -176,16 +210,20 @@ export default function JobDetailPage({ job, navigate }) {
           {!isMobile && (
             <div>
               {[
-                { title: "TIPO DE VAGA", options: ["Remoto", "Presencial", "Hibrido"] },
-                { title: "NIVEL", options: ["Estagio", "Junior", "Pleno", "Senior"] },
-                { title: "LOCALIZACAO", options: ["Sao Paulo, SP", "Rio de Janeiro, RJ", "Belo Horizonte, MG", "Curitiba, PR", "Florianopolis, SC", "Porto Alegre, RS", "Campinas, SP", "Recife, PE", "Salvador, BA", "Manaus, AM", "Brasilia, DF", "Goiania, GO"] }
+                { title: "TIPO DE VAGA", key: "types", options: ["Remoto", "Presencial", "Híbrido"] },
+                { title: "NÍVEL", key: "levels", options: ["Estágio", "Júnior", "Pleno", "Sênior"] },
+                { title: "LOCALIZAÇÃO", key: "locations", options: ["São Paulo, SP", "Rio de Janeiro, RJ", "Belo Horizonte, MG", "Curitiba, PR", "Florianópolis, SC", "Porto Alegre, RS", "Campinas, SP", "Recife, PE", "Salvador, BA", "Manaus, AM", "Brasília, DF", "Goiânia, GO"] }
               ].map(section => (
                 <div key={section.title} style={{ background: "white", border: "1px solid #e8edf2", borderRadius: 12, padding: 16, marginBottom: 16 }}>
                   <h4 style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: 1, margin: "0 0 10px", textTransform: "uppercase" }}>{section.title}</h4>
                   {section.options.map(opt => (
-                    <label key={opt} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 8, fontSize: 13 }}>
-                      <input type="checkbox" style={{ cursor: "pointer" }} readOnly />
-                      <span style={{ color: "#444" }}>{opt}</span>
+                    <label
+                      key={opt}
+                      onClick={() => navigate('vagas', { filters: { [section.key]: [opt] } })}
+                      style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 8, fontSize: 13 }}
+                    >
+                      <input type="checkbox" style={{ cursor: "pointer", pointerEvents: 'none' }} readOnly />
+                      <span style={{ color: "#1e4a8a", fontWeight: 500 }}>{opt}</span>
                     </label>
                   ))}
                 </div>
@@ -576,13 +614,24 @@ export default function JobDetailPage({ job, navigate }) {
         </div>
       )}
 
-      {/* Success Modal */}
+      {/* Success / Duplicate Modal */}
       {showModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "20px" }}>
           <div style={{ background: "white", borderRadius: 20, padding: isMobile ? 28 : 40, maxWidth: 420, width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 28, color: '#22c55e' }}>{'\u2713'}</div>
-            <h2 style={{ color: "#1e3a6e", marginBottom: 8 }}>Candidatura enviada!</h2>
-            <p style={{ color: "#555", marginBottom: 24, fontSize: 14 }}>Boa sorte! A empresa entrara em contato em breve.</p>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: isDuplicateApply ? '#fef9c3' : '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 28, color: isDuplicateApply ? '#ca8a04' : '#22c55e' }}>
+              {isDuplicateApply ? '\u2139' : '\u2713'}
+            </div>
+            {isDuplicateApply ? (
+              <>
+                <h2 style={{ color: "#1e3a6e", marginBottom: 8 }}>Voc\u00ea j\u00e1 se candidatou!</h2>
+                <p style={{ color: "#555", marginBottom: 24, fontSize: 14 }}>Sua candidatura para esta vaga j\u00e1 havia sido registrada anteriormente.</p>
+              </>
+            ) : (
+              <>
+                <h2 style={{ color: "#1e3a6e", marginBottom: 8 }}>Candidatura enviada!</h2>
+                <p style={{ color: "#555", marginBottom: 24, fontSize: 14 }}>Boa sorte! A empresa entrar\u00e1 em contato em breve.</p>
+              </>
+            )}
             <button onClick={() => setShowModal(false)} style={{ background: "linear-gradient(135deg, #1e4a8a, #4a9edd)", color: "white", border: "none", borderRadius: 10, padding: "12px 28px", cursor: "pointer", fontWeight: 700 }}>
               Entendido
             </button>

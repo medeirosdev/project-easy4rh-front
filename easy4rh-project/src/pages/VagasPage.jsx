@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useJobs } from '../context/JobsContext'
 import { useAuth } from '../context/AuthContext'
 import JobCard from '../components/JobCard'
@@ -9,8 +9,8 @@ const levels = ['Estágio', 'Sem experiência', 'Até 1 ano', '2+ anos', 'Júnio
 const locations = ['São Paulo, SP', 'Rio de Janeiro, RJ', 'Belo Horizonte, MG', 'Curitiba, PR', 'Florianópolis, SC', 'Porto Alegre, RS', 'Campinas, SP', 'Recife, PE', 'Salvador, BA', 'Manaus, AM', 'Brasília, DF', 'Goiânia, GO']
 const sortOptions = ['Mais recentes', 'Maior salário', 'Menor salário']
 
-export default function VagasPage({ navigate }) {
-  const { jobs, loading } = useJobs()
+export default function VagasPage({ navigate, initialSearch }) {
+  const { jobs, loading, loadingMore, jobsMeta, loadMoreJobs } = useJobs()
   const { user } = useAuth()
   const { isMobile } = useBreakpoint()
 
@@ -22,6 +22,26 @@ export default function VagasPage({ navigate }) {
   const [appliedKeyword, setAppliedKeyword] = useState('')
   const [appliedLocation, setAppliedLocation] = useState('')
   const [sortBy, setSortBy] = useState('Mais recentes')
+
+  useEffect(() => {
+    if (!initialSearch) return
+    if (initialSearch.keyword) {
+      setKeywordInput(initialSearch.keyword)
+      setAppliedKeyword(initialSearch.keyword)
+    }
+    if (initialSearch.location) {
+      setLocationInput(initialSearch.location)
+      setAppliedLocation(initialSearch.location)
+    }
+    if (initialSearch.filters) {
+      setFilters(prev => ({
+        ...prev,
+        ...(initialSearch.filters.types && { types: initialSearch.filters.types }),
+        ...(initialSearch.filters.levels && { levels: initialSearch.filters.levels }),
+        ...(initialSearch.filters.locations && { locations: initialSearch.filters.locations }),
+      }))
+    }
+  }, [initialSearch])
 
   const toggleFilter = (key, val) => {
     setFilters(prev => ({
@@ -52,7 +72,7 @@ export default function VagasPage({ navigate }) {
     let list = jobs.filter(job => {
       if (filters.types.length && !filters.types.includes(job.type)) return false
       if (filters.levels.length && !filters.levels.includes(job.level)) return false
-      if (filters.locations.length && !filters.locations.some(l => job.location.includes(l.split(',')[0]))) return false
+      if (filters.locations.length && !filters.locations.some(l => (job.location || '').includes(l.split(',')[0]))) return false
       if (filters.freelanceOnly && !job.isFreelance && job.contract !== 'Freelance') return false
       if (appliedKeyword) {
         const kw = appliedKeyword.toLowerCase()
@@ -61,7 +81,7 @@ export default function VagasPage({ navigate }) {
       }
       if (appliedLocation) {
         const loc = appliedLocation.toLowerCase()
-        if (!job.location.toLowerCase().includes(loc)) return false
+        if (!(job.location || '').toLowerCase().includes(loc)) return false
       }
       return true
     })
@@ -411,6 +431,26 @@ export default function VagasPage({ navigate }) {
               </div>
             ) : (
               filtered.map(job => <JobCard key={job.id} job={job} navigate={navigate} />)
+            )}
+            {!loading && jobsMeta && jobsMeta.page < jobsMeta.totalPages && (
+              <div style={{ textAlign: 'center', marginTop: 8 }}>
+                <button
+                  onClick={loadMoreJobs}
+                  disabled={loadingMore}
+                  style={{
+                    background: loadingMore ? '#e0e8f0' : 'white',
+                    color: '#1e4a8a',
+                    border: '1.5px solid #1e4a8a',
+                    borderRadius: 10,
+                    padding: '12px 32px',
+                    cursor: loadingMore ? 'default' : 'pointer',
+                    fontWeight: 700,
+                    fontSize: 13.5,
+                  }}
+                >
+                  {loadingMore ? 'Carregando...' : `Carregar mais vagas (${jobsMeta.total - jobs.length} restantes)`}
+                </button>
+              </div>
             )}
           </div>
         </div>

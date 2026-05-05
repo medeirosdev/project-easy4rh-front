@@ -78,17 +78,20 @@ export function JobsProvider({ children }) {
     try { return JSON.parse(localStorage.getItem('easy4rh_applied_jobs')) || [] } catch { return [] }
   })
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [coursesLoading, setCoursesLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [jobsMeta, setJobsMeta] = useState(null)
 
   // ── Carregar vagas ao montar ──
   const fetchJobs = useCallback(async (filters = {}) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await jobsApi.list({ limit: 100, ...filters })
+      const data = await jobsApi.list({ limit: 20, page: 1, ...filters })
       const list = Array.isArray(data) ? data : (data.data || data.jobs || [])
-      setJobs(list.map(normalizeJob))
+      setJobs(list.map((j, i) => normalizeJob(j, i)))
+      if (data.meta) setJobsMeta(data.meta)
     } catch (err) {
       console.error('Erro ao carregar vagas:', err)
       setError(err.message)
@@ -97,6 +100,27 @@ export function JobsProvider({ children }) {
       setLoading(false)
     }
   }, [])
+
+  const loadMoreJobs = useCallback(async () => {
+    if (!jobsMeta || jobsMeta.page >= jobsMeta.totalPages) return
+    setLoadingMore(true)
+    try {
+      const data = await jobsApi.list({ limit: jobsMeta.limit, page: jobsMeta.page + 1 })
+      const list = Array.isArray(data) ? data : (data.data || data.jobs || [])
+      setJobs(prev => {
+        const existingIds = new Set(prev.map(j => j.id))
+        const newJobs = list
+          .filter(j => !existingIds.has(j.id))
+          .map((j, i) => normalizeJob(j, prev.length + i))
+        return [...prev, ...newJobs]
+      })
+      if (data.meta) setJobsMeta(data.meta)
+    } catch (err) {
+      console.error('Erro ao carregar mais vagas:', err)
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [jobsMeta])
 
   // ── Carregar cursos ao montar ──
   const fetchCourses = useCallback(async () => {
@@ -160,12 +184,15 @@ export function JobsProvider({ children }) {
       courses,
       appliedJobs,
       loading,
+      loadingMore,
       coursesLoading,
       error,
+      jobsMeta,
       applyToJob,
       clearAppliedJobs,
       fetchJobs,
       fetchCourses,
+      loadMoreJobs,
     }}>
       {children}
     </JobsContext.Provider>

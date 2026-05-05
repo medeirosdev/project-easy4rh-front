@@ -45,7 +45,7 @@ class ErrorBoundary extends React.Component {
 }
 
 // Componente interno que acessa AuthContext, protege rotas e registra o navigate
-function AppContent({ page, navigate, selectedJob, selectedCompany }) {
+function AppContent({ page, navigate, selectedJob, selectedCompany, vagasInitSearch }) {
   const { user, setNavigate } = useAuth()
   useEffect(() => { setNavigate(navigate) }, [navigate, setNavigate])
 
@@ -64,7 +64,7 @@ function AppContent({ page, navigate, selectedJob, selectedCompany }) {
       case 'home':             return <HomePage navigate={navigate} />
       case 'login':            return <ConsultoriaLoginPage navigate={navigate} />
       case 'register':         return <RegisterPage navigate={navigate} />
-      case 'vagas':            return <VagasPage navigate={navigate} />
+      case 'vagas':            return <VagasPage navigate={navigate} initialSearch={vagasInitSearch} />
       case 'job-detail':       return <JobDetailPage job={selectedJob} navigate={navigate} />
       case 'treinamentos':     return <TreinamentosPage navigate={navigate} />
       case 'sobre':            return <SobreNosPage navigate={navigate} />
@@ -106,6 +106,7 @@ export default function App() {
   const [page, setPage] = useState('home')
   const [selectedJob, setSelectedJob] = useState(null)
   const [selectedCompany, setSelectedCompany] = useState(null)
+  const [vagasInitSearch, setVagasInitSearch] = useState(null)
 
   const pageTitles = {
     home: 'Easy4RH — Plataforma de RH',
@@ -129,6 +130,9 @@ export default function App() {
     setPage(pg)
     if (pg === 'empresa' && data) {
       setSelectedCompany(data)
+    } else if (pg === 'vagas') {
+      // Passa search data apenas se for objeto sem id (não é um job)
+      setVagasInitSearch(data && typeof data === 'object' && !data.id ? data : null)
     } else if (data) {
       setSelectedJob(data)
     }
@@ -181,7 +185,7 @@ export default function App() {
   return (
     <AuthProvider>
       <JobsProvider>
-        <AppContent page={page} navigate={navigate} selectedJob={selectedJob} selectedCompany={selectedCompany} />
+        <AppContent page={page} navigate={navigate} selectedJob={selectedJob} selectedCompany={selectedCompany} vagasInitSearch={vagasInitSearch} />
       </JobsProvider>
     </AuthProvider>
   )
