@@ -18,6 +18,7 @@ export default function CursoDetailPage({ navigate, courseId }) {
   const [completedLessons, setCompletedLessons] = useState(new Set())
   const [markingComplete, setMarkingComplete] = useState(false)
   const [progressError, setProgressError] = useState('')
+  const [progressRestoreError, setProgressRestoreError] = useState(false)
   const [certLoading, setCertLoading] = useState(false)
   const [certData, setCertData] = useState(null)
   // BUG-M03: ref to video element so we can read currentTime for watchedSeconds
@@ -45,7 +46,6 @@ export default function CursoDetailPage({ navigate, courseId }) {
           const enr = enrList.find(e => (e.courseId || e.course?.id) === courseId)
           if (enr) {
             setEnrollment(enr)
-            // BUG-M04: load existing lesson progress so already-completed lessons show as done
             try {
               const detail = await coursesApi.enrollmentDetail(enr.id)
               const doneLessons = new Set(
@@ -54,8 +54,9 @@ export default function CursoDetailPage({ navigate, courseId }) {
                   .map(p => p.lessonId)
               )
               setCompletedLessons(doneLessons)
-            } catch {
-              // non-critical — proceed without pre-loaded progress
+            } catch (err) {
+              console.error('Erro ao carregar progresso das aulas:', err)
+              setProgressRestoreError(true)
             }
           }
         }
@@ -114,6 +115,21 @@ export default function CursoDetailPage({ navigate, courseId }) {
       alert(err.message || 'Erro ao matricular')
     } finally {
       setEnrolling(false)
+    }
+  }
+
+  const retryLoadProgress = async () => {
+    if (!enrollment) return
+    setProgressRestoreError(false)
+    try {
+      const detail = await coursesApi.enrollmentDetail(enrollment.id)
+      const doneLessons = new Set(
+        (detail.lessonProgress || []).filter(p => p.completed).map(p => p.lessonId)
+      )
+      setCompletedLessons(doneLessons)
+    } catch (err) {
+      console.error('Erro ao recarregar progresso:', err)
+      setProgressRestoreError(true)
     }
   }
 
@@ -245,6 +261,31 @@ export default function CursoDetailPage({ navigate, courseId }) {
                     </button>
                   )}
                 </div>
+                {enrollment && computedProgress >= 100 && (
+                  <div style={{ marginTop: 16, borderTop: '1px solid #e8edf2', paddingTop: 16 }}>
+                    {certData ? (
+                      <div style={{ background: '#fefce8', borderRadius: 10, padding: '14px 18px', border: '1px solid #fde047', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 20 }}>🏆</span>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#854d0e', margin: 0 }}>Certificado emitido!</p>
+                          {certData.certificateUrl && (
+                            <a href={certData.certificateUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: '#1e4a8a', fontWeight: 600 }}>
+                              Baixar certificado
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleGenerateCert}
+                        disabled={certLoading}
+                        style={{ background: certLoading ? '#aaa' : 'linear-gradient(135deg, #854d0e, #b45309)', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: certLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 13 }}
+                      >
+                        {certLoading ? 'Gerando...' : '🏆 Emitir Certificado'}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -323,6 +364,17 @@ export default function CursoDetailPage({ navigate, courseId }) {
         {/* Sidebar — Sections & Lessons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e3a6e', margin: '0 0 8px' }}>Conteúdo do curso</h3>
+          {progressRestoreError && (
+            <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <span style={{ fontSize: 12.5, color: '#9a3412' }}>Não foi possível carregar seu progresso.</span>
+              <button
+                onClick={retryLoadProgress}
+                style={{ background: '#ea580c', color: 'white', border: 'none', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, flexShrink: 0 }}
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
           {sections.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 12, padding: '24px', textAlign: 'center', color: '#778' }}>
               <p>Nenhuma aula disponível ainda.</p>
