@@ -1,20 +1,21 @@
 import { useState } from 'react'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { Map, Puzzle, BarChart2, Grid, MessageSquare, ClipboardList, Star, Route, Wrench, Handshake, Crown, Megaphone, Target, Users } from '../utils/icons.jsx'
 
 const services = [
-  { icon: '🗺️', title: 'Mapeamento de perfil', desc: 'Identificamos o perfil comportamental e técnico de cada colaborador para alocação estratégica.' },
-  { icon: '🧩', title: 'DISC', desc: 'Aplicação da metodologia DISC para entender estilos de comportamento e melhorar a comunicação interna.' },
-  { icon: '📊', title: 'Avaliação de experiência e desempenho', desc: 'Avaliações estruturadas que mensuram resultados e potencial de crescimento.' },
-  { icon: '📦', title: '9 Box', desc: 'Matriz de talentos para identificar quem são seus líderes do futuro.' },
-  { icon: '💬', title: 'Feedback', desc: 'Cultura de feedback contínuo, estruturado e orientado ao desenvolvimento.' },
-  { icon: '📋', title: 'PDI', desc: 'Plano de Desenvolvimento Individual alinhado aos objetivos do negócio.' },
-  { icon: '🌟', title: 'Gestão de talentos', desc: 'Estratégias para reter, engajar e desenvolver seus melhores profissionais.' },
-  { icon: '🛤️', title: 'Trilha de carreira', desc: 'Estruturação de planos de carreira claros e motivadores para toda a equipe.' },
-  { icon: '🔧', title: 'Treinamentos técnicos', desc: 'Capacitação focada nas habilidades técnicas exigidas pelo cargo.' },
-  { icon: '🤝', title: 'Treinamentos comportamentais', desc: 'Desenvolvimento de soft skills essenciais para a performance no varejo.' },
-  { icon: '👑', title: 'Treinamentos de liderança', desc: 'Formação de líderes que inspiram, engajam e entregam resultados.' },
-  { icon: '📣', title: 'Endomarketing', desc: 'Ações internas que fortalecem a cultura, o engajamento e o senso de pertencimento.' },
-  { icon: '🎯', title: 'Gincanas e dinâmicas', desc: 'Atividades práticas que desenvolvem equipes de forma leve e eficaz.' },
+  { icon: <Map size={22} />, title: 'Mapeamento de perfil', desc: 'Identificamos o perfil comportamental e técnico de cada colaborador para alocação estratégica.' },
+  { icon: <Puzzle size={22} />, title: 'DISC', desc: 'Aplicação da metodologia DISC para entender estilos de comportamento e melhorar a comunicação interna.' },
+  { icon: <BarChart2 size={22} />, title: 'Avaliação de experiência e desempenho', desc: 'Avaliações estruturadas que mensuram resultados e potencial de crescimento.' },
+  { icon: <Grid size={22} />, title: '9 Box', desc: 'Matriz de talentos para identificar quem são seus líderes do futuro.' },
+  { icon: <MessageSquare size={22} />, title: 'Feedback', desc: 'Cultura de feedback contínuo, estruturado e orientado ao desenvolvimento.' },
+  { icon: <ClipboardList size={22} />, title: 'PDI', desc: 'Plano de Desenvolvimento Individual alinhado aos objetivos do negócio.' },
+  { icon: <Star size={22} />, title: 'Gestão de talentos', desc: 'Estratégias para reter, engajar e desenvolver seus melhores profissionais.' },
+  { icon: <Route size={22} />, title: 'Trilha de carreira', desc: 'Estruturação de planos de carreira claros e motivadores para toda a equipe.' },
+  { icon: <Wrench size={22} />, title: 'Treinamentos técnicos', desc: 'Capacitação focada nas habilidades técnicas exigidas pelo cargo.' },
+  { icon: <Handshake size={22} />, title: 'Treinamentos comportamentais', desc: 'Desenvolvimento de soft skills essenciais para a performance no varejo.' },
+  { icon: <Crown size={22} />, title: 'Treinamentos de liderança', desc: 'Formação de líderes que inspiram, engajam e entregam resultados.' },
+  { icon: <Megaphone size={22} />, title: 'Endomarketing', desc: 'Ações internas que fortalecem a cultura, o engajamento e o senso de pertencimento.' },
+  { icon: <Target size={22} />, title: 'Gincanas e dinâmicas', desc: 'Atividades práticas que desenvolvem equipes de forma leve e eficaz.' },
 ]
 
 const w2h = [
@@ -85,8 +86,8 @@ export default function PessoasPage({ navigate }) {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0 }}>
-              👥
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white' }}>
+              <Users size={28} />
             </div>
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 4 }}>

@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { Scale, ScrollText, Lock, FileText, Handshake, Heart, ClipboardList, GraduationCap, Shield } from '../utils/icons.jsx'
 
 const services = [
-  { icon: '⚖️', title: 'Compliance trabalhista', desc: 'Adequação às normas trabalhistas para evitar passivos e autuações.' },
-  { icon: '📜', title: 'Políticas internas e código de conduta', desc: 'Documentos que definem as regras do jogo e protegem empresa e colaboradores.' },
-  { icon: '🔒', title: 'LGPD aplicada ao RH', desc: 'Adequação dos processos de RH à Lei Geral de Proteção de Dados.' },
-  { icon: '🧾', title: 'Gestão de advertências e medidas disciplinares', desc: 'Processos corretos para aplicação de medidas disciplinares sem risco jurídico.' },
-  { icon: '🤝', title: 'Prevenção de assédio e conflitos', desc: 'Políticas e treinamentos para criar um ambiente de trabalho saudável e seguro.' },
-  { icon: '🏥', title: 'Gestão de afastamentos e saúde mental', desc: 'Protocolos para lidar com afastamentos de forma humanizada e legalmente correta.' },
-  { icon: '📋', title: 'Auditoria de processos de RH', desc: 'Revisão completa dos processos para identificar riscos antes que virem problemas.' },
-  { icon: '🎓', title: 'Treinamento de gestores em legislação', desc: 'Capacitação das lideranças nos pontos críticos da CLT e normas internas.' },
-  { icon: '🛡️', title: 'Gestão de riscos trabalhistas', desc: 'Mapeamento e mitigação dos principais riscos jurídicos da operação de RH.' },
+  { icon: <Scale size={22} />, title: 'Compliance trabalhista', desc: 'Adequação às normas trabalhistas para evitar passivos e autuações.' },
+  { icon: <ScrollText size={22} />, title: 'Políticas internas e código de conduta', desc: 'Documentos que definem as regras do jogo e protegem empresa e colaboradores.' },
+  { icon: <Lock size={22} />, title: 'LGPD aplicada ao RH', desc: 'Adequação dos processos de RH à Lei Geral de Proteção de Dados.' },
+  { icon: <FileText size={22} />, title: 'Gestão de advertências e medidas disciplinares', desc: 'Processos corretos para aplicação de medidas disciplinares sem risco jurídico.' },
+  { icon: <Handshake size={22} />, title: 'Prevenção de assédio e conflitos', desc: 'Políticas e treinamentos para criar um ambiente de trabalho saudável e seguro.' },
+  { icon: <Heart size={22} />, title: 'Gestão de afastamentos e saúde mental', desc: 'Protocolos para lidar com afastamentos de forma humanizada e legalmente correta.' },
+  { icon: <ClipboardList size={22} />, title: 'Auditoria de processos de RH', desc: 'Revisão completa dos processos para identificar riscos antes que virem problemas.' },
+  { icon: <GraduationCap size={22} />, title: 'Treinamento de gestores em legislação', desc: 'Capacitação das lideranças nos pontos críticos da CLT e normas internas.' },
+  { icon: <Shield size={22} />, title: 'Gestão de riscos trabalhistas', desc: 'Mapeamento e mitigação dos principais riscos jurídicos da operação de RH.' },
 ]
 
 const w2h = [
@@ -41,7 +42,7 @@ export default function PrevencaoPage({ navigate }) {
             <span style={{ fontSize: 13, color: 'white', fontWeight: 600 }}>Prevenção</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0 }}>🛡️</div>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white' }}><Shield size={28} /></div>
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 4 }}>Metodologia 4 P's</p>
               <h1 style={{ fontSize: isMobile ? 32 : 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: 'white', lineHeight: 1.1 }}>Prevenção</h1>

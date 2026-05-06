@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import logoImg from '../assets/logo.png'
+import { Users, Settings, TrendingUp, Shield, User, GraduationCap, Bookmark, ClipboardList, LogOut, ChevronDown } from '../utils/icons.jsx'
 
 const Logo = ({ onClick }) => (
   <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
@@ -59,10 +60,10 @@ const Icons = {
 }
 
 const pilares = [
-  { label: 'Pessoas',     page: 'pessoas',     icon: '👥', color: '#1e4a8a', desc: 'Desenvolvimento humano estratégico' },
-  { label: 'Processos',   page: 'processos',   icon: '⚙️', color: '#1e4a8a', desc: 'Fluxos otimizados para resultados' },
-  { label: 'Performance', page: 'performance', icon: '📈', color: '#1e4a8a', desc: 'Metas, KPIs e reconhecimento' },
-  { label: 'Prevenção',   page: 'prevencao',   icon: '🛡️', color: '#1e4a8a', desc: 'Compliance e proteção jurídica' },
+  { label: 'Pessoas',     page: 'pessoas',     icon: <Users size={18} />,      color: '#1e4a8a', desc: 'Desenvolvimento humano estratégico' },
+  { label: 'Processos',   page: 'processos',   icon: <Settings size={18} />,   color: '#1e4a8a', desc: 'Fluxos otimizados para resultados' },
+  { label: 'Performance', page: 'performance', icon: <TrendingUp size={18} />, color: '#1e4a8a', desc: 'Metas, KPIs e reconhecimento' },
+  { label: 'Prevenção',   page: 'prevencao',   icon: <Shield size={18} />,     color: '#1e4a8a', desc: 'Compliance e proteção jurídica' },
 ]
 
 const navItems = [
@@ -135,7 +136,7 @@ export default function Navbar({ navigate, page }) {
                         <span style={{ display: 'flex', alignItems: 'center' }}>{item.icon}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                           {item.label}
-                          <span style={{ fontSize: 8, display: 'inline-block', transition: 'transform 0.2s', transform: servicosOpen ? 'rotate(180deg)' : 'none' }}>▼</span>
+                          <span style={{ display:'inline-flex', transition:'transform 0.2s', transform: servicosOpen ? 'rotate(180deg)' : 'none' }}><ChevronDown size={12} /></span>
                         </span>
                       </button>
                       {servicosOpen && (
@@ -189,11 +190,11 @@ export default function Navbar({ navigate, page }) {
                 {userMenu && (
                   <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 8px)', background: 'white', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #e8edf2', minWidth: 170, overflow: 'hidden', zIndex: 100 }}>
                     {[
-                      { icon: '👤', label: 'Meu Painel',   page: ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(user?.role) ? 'dashboard-recrutador' : 'dashboard-candidato' },
-                      { icon: '🎓', label: 'Treinamentos', page: 'treinamentos' },
+                      { icon: <User size={14} />,         label: 'Meu Painel',   page: ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(user?.role) ? 'dashboard-recrutador' : 'dashboard-candidato' },
+                      { icon: <GraduationCap size={14} />, label: 'Treinamentos', page: 'treinamentos' },
                       ...(user?.role === 'CANDIDATE' ? [
-                        { icon: '🔖', label: 'Vagas Salvas', page: 'dashboard-candidato' },
-                        { icon: '📋', label: 'Candidaturas', page: 'dashboard-candidato' },
+                        { icon: <Bookmark size={14} />,     label: 'Vagas Salvas', page: 'dashboard-candidato' },
+                        { icon: <ClipboardList size={14} />, label: 'Candidaturas', page: 'dashboard-candidato' },
                       ] : []),
                     ].map(({ icon, label, page: dest }) => (
                       <button key={label} onClick={() => { navigate(dest); setUserMenu(false) }}
@@ -205,7 +206,7 @@ export default function Navbar({ navigate, page }) {
                     <hr style={{ margin: 0, borderColor: '#eee' }} />
                     <button onClick={() => { logout(); setUserMenu(false) }}
                       style={{ display: 'flex', width: '100%', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#e53e3e', fontSize: 13.5, gap: 8, alignItems: 'center' }}
-                    >🚪 Sair</button>
+                    ><span style={{ display:'flex',alignItems:'center',gap:6 }}><LogOut size={14} /> Sair</span></button>
                   </div>
                 )}
               </div>
@@ -250,7 +251,7 @@ export default function Navbar({ navigate, page }) {
                         <span style={{ color: '#778899' }}>{item.icon}</span>
                         {item.label}
                       </div>
-                      <span style={{ fontSize: 10, color: '#4a9edd', transform: mobileServicosOpen ? 'rotate(180deg)' : 'none', display: 'inline-block', transition: 'transform 0.2s' }}>▼</span>
+                      <span style={{ display:'inline-flex', color:'#4a9edd', transform: mobileServicosOpen ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }}><ChevronDown size={14} /></span>
                     </button>
                     {mobileServicosOpen && (
                       <div style={{ background: '#f8fafc', borderTop: '1px solid #f0f4f8', borderBottom: '1px solid #f0f4f8' }}>

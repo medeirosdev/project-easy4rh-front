@@ -81,17 +81,6 @@ export default function Footer({ navigate }) {
                     </div>
                   ))}
                 </div>
-                {/* Matriz mobile */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: 14, marginTop: 2 }}>📍</span>
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7 }}>Av. Paulista, 1234 — Sala 56{'\n'}Bela Vista, São Paulo — SP{'\n'}CEP 01310-100</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ fontSize: 14 }}>✉️</span>
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>contato@easy4rh.com.br</span>
-                  </div>
-                </div>
               </div>
 
               {/* Accordion for 4 P's */}
@@ -128,11 +117,11 @@ export default function Footer({ navigate }) {
               {/* Col 1: Brand + Matriz */}
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    <img src={logoImg} alt="Easy4RH" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                  <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                    <img src={logoImg} alt="Easy4RH" style={{ width: 40, height: 40, objectFit: 'contain' }} />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: 1 }}>EASY<span style={{ color: '#4a9edd' }}>4</span>RH</div>
+                    <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: 1 }}>EASY<span style={{ color: '#4a9edd' }}>4</span>RH</div>
                     <div style={{ fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Consultoria em RH</div>
                   </div>
                 </div>
@@ -150,24 +139,6 @@ export default function Footer({ navigate }) {
                 </div>
               </div>
 
-              {/* Col 2: Matriz */}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                  <div style={{ height: 2, width: 16, background: '#4a9edd', borderRadius: 2 }} />
-                  <h4 style={{ fontSize: 11, fontWeight: 800, color: '#4a9edd', letterSpacing: 1.5, textTransform: 'uppercase', margin: 0 }}>Matriz</h4>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: 13, marginTop: 2, flexShrink: 0 }}>📍</span>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, whiteSpace: 'pre-line' }}>{'Av. Paulista, 1234 — Sala 56\nBela Vista, São Paulo — SP\nCEP 01310-100'}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, flexShrink: 0 }}>✉️</span>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>contato@easy4rh.com.br</span>
-                  </div>
-                </div>
-              </div>
-
               {/* Cols 3-6: 4 P's */}
               {Object.entries(services).map(([pillar, items]) => (
                 <div key={pillar}>
@@ -179,7 +150,7 @@ export default function Footer({ navigate }) {
                     {items.map((item, i) => (
                       <div key={i} style={{ display: 'flex', gap: 7, alignItems: 'flex-start' }}>
                         <span style={{ color: '#4a9edd', fontSize: 9, marginTop: 5, flexShrink: 0 }}>•</span>
-                        <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>{item}</span>
+                        <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>{item}</span>
                       </div>
                     ))}
                   </div>

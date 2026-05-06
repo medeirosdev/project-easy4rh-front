@@ -36,7 +36,7 @@ export default function RegisterPage({ navigate }) {
 
   const inputStyle = (field) => ({
     width: "100%", border: `1px solid ${errors[field] ? "#e53e3e" : "#d0d8e4"}`,
-    borderRadius: 8, padding: "13px 16px", fontSize: 14, outline: "none",
+    borderRadius: 10, padding: "13px 16px", fontSize: 14, outline: "none",
     boxSizing: "border-box", background: "white"
   });
 
@@ -79,7 +79,7 @@ export default function RegisterPage({ navigate }) {
                   ].map(opt => (
                     <button key={opt.value} onClick={() => { setRole(opt.value); setErrors({}); }}
                       style={{
-                        flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", cursor: "pointer",
+                        flex: 1, padding: "10px 16px", borderRadius: 10, border: "none", cursor: "pointer",
                         fontSize: 13.5, fontWeight: role === opt.value ? 700 : 500, transition: "all 0.2s",
                         background: role === opt.value ? "white" : "transparent",
                         color: role === opt.value ? "#1e4a8a" : "#778899",
@@ -91,7 +91,7 @@ export default function RegisterPage({ navigate }) {
                 </div>
 
                 {errors.general && (
-                  <div style={{ background: "#fee", border: "1px solid #fcc", borderRadius: 8, padding: "10px 14px", color: "#c00", fontSize: 13, marginBottom: 16 }}>
+                  <div style={{ background: "#fee", border: "1px solid #fcc", borderRadius: 10, padding: "10px 14px", color: "#c00", fontSize: 13, marginBottom: 16 }}>
                     {errors.general}
                   </div>
                 )}
@@ -132,7 +132,7 @@ export default function RegisterPage({ navigate }) {
                     <div style={{ marginBottom: 24 }}>
                       <label style={{
                         display: "inline-block", border: "1px solid #d0d8e4",
-                        borderRadius: 8, padding: "10px 20px", cursor: "pointer",
+                        borderRadius: 10, padding: "10px 20px", cursor: "pointer",
                         background: "white", fontSize: 13.5, color: "#555", fontWeight: 500
                       }}>
                         Carregue seu CV

@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext'
+import { MapPin, GraduationCap, DollarSign, Clock, Bookmark } from '../utils/icons.jsx'
 
 const typeColors = {
   Presencial: { bg: '#e8f4fd', color: '#1a6ea8' },
@@ -50,21 +51,21 @@ export default function JobCard({ job, navigate }) {
           <button
             aria-label={isSaved ? "Remover vaga salva" : "Salvar vaga"}
             onClick={() => (user ? toggleSaveJob(job.id) : navigate('login'))}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, opacity: isSaved ? 1 : 0.25, transition: 'opacity 0.2s' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: isSaved ? 1 : 0.25, transition: 'opacity 0.2s', color: '#1e4a8a', display: 'flex', alignItems: 'center' }}
           >
-            🔖
+            <Bookmark size={18} fill={isSaved ? '#1e4a8a' : 'none'} />
           </button>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 10 }}>
-        <span style={{ fontSize: 12.5, color: '#555' }}>📍 {job.location}</span>
-        <span style={{ fontSize: 12.5, color: '#555' }}>🎓 {job.level}</span>
-        <span style={{ fontSize: 12.5, color: '#2e7d32', fontWeight: 600 }}>💰 {job.salary}</span>
+        <span style={{ fontSize: 12.5, color: '#555', display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={13} /> {job.location}</span>
+        <span style={{ fontSize: 12.5, color: '#555', display: 'flex', alignItems: 'center', gap: 4 }}><GraduationCap size={13} /> {job.level}</span>
+        <span style={{ fontSize: 12.5, color: '#2e7d32', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><DollarSign size={13} /> {job.salary}</span>
         {(job.isFreelance || job.contract === 'Freelance') && (
           <span style={{ fontSize: 11.5, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed' }}>Freelance</span>
         )}
-        <span style={{ fontSize: 12, color: '#999', marginLeft: 'auto' }}>🕐 Há {job.posted}</span>
+        <span style={{ fontSize: 12, color: '#999', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={12} /> Há {job.posted}</span>
       </div>
 
       <p style={{ fontSize: 13, color: '#666', lineHeight: 1.6, marginBottom: 14, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>

@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { Target, BarChart2, Trophy, TrendingUp, RefreshCw, LineChart, ShoppingCart, Megaphone, Search } from '../utils/icons.jsx'
 
 const services = [
-  { icon: '🎯', title: 'OKR e metas', desc: 'Estruturação de objetivos e resultados-chave alinhados à estratégia do negócio.' },
-  { icon: '📊', title: 'KPIs de RH e vendas', desc: 'Definição dos indicadores certos para medir o desempenho humano e comercial.' },
-  { icon: '🏆', title: 'Programa de incentivo e reconhecimento', desc: 'Campanhas que motivam equipes a baterem metas com consistência.' },
-  { icon: '💹', title: 'Remuneração variável', desc: 'Estrutura de comissões e bônus que conecta salário ao resultado.' },
-  { icon: '🔄', title: 'Avaliação de desempenho por resultados', desc: 'Ciclos de avaliação focados em entregas reais, não apenas comportamento.' },
-  { icon: '📈', title: 'Dashboard de pessoas', desc: 'Painel visual com os principais indicadores de RH para decisão rápida.' },
-  { icon: '🛒', title: 'Treinamento de vendas no varejo', desc: 'Capacitação prática da equipe comercial com foco em conversão e ticket médio.' },
-  { icon: '🗣️', title: 'Comunicação de resultados', desc: 'Rituais de gestão que mantêm a equipe informada, focada e engajada.' },
-  { icon: '🔍', title: 'Diagnóstico de clima organizacional', desc: 'Pesquisas que revelam o nível real de engajamento e os pontos de melhoria.' },
+  { icon: <Target size={22} />, title: 'OKR e metas', desc: 'Estruturação de objetivos e resultados-chave alinhados à estratégia do negócio.' },
+  { icon: <BarChart2 size={22} />, title: 'KPIs de RH e vendas', desc: 'Definição dos indicadores certos para medir o desempenho humano e comercial.' },
+  { icon: <Trophy size={22} />, title: 'Programa de incentivo e reconhecimento', desc: 'Campanhas que motivam equipes a baterem metas com consistência.' },
+  { icon: <TrendingUp size={22} />, title: 'Remuneração variável', desc: 'Estrutura de comissões e bônus que conecta salário ao resultado.' },
+  { icon: <RefreshCw size={22} />, title: 'Avaliação de desempenho por resultados', desc: 'Ciclos de avaliação focados em entregas reais, não apenas comportamento.' },
+  { icon: <LineChart size={22} />, title: 'Dashboard de pessoas', desc: 'Painel visual com os principais indicadores de RH para decisão rápida.' },
+  { icon: <ShoppingCart size={22} />, title: 'Treinamento de vendas no varejo', desc: 'Capacitação prática da equipe comercial com foco em conversão e ticket médio.' },
+  { icon: <Megaphone size={22} />, title: 'Comunicação de resultados', desc: 'Rituais de gestão que mantêm a equipe informada, focada e engajada.' },
+  { icon: <Search size={22} />, title: 'Diagnóstico de clima organizacional', desc: 'Pesquisas que revelam o nível real de engajamento e os pontos de melhoria.' },
 ]
 
 const w2h = [
@@ -46,7 +47,7 @@ export default function PerformancePage({ navigate }) {
             <span style={{ fontSize: 13, color: 'white', fontWeight: 600 }}>Performance</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0 }}>📈</div>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white' }}><TrendingUp size={28} /></div>
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 4 }}>Metodologia 4 P's</p>
               <h1 style={{ fontSize: isMobile ? 32 : 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: 'white', lineHeight: 1.1 }}>Performance</h1>

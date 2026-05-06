@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { ClipboardList, FileText, LogOut, Sparkles, DollarSign, Gift, Clock, HardHat, Folder, Landmark, Settings } from '../utils/icons.jsx'
 
 const services = [
-  { icon: '📋', title: 'Política de R&S (Recrutamento e Seleção)', desc: 'Estruturação completa do processo seletivo com critérios claros e alinhados à cultura.' },
-  { icon: '📄', title: 'Descritivo de cargos e manuais operacionais', desc: 'Documentação clara de funções, responsabilidades e procedimentos operacionais.' },
-  { icon: '🚪', title: 'Admissão / Demissão', desc: 'Processos estruturados de entrada e saída que protegem a empresa e respeitam o colaborador.' },
-  { icon: '🎉', title: 'Onboarding / Offboarding', desc: 'Integração eficaz de novos colaboradores e saída organizada de quem parte.' },
-  { icon: '💰', title: 'Folha de pagamento', desc: 'Gestão precisa e organizada da folha, evitando erros e passivos trabalhistas.' },
-  { icon: '🎁', title: 'Política de remuneração e benefícios', desc: 'Estrutura de salários e benefícios competitiva e alinhada ao mercado.' },
-  { icon: '⏱️', title: 'Gestão de ponto / jornada / escala', desc: 'Controle eficiente de jornada, escalas e banco de horas.' },
-  { icon: '🦺', title: 'SST (Saúde e Segurança do Trabalho)', desc: 'Conformidade com normas de saúde e segurança para proteger colaboradores e a empresa.' },
-  { icon: '📁', title: 'Gestão de documentos', desc: 'Organização e controle de toda a documentação trabalhista e operacional.' },
-  { icon: '🏛️', title: 'Construção e revisão da cultura', desc: 'Definição e fortalecimento dos valores, missão e comportamentos esperados na equipe.' },
+  { icon: <ClipboardList size={22} />, title: 'Política de R&S (Recrutamento e Seleção)', desc: 'Estruturação completa do processo seletivo com critérios claros e alinhados à cultura.' },
+  { icon: <FileText size={22} />, title: 'Descritivo de cargos e manuais operacionais', desc: 'Documentação clara de funções, responsabilidades e procedimentos operacionais.' },
+  { icon: <LogOut size={22} />, title: 'Admissão / Demissão', desc: 'Processos estruturados de entrada e saída que protegem a empresa e respeitam o colaborador.' },
+  { icon: <Sparkles size={22} />, title: 'Onboarding / Offboarding', desc: 'Integração eficaz de novos colaboradores e saída organizada de quem parte.' },
+  { icon: <DollarSign size={22} />, title: 'Folha de pagamento', desc: 'Gestão precisa e organizada da folha, evitando erros e passivos trabalhistas.' },
+  { icon: <Gift size={22} />, title: 'Política de remuneração e benefícios', desc: 'Estrutura de salários e benefícios competitiva e alinhada ao mercado.' },
+  { icon: <Clock size={22} />, title: 'Gestão de ponto / jornada / escala', desc: 'Controle eficiente de jornada, escalas e banco de horas.' },
+  { icon: <HardHat size={22} />, title: 'SST (Saúde e Segurança do Trabalho)', desc: 'Conformidade com normas de saúde e segurança para proteger colaboradores e a empresa.' },
+  { icon: <Folder size={22} />, title: 'Gestão de documentos', desc: 'Organização e controle de toda a documentação trabalhista e operacional.' },
+  { icon: <Landmark size={22} />, title: 'Construção e revisão da cultura', desc: 'Definição e fortalecimento dos valores, missão e comportamentos esperados na equipe.' },
 ]
 
 const w2h = [
@@ -42,7 +43,7 @@ export default function ProcessosPage({ navigate }) {
             <span style={{ fontSize: 13, color: 'white', fontWeight: 600 }}>Processos</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0 }}>⚙️</div>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'white' }}><Settings size={28} /></div>
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 4 }}>Metodologia 4 P's</p>
               <h1 style={{ fontSize: isMobile ? 32 : 'clamp(32px, 4vw, 52px)', fontWeight: 800, color: 'white', lineHeight: 1.1 }}>Processos</h1>

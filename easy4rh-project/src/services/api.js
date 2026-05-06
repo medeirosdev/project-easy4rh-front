@@ -186,6 +186,7 @@ export const jobsApi = {
    * POST /jobs/:id/close
    */
   close: (id) => request('POST', `/jobs/${id}/close`),
+  fill: (id) => request('POST', `/jobs/${id}/fill`),
 
   /**
    * Minhas vagas (Recrutador)

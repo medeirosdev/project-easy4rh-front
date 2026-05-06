@@ -77,7 +77,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
 
             {tab === 'login' ? (
               <>
-                {error && <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '9px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>⚠️ {error}</div>}
+                {error && <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '9px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>⚠️ {error}</div>}
 
                 <input type="email" aria-label="Email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
                 <input type="password" aria-label="Senha" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={inputStyle} />
@@ -100,10 +100,10 @@ export default function ConsultoriaLoginPage({ navigate }) {
               </>
             ) : (
               <>
-                {regError && <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '9px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>⚠️ {regError}</div>}
+                {regError && <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '9px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>⚠️ {regError}</div>}
 
                 {/* Role toggle */}
-                <div style={{ display: 'flex', background: '#e4e9f0', borderRadius: 8, padding: 3, marginBottom: 22 }}>
+                <div style={{ display: 'flex', background: '#e4e9f0', borderRadius: 10, padding: 3, marginBottom: 22 }}>
                   {[
                     { value: 'CANDIDATE', label: 'Candidato' },
                     { value: 'RECRUITER', label: 'Recrutador' },
@@ -129,7 +129,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 <input type="password" placeholder="Confirmar senha" value={regConfirm} onChange={e => setRegConfirm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRegister()} style={inputStyle} />
 
                 {regRole === 'RECRUITER' && (
-                  <div style={{ background: '#f0f8ff', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #d0e4f4' }}>
+                  <div style={{ background: '#f0f8ff', borderRadius: 10, padding: '12px 14px', marginBottom: 20, border: '1px solid #d0e4f4' }}>
                     <p style={{ fontSize: 12.5, color: '#1e4a8a', margin: 0, fontWeight: 600 }}>
                       Após o cadastro, você poderá vincular ou criar sua empresa no painel do recrutador.
                     </p>
@@ -137,7 +137,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 )}
 
                 {regRole === 'INSTRUCTOR' && (
-                  <div style={{ background: '#f0fff4', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #b2e4c8' }}>
+                  <div style={{ background: '#f0fff4', borderRadius: 10, padding: '12px 14px', marginBottom: 20, border: '1px solid #b2e4c8' }}>
                     <p style={{ fontSize: 12.5, color: '#276749', margin: 0, fontWeight: 600 }}>
                       Como instrutor, você poderá criar cursos, adicionar aulas com videos e acompanhar o progresso dos alunos.
                     </p>
@@ -145,7 +145,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 )}
 
                 {regRole === 'RECRUITER_INSTRUCTOR' && (
-                  <div style={{ background: '#f5f0ff', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #c4b2e4' }}>
+                  <div style={{ background: '#f5f0ff', borderRadius: 10, padding: '12px 14px', marginBottom: 20, border: '1px solid #c4b2e4' }}>
                     <p style={{ fontSize: 12.5, color: '#4a1e8a', margin: 0, fontWeight: 600 }}>
                       Acesso completo: publique vagas, gerencie candidaturas e crie cursos — tudo em um unico painel.
                     </p>

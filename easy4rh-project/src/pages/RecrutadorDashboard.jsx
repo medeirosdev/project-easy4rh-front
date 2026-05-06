@@ -5,21 +5,22 @@ import { jobsApi, companiesApi, applicationsApi, jobQuestionsApi, coursesApi, se
 import { locationTypeMap } from '../context/JobsContext'
 import { getStageLabel, getStageColor, getStageBackground, PIPELINE_STAGES, normalizeStage } from '../utils/applicationStages'
 import JobPosterModal from '../components/JobPosterModal'
+import { Home, Building2, Plus, Megaphone, ClipboardList, FileText, GraduationCap, Users, BarChart2, TrendingUp, CheckCircle, Sparkles, AlertTriangle, Calendar, Folder, Globe, LogOut, Edit3, Trophy, BookOpen, Search } from '../utils/icons.jsx'
 
 const recruiterMenuItems = [
-  { id: 'resumo',      label: 'Resumo' },
-  { id: 'empresa',     label: 'Minha Empresa' },
-  { id: 'publicar',    label: 'Publicar Vaga' },
-  { id: 'vagas',       label: 'Vagas Publicadas' },
-  { id: 'aplicacoes',  label: 'Aplicações' },
-  { id: 'documentos',  label: 'Documentos' },
-  { id: 'talentos',    label: 'Banco de Talentos' },
-  { id: 'cursos',      label: 'Cursos' },
+  { id: 'resumo',      icon: <Home size={16} />,          label: 'Resumo' },
+  { id: 'empresa',     icon: <Building2 size={16} />,     label: 'Minha Empresa' },
+  { id: 'publicar',    icon: <Plus size={16} />,           label: 'Publicar Vaga' },
+  { id: 'vagas',       icon: <Megaphone size={16} />,     label: 'Vagas Publicadas' },
+  { id: 'aplicacoes',  icon: <ClipboardList size={16} />, label: 'Aplicações' },
+  { id: 'documentos',  icon: <FileText size={16} />,      label: 'Documentos' },
+  { id: 'talentos',    icon: <Users size={16} />,          label: 'Banco de Talentos' },
+  { id: 'cursos',      icon: <GraduationCap size={16} />, label: 'Cursos' },
 ]
 
 const instructorMenuItems = [
-  { id: 'resumo',      label: 'Resumo' },
-  { id: 'cursos',      label: 'Meus Cursos' },
+  { id: 'resumo',      icon: <Home size={16} />,          label: 'Resumo' },
+  { id: 'cursos',      icon: <GraduationCap size={16} />, label: 'Meus Cursos' },
 ]
 
 const jobTypes = [
@@ -428,6 +429,17 @@ export default function RecrutadorDashboard({ navigate }) {
       setMyJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: 'Encerrada', rawStatus: 'CLOSED' } : j))
     } catch (err) {
       setJobActionError(err.message || 'Erro ao encerrar vaga.')
+    }
+  }
+
+  const handleFillJob = async (jobId) => {
+    if (!window.confirm('Marcar esta vaga como preenchida? Indica que a posição foi ocupada por um candidato.')) return
+    setJobActionError('')
+    try {
+      await jobsApi.fill(jobId)
+      setMyJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: 'Preenchida', rawStatus: 'FILLED' } : j))
+    } catch (err) {
+      setJobActionError(err.message || 'Erro ao marcar vaga como preenchida.')
     }
   }
 
@@ -954,12 +966,13 @@ export default function RecrutadorDashboard({ navigate }) {
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
             {[
-              { label: 'Vagas ativas', value: vagasAtivas, color: '#1e4a8a' },
-              { label: 'Total de aplicações', value: totalAplicacoes, color: '#f0a500' },
-              { label: 'Aprovados', value: aprovados, color: '#22c55e' },
-              { label: 'Talentos no banco', value: '—', color: '#8b5cf6' },
+              { label: 'Vagas ativas', value: vagasAtivas, color: '#1e4a8a', icon: <Megaphone size={20} /> },
+              { label: 'Total de aplicações', value: totalAplicacoes, color: '#f0a500', icon: <ClipboardList size={20} /> },
+              { label: 'Aprovados', value: aprovados, color: '#22c55e', icon: <CheckCircle size={20} /> },
+              { label: 'Talentos no banco', value: '—', color: '#8b5cf6', icon: <Users size={20} /> },
             ].map((s) => (
               <div key={s.label} style={{ background: 'white', borderRadius: 16, padding: '20px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', borderTop: `3px solid ${s.color}` }}>
+                <div style={{ color: s.color, marginBottom: 4 }}>{s.icon}</div>
                 <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
                 <div style={{ fontSize: 12, color: '#778899', marginTop: 2 }}>{s.label}</div>
               </div>
@@ -992,7 +1005,7 @@ export default function RecrutadorDashboard({ navigate }) {
           </div>
 
           {/* CTA publish */}
-          <div style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', borderRadius: 16, padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', borderRadius: 16, padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: 'white', marginBottom: 4 }}>Publique uma nova vaga</div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>Alcance centenas de candidatos qualificados no varejo.</div>
@@ -1222,7 +1235,7 @@ export default function RecrutadorDashboard({ navigate }) {
 
           {vagaPublicada ? (
             <div style={{ background: 'white', borderRadius: 16, padding: '48px', textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-              <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
+              <div style={{ display: "flex", justifyContent: "center", color: "#22c55e", marginBottom: 16 }}><Sparkles size={56} /></div>
               <h3 style={{ color: '#22c55e', fontSize: 18, fontWeight: 800 }}>Vaga publicada com sucesso!</h3>
               <p style={{ color: '#778899', marginTop: 8 }}>Redirecionando para suas vagas...</p>
             </div>
@@ -1239,7 +1252,7 @@ export default function RecrutadorDashboard({ navigate }) {
                 <>
                   {!myCompany && (
                     <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 18 }}>⚠️</span>
+                      <span style={{ display: "flex", color: "#f0a500" }}><AlertTriangle size={18} /></span>
                       <div>
                         <span style={{ fontSize: 13.5, color: '#9a3412', fontWeight: 600 }}>Empresa não cadastrada. </span>
                         <span style={{ fontSize: 13, color: '#9a3412' }}>Você precisa cadastrar sua empresa antes de publicar vagas. </span>
@@ -1509,7 +1522,7 @@ export default function RecrutadorDashboard({ navigate }) {
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e' }}>Vagas Publicadas</h2>
-            <button onClick={() => setActiveSection('publicar')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+            <button onClick={() => setActiveSection('publicar')} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
               + Nova vaga
             </button>
           </div>
@@ -1550,7 +1563,7 @@ export default function RecrutadorDashboard({ navigate }) {
                         </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: statusBg, color: statusColor }}>{v.status}</span>
-                          <span style={{ fontSize: 12, color: '#778899' }}>📋 {v.aplicacoes} aplicação(ões)</span>
+                          <span style={{ fontSize: 12, color: '#778899', display: 'flex', alignItems: 'center', gap: 4 }}><ClipboardList size={12} /> {v.aplicacoes} aplicação(ões)</span>
                           {experienceLevelLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0f9ff', color: '#0369a1', fontWeight: 600 }}>{experienceLevelLabel}</span>}
                           {contractTypeLabel && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', fontWeight: 600 }}>{contractTypeLabel}</span>}
                           {v.isFreelance && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed', fontWeight: 600 }}>Freelance</span>}
@@ -1567,6 +1580,9 @@ export default function RecrutadorDashboard({ navigate }) {
                         )}
                         {(v.rawStatus === 'PUBLISHED' || v.rawStatus === 'PAUSED') && (
                           <button onClick={() => handleCloseJob(v.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Encerrar</button>
+                        )}
+                        {(v.rawStatus === 'PUBLISHED' || v.rawStatus === 'PAUSED') && (
+                          <button onClick={() => handleFillJob(v.id)} style={{ background: '#f0fdf4', color: '#15803d', border: 'none', borderRadius: 20, padding: '8px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>✓ Preenchida</button>
                         )}
                       </div>
                     </div>
@@ -1744,7 +1760,7 @@ export default function RecrutadorDashboard({ navigate }) {
                 <button onClick={() => setDocView('library')} style={{ background: docView === 'library' ? '#1e4a8a' : '#e8f2fc', color: docView === 'library' ? 'white' : '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Biblioteca</button>
                 <button onClick={() => { setDocView('sent'); fetchSentDocs() }} style={{ background: docView === 'sent' ? '#1e4a8a' : '#e8f2fc', color: docView === 'sent' ? 'white' : '#1e4a8a', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Enviados</button>
                 {docView !== 'add' && (
-                  <button onClick={() => setDocView('add')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>+ Adicionar</button>
+                  <button onClick={() => setDocView('add')} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>+ Adicionar</button>
                 )}
               </div>
             </div>
@@ -1787,7 +1803,7 @@ export default function RecrutadorDashboard({ navigate }) {
                     <input value={docForm.fileName} onChange={e => setDocForm(p => ({ ...p, fileName: e.target.value }))} placeholder="Ex: codigo-vestimenta.pdf" style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button type="submit" disabled={docSaving} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 10, padding: '10px 24px', cursor: docSaving ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13 }}>
+                    <button type="submit" disabled={docSaving} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 10, padding: '10px 24px', cursor: docSaving ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13 }}>
                       {docSaving ? 'Salvando...' : 'Salvar'}
                     </button>
                     <button type="button" onClick={() => { setDocView('library'); setDocForm({ title: '', description: '', category: 'OTHER', fileUrl: '', fileName: '' }); setDocError('') }} style={{ background: '#f3f4f6', color: '#556677', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Cancelar</button>
@@ -1811,7 +1827,7 @@ export default function RecrutadorDashboard({ navigate }) {
                     <div key={doc.id} style={{ background: 'white', borderRadius: 14, padding: '18px 20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: 20 }}>📄</span>
+                          <span style={{ display: "flex", color: "#1e4a8a" }}><FileText size={20} /></span>
                           <span style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e' }}>{doc.title}</span>
                         </div>
                         <div style={{ fontSize: 12, color: '#778899' }}>
@@ -1958,7 +1974,7 @@ export default function RecrutadorDashboard({ navigate }) {
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Banco de Talentos</h2>
           <div style={{ background: 'white', borderRadius: 16, padding: '48px', textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🌟</div>
+            <div style={{ display: "flex", justifyContent: "center", color: "#aab", marginBottom: 16 }}><Users size={48} /></div>
             <h3 style={{ color: '#1e3a6e', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Em breve</h3>
             <p style={{ color: '#778899', fontSize: 13 }}>O banco de talentos estará disponível em breve.</p>
           </div>
@@ -2050,7 +2066,7 @@ export default function RecrutadorDashboard({ navigate }) {
 
             {courseSuccess ? (
               <div style={{ background: 'white', borderRadius: 16, padding: '48px', textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-                <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
+                <div style={{ display: "flex", justifyContent: "center", color: "#22c55e", marginBottom: 16 }}><Sparkles size={56} /></div>
                 <h3 style={{ color: '#22c55e', fontSize: 18, fontWeight: 800 }}>{courseSuccess}</h3>
               </div>
             ) : (
@@ -2193,7 +2209,7 @@ export default function RecrutadorDashboard({ navigate }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>Meus Cursos</h2>
               <button onClick={() => { setCourseView('create'); setNovoCurso({ ...emptyCurso }); setCourseSections([]); setCourseError(''); setCourseSuccess(''); setDeletedSectionIds([]); setDeletedLessonIds([]) }}
-                style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                 + Novo curso
               </button>
             </div>
@@ -2211,7 +2227,7 @@ export default function RecrutadorDashboard({ navigate }) {
               <div style={{ background: 'white', borderRadius: 14, padding: '32px', textAlign: 'center', color: '#778899', fontSize: 13 }}>Carregando cursos...</div>
             ) : myCourses.length === 0 ? (
               <div style={{ background: 'white', borderRadius: 16, padding: '48px', textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🎓</div>
+                <div style={{ display: "flex", justifyContent: "center", color: "#aab", marginBottom: 16 }}><GraduationCap size={48} /></div>
                 <h3 style={{ color: '#1e3a6e', fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Nenhum curso criado</h3>
                 <p style={{ color: '#778899', fontSize: 13 }}>Crie seu primeiro curso para compartilhar conhecimento.</p>
               </div>
@@ -2230,7 +2246,7 @@ export default function RecrutadorDashboard({ navigate }) {
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: st.bg, color: st.color }}>{st.label}</span>
                             {course._count?.enrollments > 0 && (
-                              <span style={{ fontSize: 12, color: '#778899' }}>👥 {course._count.enrollments} alunos</span>
+                              <span style={{ fontSize: 12, color: '#778899', display: 'flex', alignItems: 'center', gap: 4 }}><Users size={12} /> {course._count.enrollments} alunos</span>
                             )}
                           </div>
                         </div>
@@ -2271,7 +2287,7 @@ export default function RecrutadorDashboard({ navigate }) {
       {isDesktop && (
         <div style={{ width: 240, background: 'white', borderRight: '1px solid #e8edf2', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
           <div style={{ padding: '24px 20px', borderBottom: '1px solid #f0f4f8' }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'white', fontWeight: 800, marginBottom: 10 }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'white', fontWeight: 800, marginBottom: 10 }}>
               {user?.name?.[0]}
             </div>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e' }}>{user?.name}</div>
@@ -2293,11 +2309,11 @@ export default function RecrutadorDashboard({ navigate }) {
                 Painel Admin
               </button>
             )}
-            <button onClick={() => navigate('home')} style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#556677', marginBottom: 2 }}>
-              Ver site
+            <button onClick={() => navigate('home')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#556677', marginBottom: 2 }}>
+              <Globe size={15} /> Ver site
             </button>
-            <button onClick={() => { logout(); navigate('home') }} style={{ width: '100%', display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#ef4444' }}>
-              Sair
+            <button onClick={() => { logout(); navigate('home') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#ef4444' }}>
+              <LogOut size={15} /> Sair
             </button>
           </div>
         </div>
@@ -2310,7 +2326,7 @@ export default function RecrutadorDashboard({ navigate }) {
         {!isDesktop && (
           <div style={{ background: 'white', borderBottom: '1px solid #e8edf2', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'white', fontWeight: 800, flexShrink: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'white', fontWeight: 800, flexShrink: 0 }}>
                 {user?.name?.[0]}
               </div>
               <div>

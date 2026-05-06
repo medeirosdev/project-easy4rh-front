@@ -3,6 +3,7 @@ import { useJobs } from '../context/JobsContext'
 import { useAuth } from '../context/AuthContext'
 import JobCard from '../components/JobCard'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { Search, Lock, FileText, Home, ClipboardList, SlidersHorizontal } from '../utils/icons.jsx'
 
 const jobTypes = ['Remoto', 'Presencial', 'Híbrido']
 const levels = ['Estágio', 'Sem experiência', 'Até 1 ano', '2+ anos', 'Júnior', 'Pleno', 'Sênior', 'Lead', 'Gerente']
@@ -167,7 +168,7 @@ export default function VagasPage({ navigate, initialSearch }) {
             onClick={() => setShowAdvanced(!showAdvanced)}
             style={{
               background: 'rgba(255,255,255,0.15)', color: 'white',
-              border: '1.5px solid rgba(255,255,255,0.4)', borderRadius: 8,
+              border: '1.5px solid rgba(255,255,255,0.4)', borderRadius: 10,
               padding: '7px 16px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600,
               display: 'flex', alignItems: 'center', gap: 6,
             }}
@@ -225,7 +226,7 @@ export default function VagasPage({ navigate, initialSearch }) {
                 <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                   <button
                     onClick={handleClearAll}
-                    style={{ background: 'rgba(255,80,80,0.2)', color: 'white', border: '1px solid rgba(255,80,80,0.4)', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                    style={{ background: 'rgba(255,80,80,0.2)', color: 'white', border: '1px solid rgba(255,80,80,0.4)', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
                   >
                     Limpar filtros
                   </button>
@@ -253,26 +254,26 @@ export default function VagasPage({ navigate, initialSearch }) {
           {!user ? (
             <div style={{ display: 'flex', gap: isMobile ? 12 : 32, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
-                { label: '🔐 Entrar', action: () => navigate('login') },
-                { label: '📝 Criar conta', action: () => navigate('register') },
-                { label: '🔍 Recrutamento', action: () => navigate('login') },
+                { icon: <Lock size={13} />, label: 'Entrar', action: () => navigate('login') },
+                { icon: <FileText size={13} />, label: 'Criar conta', action: () => navigate('register') },
+                { icon: <Search size={13} />, label: 'Recrutamento', action: () => navigate('login') },
               ].map((item) => (
                 <button key={item.label} onClick={item.action}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
-                  {item.label}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  {item.icon} {item.label}
                 </button>
               ))}
             </div>
           ) : (
             <div style={{ display: 'flex', gap: isMobile ? 12 : 24, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
               <button onClick={() => navigate(isRecruiter ? 'dashboard-recrutador' : 'dashboard-candidato')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
-                🏠 Meu Painel
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Home size={13} /> Meu Painel
               </button>
               {!isRecruiter && (
                 <button onClick={() => navigate('dashboard-candidato')}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600 }}>
-                  📋 Minhas Candidaturas
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1e4a8a', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <ClipboardList size={13} /> Minhas Candidaturas
                 </button>
               )}
             </div>
@@ -299,7 +300,7 @@ export default function VagasPage({ navigate, initialSearch }) {
                 onClick={() => setShowFilterDrawer(true)}
                 style={{ background: hasActiveFilters ? '#1e4a8a' : 'white', color: hasActiveFilters ? 'white' : '#1e4a8a', border: '1.5px solid #1e4a8a', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', fontSize: 12.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
               >
-                🔧 Filtros{hasActiveFilters ? ` (${filters.types.length + filters.levels.length + filters.locations.length})` : ''}
+                <SlidersHorizontal size={13} /> Filtros{hasActiveFilters ? ` (${filters.types.length + filters.levels.length + filters.locations.length})` : ''}
               </button>
             )}
           </div>
@@ -404,7 +405,7 @@ export default function VagasPage({ navigate, initialSearch }) {
             </div>
             {hasActiveFilters ? (
               <button onClick={handleClearAll}
-                style={{ background: '#fee', border: '1px solid #fcc', color: '#c00', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, width: '100%' }}>
+                style={{ background: '#fee', border: '1px solid #fcc', color: '#c00', borderRadius: 10, padding: '8px 14px', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, width: '100%' }}>
                 Limpar todos os filtros
               </button>
             ) : null}
@@ -418,13 +419,13 @@ export default function VagasPage({ navigate, initialSearch }) {
               ))
             ) : filtered.length === 0 ? (
               <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center', border: '1px solid #e8edf2' }}>
-                <div style={{ fontSize: 48 }}>🔍</div>
+                <div style={{ display:"flex",justifyContent:"center",color:"#aab" }}><Search size={48} /></div>
                 <h3 style={{ color: '#1e3a6e' }}>Nenhuma vaga encontrada</h3>
                 <p style={{ color: '#666' }}>
                   {appliedKeyword ? `Nenhuma vaga para "${appliedKeyword}"` : 'Tente ajustar seus filtros ou busca'}
                 </p>
                 {hasActiveFilters && (
-                  <button onClick={handleClearAll} style={{ marginTop: 8, background: '#1e4a8a', color: 'white', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                  <button onClick={handleClearAll} style={{ marginTop: 8, background: '#1e4a8a', color: 'white', border: 'none', borderRadius: 10, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
                     Limpar filtros
                   </button>
                 )}

@@ -111,7 +111,7 @@ export default function JobPosterModal({ job, company, onClose }) {
           className="poster-modal-actions"
           style={{ position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, zIndex: 1001, flexWrap: 'wrap', justifyContent: 'center' }}
         >
-          <button onClick={handleDownload} style={{ background: '#1a4f8a', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+          <button onClick={handleDownload} style={{ background: '#1e4a8a', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
             Baixar PNG
           </button>
           <button onClick={handlePrint} style={{ background: '#22c55e', color: 'white', border: 'none', borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
@@ -138,7 +138,7 @@ export default function JobPosterModal({ job, company, onClose }) {
             }}
           >
           {/* ── Header ── */}
-          <div style={{ background: 'linear-gradient(135deg, #1a4f8a 0%, #2a7ec8 100%)', padding: '32px 40px 28px' }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e4a8a 0%, #4a9edd 100%)', padding: '32px 40px 28px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
 
               {/* Empresa */}
@@ -152,7 +152,7 @@ export default function JobPosterModal({ job, company, onClose }) {
                   </div>
                 )}
                 <div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 500, marginBottom: 2, letterSpacing: 0.5 }}>VAGA EM ABERTO</div>
+                  <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)', fontWeight: 500, marginBottom: 2, letterSpacing: 0.5 }}>VAGA EM ABERTO</div>
                   <div style={{ fontSize: 15, color: 'white', fontWeight: 700 }}>{companyName}</div>
                 </div>
               </div>
@@ -160,7 +160,7 @@ export default function JobPosterModal({ job, company, onClose }) {
               {/* Easy4RH branding no canto */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.75 }}>
                 <img src={logoImg} alt="Easy4RH" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.9)', fontWeight: 700, letterSpacing: 0.5 }}>EASY4RH</span>
+                <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.9)', fontWeight: 700, letterSpacing: 0.5 }}>EASY4RH</span>
               </div>
             </div>
 
@@ -233,7 +233,7 @@ export default function JobPosterModal({ job, company, onClose }) {
           {/* ── Freelance ── */}
           {(job.isFreelance || job.contractType === 'FREELANCE') && (job.freelanceDuration || job.freelancePaymentType || job.freelanceHoursPerWeek) && (
             <div style={{ padding: '14px 40px 0' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ width: 18, height: 2, background: '#7c3aed', borderRadius: 2 }} />
                 Detalhes Freelance
               </div>
@@ -269,14 +269,14 @@ export default function JobPosterModal({ job, company, onClose }) {
               <div style={{ fontSize: 13, fontWeight: 800, color: '#1e3a6e', marginBottom: 4 }}>
                 Candidate-se agora!
               </div>
-              <div style={{ fontSize: 11, color: '#778899', lineHeight: 1.5, marginBottom: 6 }}>
+              <div style={{ fontSize: 12.5, color: '#778899', lineHeight: 1.5, marginBottom: 6 }}>
                 Escaneie o QR Code ou acesse o link abaixo para se candidatar:
               </div>
-              <div style={{ fontSize: 10.5, color: '#2a7ec8', fontWeight: 600, wordBreak: 'break-all' }}>
+              <div style={{ fontSize: 12, color: '#4a9edd', fontWeight: 600, wordBreak: 'break-all' }}>
                 {jobUrl}
               </div>
               {job.expiresAt && (
-                <div style={{ marginTop: 6, fontSize: 10.5, color: '#9ca3af' }}>
+                <div style={{ marginTop: 6, fontSize: 12, color: '#9ca3af' }}>
                   Inscrições até {new Date(job.expiresAt).toLocaleDateString('pt-BR')}
                 </div>
               )}
@@ -306,8 +306,8 @@ function Tag({ icon, children }) {
 function Section({ title, children }) {
   return (
     <div style={{ padding: '14px 40px 0' }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: '#1a4f8a', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ width: 18, height: 2, background: '#1a4f8a', borderRadius: 2 }} />
+      <div style={{ fontSize: 12.5, fontWeight: 800, color: '#1e4a8a', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ width: 18, height: 2, background: '#1e4a8a', borderRadius: 2 }} />
         {title}
       </div>
       {children}

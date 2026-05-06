@@ -3,6 +3,7 @@ import { companiesApi, jobsApi } from '../services/api'
 import { normalizeJob } from '../context/JobsContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import logoImg from '../assets/logo.png'
+import { ArrowLeft, Building2, MapPin, Users, ClipboardList, Globe, Target, GraduationCap, DollarSign, Linkedin, Briefcase } from '../utils/icons.jsx'
 
 const sizeLabels = {
   MICRO: '1–9 funcionários',
@@ -97,7 +98,7 @@ export default function EmpresaPage({ companyId, company: companyProp, navigate 
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.18)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
           >
-            ← Voltar às vagas
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ArrowLeft size={16} /> Voltar às vagas</span>
           </button>
 
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? 16 : 28, flexWrap: 'wrap' }}>
@@ -120,16 +121,16 @@ export default function EmpresaPage({ companyId, company: companyProp, navigate 
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
                 {company.industry && (
-                  <HeroBadge icon="🏢">{company.industry}</HeroBadge>
+                  <HeroBadge icon={<Building2 size={13} />}>{company.industry}</HeroBadge>
                 )}
                 {location && (
-                  <HeroBadge icon="📍">{location}</HeroBadge>
+                  <HeroBadge icon={<MapPin size={13} />}>{location}</HeroBadge>
                 )}
                 {company.size && sizeLabels[company.size] && (
-                  <HeroBadge icon="👥">{sizeLabels[company.size]}</HeroBadge>
+                  <HeroBadge icon={<Users size={13} />}>{sizeLabels[company.size]}</HeroBadge>
                 )}
                 {company.legalNature && (
-                  <HeroBadge icon="📋">{company.legalNature}</HeroBadge>
+                  <HeroBadge icon={<ClipboardList size={13} />}>{company.legalNature}</HeroBadge>
                 )}
               </div>
 
@@ -137,7 +138,7 @@ export default function EmpresaPage({ companyId, company: companyProp, navigate 
               {hasSocial && (
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   {company.website && (
-                    <SocialBtn href={company.website} label="Website">🌐</SocialBtn>
+                    <SocialBtn href={company.website} label="Website"><Globe size={14} /></SocialBtn>
                   )}
                   {company.linkedinUrl && (
                     <SocialBtn href={company.linkedinUrl} label="LinkedIn">in</SocialBtn>
@@ -210,7 +211,7 @@ export default function EmpresaPage({ companyId, company: companyProp, navigate 
               {company.mission && (
                 <Card title="Nossa missão" accent="#16a34a">
                   <div style={{ display: 'flex', gap: 14 }}>
-                    <div style={{ fontSize: 28, flexShrink: 0, marginTop: 2 }}>🎯</div>
+                    <div style={{ color: "#1e4a8a", flexShrink: 0, marginTop: 2, display: "flex" }}><Target size={28} /></div>
                     <p style={{ fontSize: 14.5, color: '#4b5563', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap' }}>
                       {company.mission}
                     </p>
@@ -226,7 +227,7 @@ export default function EmpresaPage({ companyId, company: companyProp, navigate 
 
               {!company.description && !company.mission && !company.values && (
                 <div style={{ textAlign: 'center', padding: '48px 24px', background: 'white', borderRadius: 16, border: '1px solid #e5eaf0', color: '#9ca3af' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🏢</div>
+                  <div style={{ display: "flex", justifyContent: "center", color: "#aab", marginBottom: 12 }}><Building2 size={40} /></div>
                   <p style={{ margin: 0, fontSize: 14 }}>A empresa ainda não adicionou informações sobre si mesma.</p>
                 </div>
               )}
@@ -238,10 +239,10 @@ export default function EmpresaPage({ companyId, company: companyProp, navigate 
                 <div style={{ fontSize: 11, fontWeight: 800, color: '#1a4f8a', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 14 }}>
                   Informações
                 </div>
-                <InfoRow label="Setor" value={company.industry} icon="🏢" />
-                <InfoRow label="Porte" value={sizeLabels[company.size]} icon="👥" />
-                <InfoRow label="Localização" value={location} icon="📍" />
-                <InfoRow label="Natureza" value={company.legalNature} icon="📋" />
+                <InfoRow label="Setor" value={company.industry} icon={<Building2 size={13} />} />
+                <InfoRow label="Porte" value={sizeLabels[company.size]} icon={<Users size={13} />} />
+                <InfoRow label="Localização" value={location} icon={<MapPin size={13} />} />
+                <InfoRow label="Natureza" value={company.legalNature} icon={<ClipboardList size={13} />} />
               </div>
 
               {hasSocial && (
@@ -249,10 +250,10 @@ export default function EmpresaPage({ companyId, company: companyProp, navigate 
                   <div style={{ fontSize: 11, fontWeight: 800, color: '#1a4f8a', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 14 }}>
                     Links
                   </div>
-                  {company.website && <LinkRow href={company.website} label="Website" icon="🌐" />}
-                  {company.linkedinUrl && <LinkRow href={company.linkedinUrl} label="LinkedIn" icon="💼" />}
+                  {company.website && <LinkRow href={company.website} label="Website" icon={<Globe size={13} />} />}
+                  {company.linkedinUrl && <LinkRow href={company.linkedinUrl} label="LinkedIn" icon={<Briefcase size={13} />} />}
                   {company.glassdoorUrl && <LinkRow href={company.glassdoorUrl} label="Glassdoor" icon="★" />}
-                  {company.instagramUrl && <LinkRow href={company.instagramUrl} label="Instagram" icon="📷" />}
+                  {company.instagramUrl && <LinkRow href={company.instagramUrl} label="Instagram" icon={<span>📷</span>} />}
                 </div>
               )}
 
@@ -419,9 +420,9 @@ function CompanyJobCard({ job, navigate }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15.5, fontWeight: 700, color: '#1e3a6e', marginBottom: 6, lineHeight: 1.3 }}>{job.title}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-            {job.location && <Tag>📍 {job.location}</Tag>}
-            {job.level && <Tag>🎓 {job.level}</Tag>}
-            {sal !== 'A combinar' && <Tag color="#16a34a">💰 {sal}</Tag>}
+            {job.location && <Tag><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={11} /> {job.location}</span></Tag>}
+            {job.level && <Tag><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><GraduationCap size={11} /> {job.level}</span></Tag>}
+            {sal !== 'A combinar' && <Tag color="#16a34a"><span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><DollarSign size={11} /> {sal}</span></Tag>}
             {(job.isFreelance || job.contractType === 'FREELANCE') && (
               <span style={{ fontSize: 11.5, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: '#f5f3ff', color: '#7c3aed' }}>Freelance</span>
             )}
@@ -494,7 +495,7 @@ function ErrorScreen({ message, navigate }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f4f8' }}>
       <div style={{ textAlign: 'center', maxWidth: 400, padding: 40 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🏢</div>
+        <div style={{ display: "flex", justifyContent: "center", color: "#aab", marginBottom: 16 }}><Building2 size={48} /></div>
         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1e3a6e', marginBottom: 8 }}>Empresa não encontrada</h2>
         <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 24 }}>{message || 'Não foi possível carregar os dados desta empresa.'}</p>
         <button

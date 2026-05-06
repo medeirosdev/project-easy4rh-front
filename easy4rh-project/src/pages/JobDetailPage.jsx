@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useJobs } from "../context/JobsContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
 import { jobQuestionsApi } from "../services/api";
+import { DollarSign, AlertTriangle } from "../utils/icons.jsx";
 
 const typeColors = {
   Presencial: { bg: "#e8f4fd", color: "#1e6eab" },
@@ -265,8 +266,8 @@ export default function JobDetailPage({ job, navigate }) {
                     {job.type && <span style={{ fontSize: 13, color: "#555" }}>Modalidade: {job.type}</span>}
                     {job.contract && <span style={{ fontSize: 13, color: "#555" }}>Contrato: {job.contract}</span>}
                     {job.salary && (
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#276749', background: '#f0ffe4', borderRadius: 20, padding: '3px 10px' }}>
-                        💰 {job.salary}
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#276749', background: '#f0ffe4', borderRadius: 20, padding: '3px 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <DollarSign size={13} /> {job.salary}
                       </span>
                     )}
                     {(job.isFreelance || job.contract === 'Freelance') && (
@@ -394,7 +395,7 @@ export default function JobDetailPage({ job, navigate }) {
             </div>
 
             {submitError && (
-              <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', color: '#c00', fontSize: 13, marginBottom: 16 }}>{submitError}</div>
+              <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', color: '#c00', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><AlertTriangle size={14} /> {submitError}</div>
             )}
 
             {/* Step 1 — Cover Letter */}

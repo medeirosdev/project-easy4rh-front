@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import heroImage from '../assets/hero-image.png'
 import ellipseImg from '../assets/ellipse.png'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { Users, ArrowRight, Settings, BarChart2, Shield } from '../utils/icons.jsx'
 
 const megaMenu = {
   Pessoas: {
-    icon: '👥',
+    icon: <Users size={18} />,
     page: 'pessoas',
     desc: 'Desenvolvimento humano estratégico.',
     items: [
@@ -17,7 +18,7 @@ const megaMenu = {
     ],
   },
   Processos: {
-    icon: '⚙️',
+    icon: <Settings size={18} />,
     page: 'processos',
     desc: 'Fluxos otimizados para resultados.',
     items: [
@@ -29,7 +30,7 @@ const megaMenu = {
     ],
   },
   Performance: {
-    icon: '📊',
+    icon: <BarChart2 size={18} />,
     page: 'performance',
     desc: 'Maximize o desempenho da equipe.',
     items: [
@@ -40,7 +41,7 @@ const megaMenu = {
     ],
   },
   Prevenção: {
-    icon: '🛡️',
+    icon: <Shield size={18} />,
     page: 'prevencao',
     desc: 'Gestão de riscos e bem-estar.',
     items: [
@@ -193,7 +194,7 @@ export default function HeroSearch({ navigate }) {
             Do diagnóstico à prática: estruturamos processos e desenvolvemos pessoas com inteligência em RH.
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12, marginLeft: isMobile ? 0 : '-90px' }}>
-            <button onClick={() => navigate('pessoas')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 32, padding: isMobile ? '11px 18px' : '14px 28px', cursor: 'pointer', fontWeight: 700, fontSize: isMobile ? 13 : 15, boxShadow: '0 4px 16px rgba(26,79,138,0.35)' }}>
+            <button onClick={() => navigate('pessoas')} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 32, padding: isMobile ? '11px 18px' : '14px 28px', cursor: 'pointer', fontWeight: 700, fontSize: isMobile ? 13 : 15, boxShadow: '0 4px 16px rgba(26,79,138,0.35)' }}>
               Nossos serviços
             </button>
             <button onClick={() => navigate('treinamentos')} style={{ background: 'transparent', color: '#1a3a6e', border: '2px solid #1a3a6e', borderRadius: 32, padding: isMobile ? '11px 18px' : '14px 28px', cursor: 'pointer', fontWeight: 700, fontSize: isMobile ? 13 : 15 }}>
@@ -240,12 +241,12 @@ export default function HeroSearch({ navigate }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, paddingBottom: 12, borderBottom: '1px solid #f0f4f8' }}>
                         <span style={{ fontSize: 18 }}>{p.icon}</span>
                         <span style={{ fontSize: 13, fontWeight: 800, color: '#1e3a6e' }}>{key}</span>
-                        <span onClick={() => navigate(p.page)} style={{ marginLeft: 'auto', fontSize: 11, color: '#4a9edd', fontWeight: 600, cursor: 'pointer' }}>Ver página →</span>
+                        <span onClick={() => navigate(p.page)} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#4a9edd', fontWeight: 600, cursor: 'pointer' }}>Ver página <ArrowRight size={11} /></span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                         {p.items.map((item, j) => (
                           <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                            <span style={{ color: '#4a9edd', fontSize: 10, marginTop: 4, flexShrink: 0 }}>•</span>
+                            <span style={{ color: '#4a9edd', fontSize: 12, marginTop: 4, flexShrink: 0 }}>•</span>
                             <span style={{ fontSize: 12.5, color: '#445566', lineHeight: 1.5 }}>{item}</span>
                           </div>
                         ))}
@@ -255,7 +256,7 @@ export default function HeroSearch({ navigate }) {
                 </div>
               )
             })}
-            <button onClick={() => document.getElementById('MetodologiaSection')?.scrollIntoView({ behavior: 'smooth' })} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 22px', cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap' }}>
+            <button onClick={() => document.getElementById('MetodologiaSection')?.scrollIntoView({ behavior: 'smooth' })} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 22px', cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap' }}>
               Saiba mais
             </button>
           </div>

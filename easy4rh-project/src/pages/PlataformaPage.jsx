@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { coursesApi } from '../services/api'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { Search, BookOpen, GraduationCap } from '../utils/icons.jsx'
 
 export default function PlataformaPage({ navigate }) {
   const { user, logout } = useAuth()
@@ -125,7 +126,7 @@ export default function PlataformaPage({ navigate }) {
         {/* Busca e filtros */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: '#aaa' }}>🔍</span>
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#aaa', display: 'flex' }}><Search size={14} /></span>
             <input
               type="text"
               placeholder="Buscar cursos..."
@@ -163,12 +164,12 @@ export default function PlataformaPage({ navigate }) {
         {/* Loading */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: '#778' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>📚</div>
+            <div style={{ display:"flex",justifyContent:"center",color:"#aab",marginBottom:12 }}><BookOpen size={32} /></div>
             <p>Carregando cursos...</p>
           </div>
         ) : displayCourses.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: '#778' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>{hasFilters ? '🔍' : '🎓'}</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>{hasFilters ? <Search size={48} /> : <GraduationCap size={48} />}</div>
             <h3 style={{ color: '#334', marginBottom: 8 }}>
               {hasFilters ? 'Nenhum curso encontrado' : tab === 'meus' ? 'Você ainda não está matriculado em nenhum curso' : 'Nenhum curso disponível no momento'}
             </h3>
@@ -199,7 +200,7 @@ export default function PlataformaPage({ navigate }) {
                   <div style={{ height: 160, background: 'linear-gradient(135deg, #1e3a6e, #4a9edd)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     {course.thumbnailUrl
                       ? <img src={course.thumbnailUrl} alt={course.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 48 }}>🎓</span>
+                      : <span style={{ display:'flex',justifyContent:'center',color:'#aab' }}><GraduationCap size={48} /></span>
                     }
                     {isEnrolled && (
                       <div style={{ position: 'absolute', top: 12, right: 12, background: '#2a7a4e', color: 'white', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20 }}>

@@ -2,18 +2,19 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useJobs } from '../context/JobsContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { Home, User, ClipboardList, FileText, Search, Bookmark, Files, GraduationCap, Globe, LogOut, Hourglass, CheckCircle, Clock } from '../utils/icons.jsx'
 import { profileApi, applicationsApi, coursesApi, documentsApi, certificatesApi } from '../services/api'
 import { getStageLabel, getStageColor, getStageBackground, getStageProgress, pipelineSteps, getStageStepIndex, PIPELINE_STAGES, normalizeStage } from '../utils/applicationStages'
 
 const menuItems = [
-  { id: 'resumo',       label: 'Resumo' },
-  { id: 'perfil',       label: 'Meu Perfil' },
-  { id: 'candidaturas', label: 'Candidaturas' },
-  { id: 'cv',           label: 'Meu CV' },
-  { id: 'vagas',        label: 'Pesquisar Vagas' },
-  { id: 'salvas',       label: 'Vagas Salvas' },
-  { id: 'documentos',   label: 'Meus Documentos' },
-  { id: 'cursos',       label: 'Meus Cursos' },
+  { id: 'resumo',       icon: <Home size={16} />,          label: 'Resumo' },
+  { id: 'perfil',       icon: <User size={16} />,          label: 'Meu Perfil' },
+  { id: 'candidaturas', icon: <ClipboardList size={16} />, label: 'Candidaturas' },
+  { id: 'cv',           icon: <FileText size={16} />,      label: 'Meu CV' },
+  { id: 'vagas',        icon: <Search size={16} />,        label: 'Pesquisar Vagas' },
+  { id: 'salvas',       icon: <Bookmark size={16} />,      label: 'Vagas Salvas' },
+  { id: 'documentos',   icon: <Files size={16} />,         label: 'Meus Documentos' },
+  { id: 'cursos',       icon: <GraduationCap size={16} />, label: 'Meus Cursos' },
 ]
 
 function formatDate(iso) {
@@ -265,7 +266,7 @@ export default function CandidatoDashboard({ navigate }) {
           </div>
 
           {/* CTA complete profile */}
-          <div style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', borderRadius: 16, padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', borderRadius: 16, padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: 'white', marginBottom: 4 }}>Complete seu perfil</div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>Perfis completos têm 3x mais chances de serem vistos.</div>
@@ -282,7 +283,7 @@ export default function CandidatoDashboard({ navigate }) {
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Meu Perfil</h2>
           <div style={{ background: 'white', borderRadius: 16, padding: '28px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28, flexWrap: 'wrap' }}>
-              <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: 'white', fontWeight: 800, flexShrink: 0 }}>
+              <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: 'white', fontWeight: 800, flexShrink: 0 }}>
                 {(user?.name?.[0] || user?.email?.charAt(0) || '?').toUpperCase()}
               </div>
               <div>
@@ -347,7 +348,7 @@ export default function CandidatoDashboard({ navigate }) {
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '24px 0 20px' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
+                <div style={{ display:"flex",justifyContent:"center",color:"#aab",marginBottom:12 }}><FileText size={48} /></div>
                 <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e3a6e', marginBottom: 6 }}>Nenhum CV vinculado</h3>
                 <p style={{ fontSize: 13, color: '#778899', maxWidth: 400, margin: '0 auto' }}>
                   Cole abaixo o link do seu currículo (Google Drive, Dropbox, LinkedIn, etc.)
@@ -435,14 +436,14 @@ export default function CandidatoDashboard({ navigate }) {
               placeholder="Cargo, empresa ou palavra-chave..."
               style={{ flex: 1, minWidth: 200, border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '11px 16px', fontSize: 13.5, outline: 'none' }}
             />
-            <button style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 10, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+            <button style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 10, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
               Buscar
             </button>
           </div>
           <p style={{ fontSize: 13, color: '#778899', marginBottom: 16 }}><strong style={{ color: '#1e3a6e' }}>{filteredJobs.length}</strong> vagas encontradas</p>
           {filteredJobs.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>🔍</div>
+              <div style={{ display:"flex",justifyContent:"center",color:"#aab" }}><Search size={48} /></div>
               <p style={{ color: '#778899', marginTop: 12 }}>Nenhuma vaga encontrada.</p>
             </div>
           ) : (
@@ -457,7 +458,7 @@ export default function CandidatoDashboard({ navigate }) {
                       <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#f0f4f8', color: '#556677' }}>{job.level}</span>
                     </div>
                   </div>
-                  <button onClick={() => navigate('job-detail', job)} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                  <button onClick={() => navigate('job-detail', job)} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                     Ver vaga
                   </button>
                 </div>
@@ -476,9 +477,9 @@ export default function CandidatoDashboard({ navigate }) {
             </div>
           ) : savedJobsList.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>🔖</div>
+              <div style={{ display:"flex",justifyContent:"center",color:"#aab" }}><Bookmark size={48} /></div>
               <p style={{ color: '#778899', marginTop: 12 }}>Nenhuma vaga salva ainda.</p>
-              <button onClick={() => setActiveSection('vagas')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
+              <button onClick={() => setActiveSection('vagas')} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
                 Pesquisar vagas
               </button>
             </div>
@@ -492,7 +493,7 @@ export default function CandidatoDashboard({ navigate }) {
                     <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: '#e8f2fc', color: '#1e4a8a', marginTop: 8, display: 'inline-block' }}>{job.type}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => navigate('job-detail', job)} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>Ver vaga</button>
+                    <button onClick={() => navigate('job-detail', job)} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 18px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>Ver vaga</button>
                     <button onClick={() => toggleSaveJob(job.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 24, padding: '9px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>Remover</button>
                   </div>
                 </div>
@@ -511,9 +512,9 @@ export default function CandidatoDashboard({ navigate }) {
             </div>
           ) : applications.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>📋</div>
+              <div style={{ display:"flex",justifyContent:"center",color:"#aab" }}><ClipboardList size={48} /></div>
               <p style={{ color: '#778899', marginTop: 12 }}>Você ainda não se candidatou a nenhuma vaga.</p>
-              <button onClick={() => setActiveSection('vagas')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
+              <button onClick={() => setActiveSection('vagas')} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
                 Pesquisar vagas
               </button>
             </div>
@@ -659,7 +660,15 @@ export default function CandidatoDashboard({ navigate }) {
                             href={doc.fileUrl}
                             target="_blank"
                             rel="noreferrer"
-                            onClick={() => { if (sd.status === 'PENDING') documentsApi.markAsViewed(sd.id).then(() => setReceivedDocs(prev => prev.map(d => d.id === sd.id ? { ...d, status: 'VIEWED' } : d))).catch(() => {}) }}
+                            onClick={() => {
+                              if (sd.status === 'PENDING') {
+                                documentsApi.markAsViewed(sd.id)
+                                  .then(() => setReceivedDocs(prev => prev.map(d => d.id === sd.id ? { ...d, status: 'VIEWED' } : d)))
+                                  .catch(() => {
+                                    alert('Não foi possível registrar a visualização. Tente novamente.')
+                                  })
+                              }
+                            }}
                             style={{ background: '#eff6ff', color: '#3b82f6', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12, textDecoration: 'none', display: 'inline-block' }}
                           >
                             Abrir documento
@@ -690,9 +699,9 @@ export default function CandidatoDashboard({ navigate }) {
             </div>
           ) : enrollments.length === 0 ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-              <div style={{ fontSize: 48 }}>🎓</div>
+              <div style={{ display:"flex",justifyContent:"center",color:"#aab" }}><GraduationCap size={48} /></div>
               <p style={{ color: '#778899', marginTop: 12 }}>Você ainda não está matriculado em nenhum curso.</p>
-              <button onClick={() => navigate('plataforma')} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
+              <button onClick={() => navigate('plataforma')} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13, marginTop: 16 }}>
                 Explorar cursos
               </button>
             </div>
@@ -736,7 +745,7 @@ export default function CandidatoDashboard({ navigate }) {
                             </button>
                           )
                         )}
-                        <button onClick={() => navigate(`curso-${enr.courseId || course.id}`)} style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                        <button onClick={() => navigate(`curso-${enr.courseId || course.id}`)} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '9px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                           {progress > 0 ? 'Continuar' : 'Iniciar'}
                         </button>
                       </div>
@@ -760,7 +769,7 @@ export default function CandidatoDashboard({ navigate }) {
       {isDesktop && (
         <div style={{ width: sidebarWidth, background: 'white', borderRight: '1px solid #e8edf2', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
           <div style={{ padding: '24px 20px', borderBottom: '1px solid #f0f4f8' }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'white', fontWeight: 800, marginBottom: 10 }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: 'white', fontWeight: 800, marginBottom: 10 }}>
               {user?.name?.[0]}
             </div>
             <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e' }}>{user?.name}</div>
@@ -778,10 +787,10 @@ export default function CandidatoDashboard({ navigate }) {
 
           <div style={{ padding: '12px 10px', borderTop: '1px solid #f0f4f8' }}>
             <button onClick={() => navigate('vagas')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#556677', marginBottom: 2 }}>
-              <span>🌐</span> Ver site
+              <span style={{ display:"flex",alignItems:"center" }}><Globe size={14} /></span> Ver site
             </button>
             <button onClick={() => { logout(); navigate('home') }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13.5, fontWeight: 500, background: 'transparent', color: '#ef4444' }}>
-              <span>🚪</span> Sair
+              <span style={{ display:"flex",alignItems:"center" }}><LogOut size={14} /></span> Sair
             </button>
           </div>
         </div>
@@ -794,7 +803,7 @@ export default function CandidatoDashboard({ navigate }) {
         {!isDesktop && (
           <div style={{ background: 'white', borderBottom: '1px solid #e8edf2', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'white', fontWeight: 800, flexShrink: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'white', fontWeight: 800, flexShrink: 0 }}>
                 {user?.name?.[0]}
               </div>
               <div>
