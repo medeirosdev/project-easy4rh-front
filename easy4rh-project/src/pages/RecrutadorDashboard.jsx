@@ -601,6 +601,7 @@ export default function RecrutadorDashboard({ navigate }) {
               setLessonUploadProgress(prev => { const n = { ...prev }; delete n[`${si}-${li}`]; return n })
             } catch (err) {
               console.error('Erro ao enviar vídeo:', err)
+              setCourseError(`Erro ao enviar vídeo da aula "${les.title}": ${err.message}`)
             }
           }
         }
@@ -780,12 +781,25 @@ export default function RecrutadorDashboard({ navigate }) {
           if (les.videoFile) {
             try {
               setLessonUploadProgress(prev => ({ ...prev, [`${si}-${li}`]: 0 }))
-              await uploadVideoWithProgress(lessonId, les.videoFile, (pct) => {
+              const uploadResult = await uploadVideoWithProgress(lessonId, les.videoFile, (pct) => {
                 setLessonUploadProgress(prev => ({ ...prev, [`${si}-${li}`]: pct }))
               })
               setLessonUploadProgress(prev => { const n = { ...prev }; delete n[`${si}-${li}`]; return n })
+              // Atualiza estado local com a URL retornada para o formulário refletir o valor salvo
+              const newVideoUrl = uploadResult?.lesson?.videoUrl
+              if (newVideoUrl) {
+                setCourseSections(prev => prev.map((s, sIdx) =>
+                  sIdx !== si ? s : {
+                    ...s,
+                    lessons: s.lessons.map((l, lIdx) =>
+                      lIdx !== li ? l : { ...l, videoUrl: newVideoUrl, videoFile: null }
+                    ),
+                  }
+                ))
+              }
             } catch (err) {
               console.error('Erro ao enviar vídeo:', err)
+              setCourseError(`Erro ao enviar vídeo da aula "${les.title}": ${err.message}`)
             }
           }
         }
