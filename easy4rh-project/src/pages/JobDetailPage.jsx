@@ -32,11 +32,36 @@ export default function JobDetailPage({ job, navigate }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
+  // CV step
+  const [profileResume, setProfileResume] = useState(null); // null=loading, {fileName:string|null}
+  const [cvAction, setCvAction] = useState('keep'); // 'keep' | 'upload'
+  const [cvNewFile, setCvNewFile] = useState(null);
+  const [cvUploading, setCvUploading] = useState(false);
+  const [cvUploadProgress, setCvUploadProgress] = useState(0);
+
   if (!job) { navigate("vagas"); return null; }
 
   const tc = typeColors[job.type] || typeColors.Presencial;
   const isApplied = appliedJobs.includes(job.id) || applied;
   const isSaved = savedJobs.includes(job.id);
+
+  const loadProfileResume = async () => {
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const token = localStorage.getItem('access_token');
+    try {
+      const res = await fetch(`${apiBase}/candidate-profiles/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProfileResume({ fileName: data.resumeFileName || null });
+      } else {
+        setProfileResume({ fileName: null });
+      }
+    } catch {
+      setProfileResume({ fileName: null });
+    }
+  };
 
   const loadQuestions = async () => {
     if (!job?.id) { setQuestions([]); return; }
@@ -60,7 +85,55 @@ export default function JobDetailPage({ job, navigate }) {
     setCoverLetter('');
     setAnswers({});
     setSubmitError('');
+    setCvAction('keep');
+    setCvNewFile(null);
+    setProfileResume(null);
     loadQuestions();
+    loadProfileResume();
+  };
+
+  const handleProceedFromCV = async () => {
+    if (cvAction === 'upload' && cvNewFile) {
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const token = localStorage.getItem('access_token');
+      setCvUploading(true);
+      setCvUploadProgress(0);
+      setSubmitError('');
+      try {
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          const fd = new FormData();
+          fd.append('file', cvNewFile);
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) setCvUploadProgress(Math.round((e.loaded / e.total) * 100));
+          };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              const res = JSON.parse(xhr.responseText);
+              setProfileResume({ fileName: res.fileName || cvNewFile.name });
+              setCvAction('keep');
+              resolve();
+            } else {
+              const err = JSON.parse(xhr.responseText || '{}');
+              reject(new Error(err.message || `Erro ${xhr.status}`));
+            }
+          };
+          xhr.onerror = () => reject(new Error('Erro de conexão'));
+          xhr.open('POST', `${apiBase}/candidate-profiles/me/resume`);
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          xhr.send(fd);
+        });
+      } catch (err) {
+        setSubmitError(err.message || 'Erro ao enviar CV');
+        setCvUploading(false);
+        setCvUploadProgress(0);
+        return;
+      }
+      setCvUploading(false);
+      setCvUploadProgress(0);
+    }
+    if (hasQuestions) setApplyStep(3);
+    else setApplyStep(totalSteps);
   };
 
   const handleSubmitApplication = async () => {
@@ -113,7 +186,7 @@ export default function JobDetailPage({ job, navigate }) {
   };
 
   const hasQuestions = questions.length > 0;
-  const totalSteps = hasQuestions ? 3 : 2; // with questions: cover, questions, review. without: cover, review.
+  const totalSteps = hasQuestions ? 4 : 3; // cover, cv, [questions], review
 
   const canProceedFromQuestions = () => {
     const required = questions.filter(q => q.required !== false);
@@ -127,8 +200,8 @@ export default function JobDetailPage({ job, navigate }) {
   };
 
   const stepLabels = hasQuestions
-    ? ['Carta', 'Perguntas', 'Revisar']
-    : ['Carta', 'Revisar'];
+    ? ['Carta', 'CV', 'Perguntas', 'Revisar']
+    : ['Carta', 'CV', 'Revisar'];
 
   const inputStyle = {
     width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10,
@@ -415,18 +488,115 @@ export default function JobDetailPage({ job, navigate }) {
                   <button onClick={() => setShowApplyModal(false)} style={{ background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                     Cancelar
                   </button>
-                  <button onClick={() => {
-                    if (hasQuestions) setApplyStep(2);
-                    else setApplyStep(totalSteps);
-                  }} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
-                    {hasQuestions ? 'Proximo' : 'Revisar e enviar'}
+                  <button onClick={() => setApplyStep(2)} style={{ background: 'linear-gradient(135deg, #1e4a8a, #4a9edd)', color: 'white', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                    Próximo
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Step 2 — Screening Questions */}
-            {applyStep === 2 && hasQuestions && (
+            {/* Step 2 — CV */}
+            {applyStep === 2 && (
+              <div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginTop: 0, marginBottom: 6 }}>Currículo</h3>
+                <p style={{ fontSize: 13, color: '#778899', marginTop: 0, marginBottom: 20 }}>
+                  {profileResume?.fileName
+                    ? 'Seu currículo já está salvo. Você pode mantê-lo ou enviar um novo.'
+                    : 'Opcional — envie seu CV em PDF (máx. 5MB). Recrutadores poderão visualizá-lo.'}
+                </p>
+
+                {profileResume === null && (
+                  <div style={{ textAlign: 'center', padding: '16px 0', color: '#778899', fontSize: 13 }}>
+                    Carregando...
+                  </div>
+                )}
+
+                {profileResume !== null && profileResume.fileName && cvAction === 'keep' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: '#f0fdf4', borderRadius: 12, marginBottom: 16, border: '1px solid #86efac' }}>
+                    <span style={{ fontSize: 30 }}>📄</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#15803d', marginBottom: 2 }}>Currículo salvo</div>
+                      <div style={{ fontSize: 12, color: '#556677', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profileResume.fileName}</div>
+                    </div>
+                    <button
+                      onClick={() => { setCvAction('upload'); setCvNewFile(null); }}
+                      style={{ fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 20, background: '#eff6ff', color: '#1e4a8a', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                    >
+                      Trocar PDF
+                    </button>
+                  </div>
+                )}
+
+                {profileResume !== null && (profileResume.fileName === null || cvAction === 'upload') && (
+                  <div>
+                    {cvAction === 'upload' && profileResume.fileName && (
+                      <button
+                        onClick={() => { setCvAction('keep'); setCvNewFile(null); }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#778899', fontSize: 13, marginBottom: 12, padding: 0 }}
+                      >
+                        ← Cancelar troca
+                      </button>
+                    )}
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, border: `2px dashed ${cvNewFile ? '#1e4a8a' : '#c7d9f0'}`, borderRadius: 12, padding: '20px', cursor: cvUploading ? 'default' : 'pointer', background: cvNewFile ? '#eff6ff' : '#f8fafc', marginBottom: 8 }}>
+                      <span style={{ fontSize: 22 }}>📎</span>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#1e4a8a' }}>
+                          {cvNewFile ? cvNewFile.name : 'Selecionar PDF'}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#778899' }}>Somente PDF · máx. 5MB</div>
+                      </div>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        style={{ display: 'none' }}
+                        disabled={cvUploading}
+                        onChange={e => { if (e.target.files[0]) setCvNewFile(e.target.files[0]); e.target.value = ''; }}
+                      />
+                    </label>
+                    {cvNewFile && (
+                      <button
+                        onClick={() => setCvNewFile(null)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 12, padding: 0, marginBottom: 4 }}
+                      >
+                        Remover arquivo
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {cvUploading && cvUploadProgress > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#556677', marginBottom: 4 }}>
+                      <span>Enviando...</span><span>{cvUploadProgress}%</span>
+                    </div>
+                    <div style={{ background: '#e0eaf4', borderRadius: 8, height: 8 }}>
+                      <div style={{ width: `${cvUploadProgress}%`, background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', height: 8, borderRadius: 8, transition: 'width 0.2s' }} />
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24 }}>
+                  <button onClick={() => setApplyStep(1)} style={{ background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                    Voltar
+                  </button>
+                  <button
+                    onClick={handleProceedFromCV}
+                    disabled={cvUploading || (cvAction === 'upload' && !cvNewFile && !profileResume?.fileName)}
+                    style={{
+                      background: (cvUploading || (cvAction === 'upload' && !cvNewFile && !profileResume?.fileName)) ? '#aaa' : 'linear-gradient(135deg, #1e4a8a, #4a9edd)',
+                      color: 'white', border: 'none', borderRadius: 24, padding: '11px 24px',
+                      cursor: (cvUploading || (cvAction === 'upload' && !cvNewFile && !profileResume?.fileName)) ? 'default' : 'pointer',
+                      fontWeight: 700, fontSize: 13,
+                    }}
+                  >
+                    {cvUploading ? 'Enviando...' : (hasQuestions ? 'Próximo' : 'Revisar e enviar')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3 — Screening Questions */}
+            {applyStep === 3 && hasQuestions && (
               <div>
                 <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginTop: 0, marginBottom: 8 }}>Perguntas de triagem</h3>
                 <p style={{ fontSize: 13, color: '#778899', marginTop: 0, marginBottom: 20 }}>
@@ -525,7 +695,7 @@ export default function JobDetailPage({ job, navigate }) {
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24 }}>
-                  <button onClick={() => setApplyStep(1)} style={{ background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                  <button onClick={() => setApplyStep(2)} style={{ background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                     Voltar
                   </button>
                   <button
@@ -563,6 +733,17 @@ export default function JobDetailPage({ job, navigate }) {
                   </div>
                 )}
 
+                <div style={{ background: '#f8fafc', borderRadius: 12, padding: '16px', border: '1px solid #e8edf2', marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#778899', marginBottom: 6, textTransform: 'uppercase' }}>Currículo</div>
+                  {profileResume?.fileName ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#15803d', fontWeight: 600 }}>
+                      📄 {profileResume.fileName}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 13, color: '#778899' }}>Não anexado</div>
+                  )}
+                </div>
+
                 {hasQuestions && (
                   <div style={{ background: '#f8fafc', borderRadius: 12, padding: '16px', border: '1px solid #e8edf2', marginBottom: 16 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#778899', marginBottom: 12, textTransform: 'uppercase' }}>Respostas</div>
@@ -593,7 +774,7 @@ export default function JobDetailPage({ job, navigate }) {
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24 }}>
-                  <button onClick={() => setApplyStep(hasQuestions ? 2 : 1)} style={{ background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                  <button onClick={() => setApplyStep(hasQuestions ? 3 : 2)} style={{ background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 24, padding: '11px 24px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                     Voltar
                   </button>
                   <button
