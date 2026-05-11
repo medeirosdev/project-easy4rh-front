@@ -49,7 +49,14 @@ export default function ConsultoriaLoginPage({ navigate }) {
     if (result.success) {
       const r = result.user?.role
       navigate(['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(r) ? 'dashboard-recrutador' : 'dashboard-candidato')
-    } else setRegError(result.message || 'Erro ao criar conta.')
+    } else {
+      const msg = result.message || ''
+      setRegError(
+        msg.toLowerCase().includes('already') || msg.toLowerCase().includes('exist')
+          ? 'Este email já está cadastrado. Tente fazer login.'
+          : msg || 'Erro ao criar conta. Tente novamente.'
+      )
+    }
   }
 
   const inputStyle = {
@@ -106,9 +113,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 <div style={{ display: 'flex', background: '#e4e9f0', borderRadius: 8, padding: 3, marginBottom: 22 }}>
                   {[
                     { value: 'CANDIDATE', label: 'Candidato' },
-                    { value: 'RECRUITER', label: 'Recrutador' },
-                    { value: 'INSTRUCTOR', label: 'Instrutor' },
-                    { value: 'RECRUITER_INSTRUCTOR', label: 'Empresa Completa' },
+                    { value: 'RECRUITER', label: 'Empresa' },
                   ].map(opt => (
                     <button key={opt.value} onClick={() => { setRegRole(opt.value); setRegError(''); }}
                       style={{
@@ -131,23 +136,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 {regRole === 'RECRUITER' && (
                   <div style={{ background: '#f0f8ff', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #d0e4f4' }}>
                     <p style={{ fontSize: 12.5, color: '#1e4a8a', margin: 0, fontWeight: 600 }}>
-                      Após o cadastro, você poderá vincular ou criar sua empresa no painel do recrutador.
-                    </p>
-                  </div>
-                )}
-
-                {regRole === 'INSTRUCTOR' && (
-                  <div style={{ background: '#f0fff4', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #b2e4c8' }}>
-                    <p style={{ fontSize: 12.5, color: '#276749', margin: 0, fontWeight: 600 }}>
-                      Como instrutor, você poderá criar cursos, adicionar aulas com videos e acompanhar o progresso dos alunos.
-                    </p>
-                  </div>
-                )}
-
-                {regRole === 'RECRUITER_INSTRUCTOR' && (
-                  <div style={{ background: '#f5f0ff', borderRadius: 8, padding: '12px 14px', marginBottom: 20, border: '1px solid #c4b2e4' }}>
-                    <p style={{ fontSize: 12.5, color: '#4a1e8a', margin: 0, fontWeight: 600 }}>
-                      Acesso completo: publique vagas, gerencie candidaturas e crie cursos — tudo em um unico painel.
+                      Após o cadastro, você poderá vincular ou criar sua empresa e publicar vagas no painel do recrutador.
                     </p>
                   </div>
                 )}
@@ -158,7 +147,7 @@ export default function ConsultoriaLoginPage({ navigate }) {
                 </label>
 
                 <button onClick={handleRegister} disabled={regLoading} style={{ width: '100%', background: 'linear-gradient(135deg, #1e3a6e, #2a5298)', opacity: regLoading ? 0.6 : 1, color: 'white', border: 'none', borderRadius: 10, padding: '13px', cursor: regLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15, marginBottom: 16, transition: 'opacity 0.2s' }}>
-                  {regLoading ? 'Criando conta...' : regRole === 'RECRUITER' ? 'Criar conta de recrutador' : regRole === 'INSTRUCTOR' ? 'Criar conta de instrutor' : regRole === 'RECRUITER_INSTRUCTOR' ? 'Criar conta empresa completa' : 'Criar conta'}
+                  {regLoading ? 'Criando conta...' : regRole === 'RECRUITER' ? 'Criar conta da empresa' : 'Criar conta'}
                 </button>
 
                 <p style={{ textAlign: 'center', fontSize: 13, color: '#778899', marginBottom: 0 }}>
