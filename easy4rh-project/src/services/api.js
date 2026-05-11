@@ -325,6 +325,9 @@ export const documentsApi = {
   listReceived: () => request('GET', '/documents/received'),
   markAsViewed: (sentDocumentId) => request('PATCH', `/documents/received/${sentDocumentId}/view`),
   respond: (sentDocumentId, status) => request('PATCH', `/documents/received/${sentDocumentId}`, { status }),
+  // Candidate — own uploaded documents
+  listMy: () => request('GET', '/documents/my'),
+  deleteMy: (id) => request('DELETE', `/documents/my/${id}`),
 }
 
 // ── Admin Management (ADMIN only, uses JWT) ───────────────────

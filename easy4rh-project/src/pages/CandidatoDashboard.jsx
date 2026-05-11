@@ -62,6 +62,18 @@ export default function CandidatoDashboard({ navigate }) {
   const [receivedDocsLoading, setReceivedDocsLoading] = useState(false)
   const [receivedDocsLoaded, setReceivedDocsLoaded] = useState(false)
 
+  // Documentos próprios do candidato
+  const [myDocs, setMyDocs] = useState([])
+  const [myDocsLoading, setMyDocsLoading] = useState(false)
+  const [myDocsLoaded, setMyDocsLoaded] = useState(false)
+  const [docUploadName, setDocUploadName] = useState('')
+  const [docUploadLink, setDocUploadLink] = useState('')
+  const [docUploadFile, setDocUploadFile] = useState(null)
+  const [docUploading, setDocUploading] = useState(false)
+  const [docUploadProgress, setDocUploadProgress] = useState(0)
+  const [docUploadError, setDocUploadError] = useState('')
+  const [docUploadSuccess, setDocUploadSuccess] = useState(false)
+
   // Campos do formulário de perfil
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('')
@@ -155,12 +167,27 @@ export default function CandidatoDashboard({ navigate }) {
     }
   }, [receivedDocsLoaded])
 
-  // Lazy-load de documentos recebidos ao entrar na seção
-  useEffect(() => {
-    if (activeSection === 'documentos' && !receivedDocsLoaded && !receivedDocsLoading) {
-      loadReceivedDocs()
+  const loadMyDocs = useCallback(async () => {
+    if (myDocsLoaded) return
+    setMyDocsLoading(true)
+    try {
+      const data = await documentsApi.listMy()
+      setMyDocs(Array.isArray(data) ? data : [])
+      setMyDocsLoaded(true)
+    } catch {
+      setMyDocs([])
+    } finally {
+      setMyDocsLoading(false)
     }
-  }, [activeSection, receivedDocsLoaded, receivedDocsLoading, loadReceivedDocs])
+  }, [myDocsLoaded])
+
+  // Lazy-load de documentos ao entrar na seção
+  useEffect(() => {
+    if (activeSection === 'documentos') {
+      if (!receivedDocsLoaded && !receivedDocsLoading) loadReceivedDocs()
+      if (!myDocsLoaded && !myDocsLoading) loadMyDocs()
+    }
+  }, [activeSection, receivedDocsLoaded, receivedDocsLoading, loadReceivedDocs, myDocsLoaded, myDocsLoading, loadMyDocs])
 
   const handleSaveProfile = async () => {
     setProfileLoading(true)
@@ -657,6 +684,9 @@ export default function CandidatoDashboard({ navigate }) {
       )
 
       case 'documentos': {
+        const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+        const token = localStorage.getItem('access_token')
+
         const docStatusLabel = { PENDING: 'Pendente', VIEWED: 'Visualizado', SIGNED: 'Assinado', REJECTED: 'Recusado' }
         const docStatusColor = {
           PENDING: ['#fef9c3', '#ca8a04'],
@@ -673,77 +703,287 @@ export default function CandidatoDashboard({ navigate }) {
           OTHER: 'Outro',
         }
 
+        const handleUploadDoc = async () => {
+          if (!docUploadFile && !docUploadName.trim() && !docUploadLink.trim()) {
+            setDocUploadError('Preencha pelo menos um campo: PDF, nome ou link.')
+            return
+          }
+          setDocUploadError('')
+          setDocUploading(true)
+          setDocUploadProgress(0)
+          try {
+            await new Promise((resolve, reject) => {
+              const xhr = new XMLHttpRequest()
+              const fd = new FormData()
+              if (docUploadFile) fd.append('file', docUploadFile)
+              if (docUploadName.trim()) fd.append('name', docUploadName.trim())
+              if (docUploadLink.trim()) fd.append('link', docUploadLink.trim())
+              xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) setDocUploadProgress(Math.round((e.loaded / e.total) * 100))
+              }
+              xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                  const created = JSON.parse(xhr.responseText)
+                  setMyDocs(prev => [created, ...prev])
+                  setDocUploadName('')
+                  setDocUploadLink('')
+                  setDocUploadFile(null)
+                  setDocUploadSuccess(true)
+                  safeTimeout(() => setDocUploadSuccess(false), 3000)
+                  resolve()
+                } else {
+                  const err = JSON.parse(xhr.responseText || '{}')
+                  reject(new Error(err.message || `Erro ${xhr.status}`))
+                }
+              }
+              xhr.onerror = () => reject(new Error('Erro de conexão'))
+              xhr.open('POST', `${apiBase}/documents/my`)
+              xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+              xhr.send(fd)
+            })
+          } catch (err) {
+            setDocUploadError(err.message || 'Erro ao enviar documento')
+          } finally {
+            setDocUploading(false)
+            setDocUploadProgress(0)
+          }
+        }
+
+        const handleDeleteMyDoc = async (id) => {
+          try {
+            await documentsApi.deleteMy(id)
+            setMyDocs(prev => prev.filter(d => d.id !== id))
+          } catch (err) {
+            setDocUploadError(err.message || 'Erro ao remover')
+          }
+        }
+
+        const handleViewMyDoc = async (id, fileName) => {
+          try {
+            const res = await fetch(`${apiBase}/documents/my/${id}/file`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            if (!res.ok) throw new Error('Erro ao carregar arquivo')
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            window.open(url, '_blank')
+          } catch (err) {
+            setDocUploadError(err.message || 'Erro ao visualizar')
+          }
+        }
+
         return (
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Meus Documentos</h2>
-            {receivedDocsLoading ? (
-              <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-                <p style={{ color: '#778899' }}>Carregando documentos...</p>
+
+            {/* ── Enviar documento ───────────────────────── */}
+            <div style={{ background: 'white', borderRadius: 16, padding: '24px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)', marginBottom: 28 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e3a6e', marginTop: 0, marginBottom: 18 }}>Enviar documento</h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#556677', display: 'block', marginBottom: 4 }}>Nome <span style={{ color: '#9ca3af' }}>(opcional)</span></label>
+                  <input
+                    value={docUploadName}
+                    onChange={e => setDocUploadName(e.target.value)}
+                    placeholder="Ex: Certificado de Inglês"
+                    disabled={docUploading}
+                    style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#556677', display: 'block', marginBottom: 4 }}>Link <span style={{ color: '#9ca3af' }}>(opcional)</span></label>
+                  <input
+                    value={docUploadLink}
+                    onChange={e => setDocUploadLink(e.target.value)}
+                    placeholder="https://..."
+                    disabled={docUploading}
+                    style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#556677', display: 'block', marginBottom: 4 }}>Arquivo PDF <span style={{ color: '#9ca3af' }}>(opcional · máx. 10MB)</span></label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, border: `2px dashed ${docUploadFile ? '#1e4a8a' : '#c7d9f0'}`, borderRadius: 12, padding: '14px 18px', cursor: docUploading ? 'default' : 'pointer', background: docUploadFile ? '#eff6ff' : '#f8fafc' }}>
+                    <span style={{ fontSize: 20 }}>📎</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: '#1e4a8a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {docUploadFile ? docUploadFile.name : 'Selecionar PDF'}
+                      </div>
+                      {!docUploadFile && <div style={{ fontSize: 12, color: '#778899' }}>Somente PDF</div>}
+                    </div>
+                    {docUploadFile && (
+                      <button
+                        onClick={e => { e.preventDefault(); setDocUploadFile(null) }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 18, lineHeight: 1, flexShrink: 0 }}
+                      >×</button>
+                    )}
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      style={{ display: 'none' }}
+                      disabled={docUploading}
+                      onChange={e => { if (e.target.files[0]) setDocUploadFile(e.target.files[0]); e.target.value = '' }}
+                    />
+                  </label>
+                </div>
+
+                {docUploading && docUploadProgress > 0 && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#556677', marginBottom: 4 }}>
+                      <span>Enviando...</span><span>{docUploadProgress}%</span>
+                    </div>
+                    <div style={{ background: '#e0eaf4', borderRadius: 8, height: 8 }}>
+                      <div style={{ width: `${docUploadProgress}%`, background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', height: 8, borderRadius: 8, transition: 'width 0.2s' }} />
+                    </div>
+                  </div>
+                )}
+
+                {docUploadError && (
+                  <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', color: '#dc2626', fontSize: 13 }}>
+                    {docUploadError}
+                  </div>
+                )}
+
+                {docUploadSuccess && (
+                  <div style={{ background: '#dcfce7', border: '1px solid #b2e4c8', borderRadius: 8, padding: '10px 14px', color: '#16a34a', fontSize: 13 }}>
+                    Documento enviado com sucesso!
+                  </div>
+                )}
+
+                <button
+                  onClick={handleUploadDoc}
+                  disabled={docUploading}
+                  style={{ alignSelf: 'flex-start', background: docUploading ? '#aaa' : 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '11px 28px', cursor: docUploading ? 'default' : 'pointer', fontWeight: 700, fontSize: 13 }}
+                >
+                  {docUploading ? 'Enviando...' : 'Enviar'}
+                </button>
               </div>
-            ) : receivedDocs.length === 0 ? (
-              <div style={{ background: 'white', borderRadius: 16, padding: 48, textAlign: 'center', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>📑</div>
-                <p style={{ color: '#778899', fontSize: 13 }}>Nenhum documento recebido ainda.</p>
-                <p style={{ color: '#9ca3af', fontSize: 12 }}>Os documentos enviados pela empresa aparecerão aqui.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {receivedDocs.map(sd => {
-                  const doc = sd.companyDocument || {}
-                  const company = doc.company || {}
-                  const [sBg, sColor] = docStatusColor[sd.status] || ['#f3f4f6', '#6b7280']
-                  const canRespond = sd.status === 'VIEWED' || sd.status === 'PENDING'
-                  return (
-                    <div key={sd.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            {company.logoUrl ? (
-                              <img src={company.logoUrl} alt={company.name} style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} />
-                            ) : (
-                              <div style={{ width: 28, height: 28, borderRadius: 6, background: '#e8f2fc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#1e4a8a' }}>
-                                {(company.name || 'E').charAt(0)}
-                              </div>
-                            )}
-                            <span style={{ fontSize: 13, color: '#778899' }}>{company.name || 'Empresa'}</span>
-                          </div>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 2 }}>{doc.title || 'Documento'}</div>
-                          <div style={{ fontSize: 12, color: '#778899', marginBottom: 6 }}>
-                            {categoryLabel[doc.category] || doc.category} · {doc.fileName} · Recebido em {new Date(sd.createdAt).toLocaleDateString('pt-BR')}
-                          </div>
-                          {sd.message && (
-                            <div style={{ fontSize: 12, background: '#f8fafc', borderRadius: 8, padding: '8px 12px', color: '#4b5563', marginBottom: 8, borderLeft: '3px solid #3b82f6' }}>
-                              "{sd.message}"
-                            </div>
-                          )}
-                          {doc.description && <div style={{ fontSize: 12, color: '#9ca3af' }}>{doc.description}</div>}
+            </div>
+
+            {/* ── Meus documentos ────────────────────────── */}
+            <div style={{ marginBottom: 32 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e3a6e', marginBottom: 14 }}>Documentos enviados</h3>
+              {myDocsLoading ? (
+                <div style={{ background: 'white', borderRadius: 14, padding: 24, textAlign: 'center' }}>
+                  <p style={{ color: '#778899', fontSize: 13 }}>Carregando...</p>
+                </div>
+              ) : myDocs.length === 0 ? (
+                <div style={{ background: 'white', borderRadius: 14, padding: '20px 24px', color: '#9ca3af', fontSize: 13 }}>
+                  Nenhum documento enviado ainda.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {myDocs.map(doc => (
+                    <div key={doc.id} style={{ background: 'white', borderRadius: 12, padding: '16px 20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 26, flexShrink: 0 }}>{doc.fileData !== undefined || doc.fileName ? '📄' : '🔗'}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {doc.name || doc.fileName || 'Documento'}
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: sBg, color: sColor }}>
-                            {docStatusLabel[sd.status] || sd.status}
+                        <div style={{ fontSize: 12, color: '#778899', marginTop: 2 }}>
+                          {doc.fileName && <span style={{ marginRight: 8 }}>{doc.fileName}</span>}
+                          {doc.link && <a href={doc.link} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', fontWeight: 600 }}>Ver link</a>}
+                          <span style={{ marginLeft: doc.fileName || doc.link ? 8 : 0 }}>
+                            {new Date(doc.createdAt).toLocaleDateString('pt-BR')}
                           </span>
-                          <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={() => { if (sd.status === 'PENDING') documentsApi.markAsViewed(sd.id).then(() => setReceivedDocs(prev => prev.map(d => d.id === sd.id ? { ...d, status: 'VIEWED' } : d))).catch(() => {}) }}
-                            style={{ background: '#eff6ff', color: '#3b82f6', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12, textDecoration: 'none', display: 'inline-block' }}
-                          >
-                            Abrir documento
-                          </a>
-                          {canRespond && (
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <button onClick={() => handleRespondDoc(sd.id, 'SIGNED')} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Assinar</button>
-                              <button onClick={() => handleRespondDoc(sd.id, 'REJECTED')} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Recusar</button>
-                            </div>
-                          )}
                         </div>
                       </div>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        {doc.fileName && (
+                          <button
+                            onClick={() => handleViewMyDoc(doc.id, doc.fileName)}
+                            style={{ background: '#eff6ff', color: '#1e4a8a', border: 'none', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
+                          >
+                            Visualizar
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteMyDoc(doc.id)}
+                          style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
+                        >
+                          Remover
+                        </button>
+                      </div>
                     </div>
-                  )
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── Documentos recebidos da empresa ────────── */}
+            <div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e3a6e', marginBottom: 14 }}>Documentos recebidos</h3>
+              {receivedDocsLoading ? (
+                <div style={{ background: 'white', borderRadius: 14, padding: 24, textAlign: 'center' }}>
+                  <p style={{ color: '#778899', fontSize: 13 }}>Carregando...</p>
+                </div>
+              ) : receivedDocs.length === 0 ? (
+                <div style={{ background: 'white', borderRadius: 14, padding: '20px 24px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
+                  <div style={{ fontSize: 36, marginBottom: 8 }}>📑</div>
+                  <p style={{ color: '#778899', fontSize: 13, margin: 0 }}>Nenhum documento recebido ainda.</p>
+                  <p style={{ color: '#9ca3af', fontSize: 12, margin: '4px 0 0' }}>Os documentos enviados pela empresa aparecerão aqui.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {receivedDocs.map(sd => {
+                    const doc = sd.companyDocument || {}
+                    const company = doc.company || {}
+                    const [sBg, sColor] = docStatusColor[sd.status] || ['#f3f4f6', '#6b7280']
+                    const canRespond = sd.status === 'VIEWED' || sd.status === 'PENDING'
+                    return (
+                      <div key={sd.id} style={{ background: 'white', borderRadius: 14, padding: '20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              {company.logoUrl ? (
+                                <img src={company.logoUrl} alt={company.name} style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} />
+                              ) : (
+                                <div style={{ width: 28, height: 28, borderRadius: 6, background: '#e8f2fc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#1e4a8a' }}>
+                                  {(company.name || 'E').charAt(0)}
+                                </div>
+                              )}
+                              <span style={{ fontSize: 13, color: '#778899' }}>{company.name || 'Empresa'}</span>
+                            </div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: '#1e3a6e', marginBottom: 2 }}>{doc.title || 'Documento'}</div>
+                            <div style={{ fontSize: 12, color: '#778899', marginBottom: 6 }}>
+                              {categoryLabel[doc.category] || doc.category} · {doc.fileName} · Recebido em {new Date(sd.createdAt).toLocaleDateString('pt-BR')}
+                            </div>
+                            {sd.message && (
+                              <div style={{ fontSize: 12, background: '#f8fafc', borderRadius: 8, padding: '8px 12px', color: '#4b5563', marginBottom: 8, borderLeft: '3px solid #3b82f6' }}>
+                                "{sd.message}"
+                              </div>
+                            )}
+                            {doc.description && <div style={{ fontSize: 12, color: '#9ca3af' }}>{doc.description}</div>}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: sBg, color: sColor }}>
+                              {docStatusLabel[sd.status] || sd.status}
+                            </span>
+                            <a
+                              href={doc.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={() => { if (sd.status === 'PENDING') documentsApi.markAsViewed(sd.id).then(() => setReceivedDocs(prev => prev.map(d => d.id === sd.id ? { ...d, status: 'VIEWED' } : d))).catch(() => {}) }}
+                              style={{ background: '#eff6ff', color: '#3b82f6', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12, textDecoration: 'none', display: 'inline-block' }}
+                            >
+                              Abrir documento
+                            </a>
+                            {canRespond && (
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button onClick={() => handleRespondDoc(sd.id, 'SIGNED')} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Assinar</button>
+                                <button onClick={() => handleRespondDoc(sd.id, 'REJECTED')} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 20, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Recusar</button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )
       }
