@@ -66,7 +66,7 @@ const courseLevels = [
   { label: 'Intermediário', value: 'INTERMEDIATE' },
   { label: 'Avançado', value: 'ADVANCED' },
 ]
-const emptyCurso = { title: '', description: '', thumbnailUrl: '', level: 'BEGINNER', category: '' }
+const emptyCurso = { title: '', description: '', thumbnailUrl: '', level: 'BEGINNER', category: '', certificateEnabled: false }
 
 function uploadVideoWithProgress(lessonId, file, onProgress) {
   return new Promise((resolve, reject) => {
@@ -572,6 +572,7 @@ export default function RecrutadorDashboard({ navigate }) {
         price: 0,
         level: novoCurso.level || 'BEGINNER',
         category: novoCurso.category || 'Geral',
+        certificateEnabled: novoCurso.certificateEnabled ?? false,
       }
       const created = await coursesApi.create(payload)
       setEditingCourseId(created.id)
@@ -701,6 +702,7 @@ export default function RecrutadorDashboard({ navigate }) {
         thumbnailUrl: data.thumbnailUrl || '',
         level: data.level || 'BEGINNER',
         category: data.category || '',
+        certificateEnabled: data.certificateEnabled ?? false,
       })
       const secs = (data.sections || []).map(sec => ({
         id: sec.id,
@@ -735,6 +737,7 @@ export default function RecrutadorDashboard({ navigate }) {
         thumbnailUrl: novoCurso.thumbnailUrl || undefined,
         level: novoCurso.level,
         category: novoCurso.category || 'Geral',
+        certificateEnabled: novoCurso.certificateEnabled ?? false,
       })
 
       for (const id of deletedLessonIds) {
@@ -2093,6 +2096,13 @@ export default function RecrutadorDashboard({ navigate }) {
                   <div>
                     <label style={labelStyle}>URL da thumbnail</label>
                     <input value={novoCurso.thumbnailUrl} onChange={e => setNovoCurso(prev => ({ ...prev, thumbnailUrl: e.target.value }))} placeholder="https://..." style={inputBase} />
+                  </div>
+                  <div style={{ gridColumn: isMobile ? undefined : 'span 2', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: novoCurso.certificateEnabled ? '#f0f9f0' : '#f8fafc', border: `1px solid ${novoCurso.certificateEnabled ? '#86efac' : '#e0eaf4'}`, borderRadius: 10, cursor: 'pointer' }} onClick={() => setNovoCurso(prev => ({ ...prev, certificateEnabled: !prev.certificateEnabled }))}>
+                    <input type="checkbox" checked={novoCurso.certificateEnabled} onChange={() => {}} style={{ width: 18, height: 18, cursor: 'pointer', accentColor: '#16a34a' }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: novoCurso.certificateEnabled ? '#15803d' : '#334155' }}>Emitir certificado de conclusao</div>
+                      <div style={{ fontSize: 12, color: '#778899', marginTop: 2 }}>Alunos que completarem 100% das aulas recebem um certificado</div>
+                    </div>
                   </div>
                 </div>
                 <div style={{ marginBottom: 24 }}>

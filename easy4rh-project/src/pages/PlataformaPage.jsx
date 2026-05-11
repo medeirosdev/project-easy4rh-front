@@ -246,7 +246,7 @@ export default function PlataformaPage({ navigate }) {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ fontSize: 13, color: '#556' }}>
                         {course.lessonsCount || course._count?.lessons || 0} aulas
-                        {course.duration ? ` · ${Math.round(course.duration / 3600)}h` : ''}
+                        {course.duration ? ` · ${Math.round(course.duration / 60)}h` : ''}
                       </div>
                       <button
                         onClick={e => { e.stopPropagation(); navigate(`curso-${course.id}`) }}
