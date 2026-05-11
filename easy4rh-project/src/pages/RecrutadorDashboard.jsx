@@ -114,6 +114,9 @@ export default function RecrutadorDashboard({ navigate }) {
   const [allApplications, setAllApplications] = useState([])
   const [applicationsLoading, setApplicationsLoading] = useState(false)
   const [applicationsJobFilter, setApplicationsJobFilter] = useState(null) // jobId | null
+  const [selectedCandidateApp, setSelectedCandidateApp] = useState(null) // modal
+  const [draggedAppId, setDraggedAppId] = useState(null)
+  const [dragOverStage, setDragOverStage] = useState(null)
   const [posterJob, setPosterJob] = useState(null) // job object | null — drives JobPosterModal visibility
 
   // Documents module
@@ -287,18 +290,27 @@ export default function RecrutadorDashboard({ navigate }) {
             const list = Array.isArray(apps) ? apps : (apps.data || [])
             return list.map(app => {
               const stage = app.stage || 'APPLIED'
+              const profile = app.candidate?.candidateProfile || {}
               return {
                 id: app.id,
                 candidateId: app.candidate?.id || app.candidateId || null,
-                name: app.candidate?.candidateProfile?.fullName || app.candidate?.email || 'Candidato',
+                name: profile.fullName || app.candidate?.email || 'Candidato',
+                email: app.candidate?.email || null,
+                phone: profile.phone || null,
+                location: profile.location || null,
+                currentRole: profile.currentRole || null,
+                photoUrl: profile.photoUrl || null,
+                linkedin: profile.linkedin || null,
                 role: job.title,
                 jobId: job.id,
+                jobTitle: job.title,
                 date: app.createdAt ? new Date(app.createdAt).toLocaleDateString('pt-BR') : '',
                 stage,
                 status: getStageLabel(stage),
                 color: getStageColor(stage),
-                resumeUrl: app.candidate?.candidateProfile?.resumeUrl || null,
+                resumeUrl: profile.resumeUrl || null,
                 adherencePercent: app.adherencePercent ?? null,
+                answers: app.answers || [],
               }
             })
           } catch {
@@ -1596,27 +1608,147 @@ export default function RecrutadorDashboard({ navigate }) {
       )
 
       case 'aplicacoes': {
-        // Kanban de seleção — filtra por vaga, agrupa por fase
-        const [kanbanJobFilter, setKanbanJobFilter] = [
-          // usar state local com um truque — guarda em objeto mutável para este case
-          applicationsJobFilter,
-          setApplicationsJobFilter,
-        ]
-
-        const visibleApps = kanbanJobFilter
-          ? allApplications.filter(a => a.jobId === kanbanJobFilter)
+        const visibleApps = applicationsJobFilter
+          ? allApplications.filter(a => a.jobId === applicationsJobFilter)
           : allApplications
 
         const rejectedApps = visibleApps.filter(a => normalizeStage(a.stage) === 'REJECTED')
 
+        const handleDragStart = (e, appId) => {
+          setDraggedAppId(appId)
+          e.dataTransfer.effectAllowed = 'move'
+        }
+        const handleDragEnd = () => {
+          setDraggedAppId(null)
+          setDragOverStage(null)
+        }
+        const handleDragOver = (e, stageKey) => {
+          e.preventDefault()
+          e.dataTransfer.dropEffect = 'move'
+          if (dragOverStage !== stageKey) setDragOverStage(stageKey)
+        }
+        const handleDrop = (e, stageKey) => {
+          e.preventDefault()
+          if (draggedAppId && stageKey !== 'REJECTED') {
+            const app = allApplications.find(a => a.id === draggedAppId)
+            if (app && normalizeStage(app.stage) !== stageKey) {
+              handleUpdateApplicationStatus(draggedAppId, stageKey)
+            }
+          }
+          setDraggedAppId(null)
+          setDragOverStage(null)
+        }
+
         return (
           <div>
+            {/* Modal de detalhes do candidato */}
+            {selectedCandidateApp && (() => {
+              const a = selectedCandidateApp
+              const stageData = PIPELINE_STAGES.find(s => s.key === normalizeStage(a.stage)) || PIPELINE_STAGES[0]
+              return (
+                <div
+                  onClick={() => setSelectedCandidateApp(null)}
+                  style={{ position: 'fixed', inset: 0, background: 'rgba(10,20,50,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+                >
+                  <div
+                    onClick={e => e.stopPropagation()}
+                    style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 520, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(10,20,50,0.25)' }}
+                  >
+                    {/* Header do modal */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24 }}>
+                      <div style={{ width: 56, height: 56, borderRadius: '50%', background: `linear-gradient(135deg, ${stageData.bg}, ${stageData.color}44)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: stageData.color, fontSize: 22, flexShrink: 0 }}>
+                        {(a.name || 'C')[0].toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: '#1e3a6e', marginBottom: 4 }}>{a.name}</div>
+                        {a.currentRole && <div style={{ fontSize: 13, color: '#556677', marginBottom: 2 }}>{a.currentRole}</div>}
+                        <span style={{ fontSize: 11, fontWeight: 700, background: stageData.bg, color: stageData.color, padding: '3px 10px', borderRadius: 20 }}>{stageData.label}</span>
+                      </div>
+                      <button onClick={() => setSelectedCandidateApp(null)} style={{ background: '#f0f4f8', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 16, color: '#556677', flexShrink: 0 }}>✕</button>
+                    </div>
+
+                    {/* Informações de contato */}
+                    <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#778899', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Contato</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {a.email && <div style={{ fontSize: 13, color: '#334' }}>✉ {a.email}</div>}
+                        {a.phone && <div style={{ fontSize: 13, color: '#334' }}>📱 {a.phone}</div>}
+                        {a.location && <div style={{ fontSize: 13, color: '#334' }}>📍 {a.location}</div>}
+                        {a.linkedin && <div style={{ fontSize: 13, color: '#334' }}>🔗 {a.linkedin}</div>}
+                        {!a.email && !a.phone && !a.location && <div style={{ fontSize: 12, color: '#b0bec5' }}>Nenhuma informação de contato disponível</div>}
+                      </div>
+                    </div>
+
+                    {/* Candidatura */}
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, background: '#f0f4f8', borderRadius: 10, padding: '10px 14px' }}>
+                        <div style={{ fontSize: 10, color: '#778899', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Vaga</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a6e' }}>{a.jobTitle}</div>
+                      </div>
+                      <div style={{ flex: 1, background: '#f0f4f8', borderRadius: 10, padding: '10px 14px' }}>
+                        <div style={{ fontSize: 10, color: '#778899', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Inscrito em</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#1e3a6e' }}>{a.date}</div>
+                      </div>
+                      {a.adherencePercent != null && (
+                        <div style={{ flex: 1, background: a.adherencePercent >= 70 ? '#f0fdf4' : a.adherencePercent >= 40 ? '#fffbeb' : '#fef2f2', borderRadius: 10, padding: '10px 14px' }}>
+                          <div style={{ fontSize: 10, color: '#778899', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Fit</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: a.adherencePercent >= 70 ? '#16a34a' : a.adherencePercent >= 40 ? '#ca8a04' : '#dc2626' }}>{a.adherencePercent}%</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Respostas de triagem */}
+                    {a.answers && a.answers.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#778899', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Respostas de Triagem</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {a.answers.map((ans, i) => (
+                            <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 14px' }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: '#334', marginBottom: 4 }}>{ans.question?.question || ans.question || `Pergunta ${i + 1}`}</div>
+                              <div style={{ fontSize: 13, color: '#556', marginBottom: ans.score != null ? 4 : 0 }}>
+                                {Array.isArray(ans.selectedOptions) ? ans.selectedOptions.join(', ') : (ans.textAnswer || ans.answer || '—')}
+                              </div>
+                              {ans.score != null && <div style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6' }}>+{ans.score} pts</div>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Ações */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {a.resumeUrl && (
+                        <a href={a.resumeUrl} target="_blank" rel="noopener noreferrer"
+                          style={{ flex: 1, textAlign: 'center', padding: '10px 16px', borderRadius: 10, background: '#eff6ff', color: '#3b82f6', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                          Ver CV
+                        </a>
+                      )}
+                      {PIPELINE_STAGES.filter(s => s.key !== normalizeStage(a.stage)).map(s => (
+                        <button key={s.key}
+                          onClick={() => { handleUpdateApplicationStatus(a.id, s.key); setSelectedCandidateApp(prev => ({ ...prev, stage: s.key, status: getStageLabel(s.key), color: getStageColor(s.key) })) }}
+                          style={{ flex: 1, padding: '10px 16px', borderRadius: 10, background: s.bg, color: s.color, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+                          → {s.label}
+                        </button>
+                      ))}
+                      {normalizeStage(a.stage) !== 'REJECTED' && (
+                        <button
+                          onClick={() => { handleUpdateApplicationStatus(a.id, 'REJECTED'); setSelectedCandidateApp(null) }}
+                          style={{ flex: 1, padding: '10px 16px', borderRadius: 10, background: '#fef2f2', color: '#ef4444', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+                          Reprovar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e' }}>Fases da Seleção</h2>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>Fases da Seleção</h2>
               <select
-                value={kanbanJobFilter || ''}
-                onChange={e => setKanbanJobFilter(e.target.value || null)}
+                value={applicationsJobFilter || ''}
+                onChange={e => setApplicationsJobFilter(e.target.value || null)}
                 style={{ border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '8px 14px', fontSize: 13, outline: 'none', background: 'white', color: '#334', minWidth: 220 }}
               >
                 <option value=''>Todas as vagas ({allApplications.length})</option>
@@ -1634,19 +1766,26 @@ export default function RecrutadorDashboard({ navigate }) {
               </div>
             ) : (
               <>
-                {/* Kanban */}
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : `repeat(${PIPELINE_STAGES.length}, 1fr)`, gap: 12, overflowX: 'auto' }}>
+                {/* Kanban com Drag & Drop */}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : `repeat(${PIPELINE_STAGES.length}, minmax(0, 1fr))`, gap: 12, overflowX: 'auto' }}>
                   {PIPELINE_STAGES.map(stage => {
-                    const stageApps = visibleApps.filter(a => normalizeStage(a.stage) === stage.key && normalizeStage(a.stage) !== 'REJECTED')
+                    const stageApps = visibleApps.filter(a => normalizeStage(a.stage) === stage.key)
+                    const isDropTarget = dragOverStage === stage.key && draggedAppId !== null
                     return (
-                      <div key={stage.key} style={{ background: '#f8fafc', borderRadius: 14, padding: 12, minHeight: 120 }}>
+                      <div
+                        key={stage.key}
+                        onDragOver={e => handleDragOver(e, stage.key)}
+                        onDragLeave={() => setDragOverStage(null)}
+                        onDrop={e => handleDrop(e, stage.key)}
+                        style={{ background: isDropTarget ? stage.bg : '#f8fafc', borderRadius: 14, padding: 12, minHeight: 120, border: `2px solid ${isDropTarget ? stage.color : 'transparent'}`, transition: 'border-color 0.15s, background 0.15s' }}
+                      >
                         {/* Column header */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                             <div style={{ width: 10, height: 10, borderRadius: '50%', background: stage.color, flexShrink: 0 }} />
-                            <span style={{ fontSize: 12, fontWeight: 700, color: '#1e3a6e' }}>{stage.label}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: '#1e3a6e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stage.label}</span>
                           </div>
-                          <span style={{ fontSize: 11, fontWeight: 700, background: stage.bg, color: stage.color, padding: '2px 8px', borderRadius: 20 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, background: stage.bg, color: stage.color, padding: '2px 8px', borderRadius: 20, flexShrink: 0 }}>
                             {stageApps.length}
                           </span>
                         </div>
@@ -1654,57 +1793,46 @@ export default function RecrutadorDashboard({ navigate }) {
                         {/* Cards */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {stageApps.length === 0 ? (
-                            <div style={{ border: '2px dashed #e0eaf4', borderRadius: 10, padding: '20px 12px', textAlign: 'center', color: '#b0bec5', fontSize: 11 }}>
-                              Nenhum candidato
+                            <div style={{ border: `2px dashed ${isDropTarget ? stage.color : '#e0eaf4'}`, borderRadius: 10, padding: '20px 12px', textAlign: 'center', color: isDropTarget ? stage.color : '#b0bec5', fontSize: 11, transition: 'all 0.15s' }}>
+                              {isDropTarget ? 'Soltar aqui' : 'Nenhum candidato'}
                             </div>
-                          ) : stageApps.map(a => (
-                            <div key={a.id} style={{ background: 'white', borderRadius: 10, padding: '12px', boxShadow: '0 1px 4px rgba(30,74,138,0.07)', border: `1px solid ${stage.color}22` }}>
-                              {/* Avatar + name */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${stage.bg}, ${stage.color}33)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: stage.color, fontSize: 13, flexShrink: 0 }}>
-                                  {(a.name || 'C')[0].toUpperCase()}
+                          ) : stageApps.map(a => {
+                            const isDragging = draggedAppId === a.id
+                            return (
+                              <div
+                                key={a.id}
+                                draggable
+                                onDragStart={e => handleDragStart(e, a.id)}
+                                onDragEnd={handleDragEnd}
+                                onClick={() => setSelectedCandidateApp(a)}
+                                style={{ background: 'white', borderRadius: 10, padding: '12px', boxShadow: isDragging ? '0 8px 24px rgba(30,74,138,0.18)' : '0 1px 4px rgba(30,74,138,0.07)', border: `1px solid ${stage.color}22`, cursor: 'grab', opacity: isDragging ? 0.5 : 1, transform: isDragging ? 'rotate(2deg)' : 'none', transition: 'box-shadow 0.15s, opacity 0.15s', userSelect: 'none' }}
+                              >
+                                {/* Avatar + name — overflow controlado */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${stage.bg}, ${stage.color}33)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: stage.color, fontSize: 13, flexShrink: 0 }}>
+                                    {(a.name || 'C')[0].toUpperCase()}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                                    <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1e3a6e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
+                                    <div style={{ fontSize: 11, color: '#778899', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.jobTitle}</div>
+                                  </div>
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#1e3a6e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
-                                  <div style={{ fontSize: 11, color: '#778899', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.role}</div>
+
+                                {/* Score + date */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <span style={{ fontSize: 10.5, color: '#778899' }}>{a.date}</span>
+                                  {a.adherencePercent != null && (
+                                    <span style={{ fontSize: 10.5, fontWeight: 700, color: a.adherencePercent >= 70 ? '#16a34a' : a.adherencePercent >= 40 ? '#ca8a04' : '#dc2626' }}>
+                                      {a.adherencePercent}% fit
+                                    </span>
+                                  )}
                                 </div>
-                              </div>
 
-                              {/* Score + date */}
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                <span style={{ fontSize: 10.5, color: '#778899' }}>{a.date}</span>
-                                {a.adherencePercent != null && (
-                                  <span style={{ fontSize: 10.5, fontWeight: 700, color: a.adherencePercent >= 70 ? '#16a34a' : a.adherencePercent >= 40 ? '#ca8a04' : '#dc2626' }}>
-                                    {a.adherencePercent}% fit
-                                  </span>
-                                )}
+                                {/* Hint de clique */}
+                                <div style={{ fontSize: 10, color: '#b0bec5', marginTop: 6, textAlign: 'center' }}>clique para detalhes · arraste para mover</div>
                               </div>
-
-                              {/* Actions */}
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                {a.resumeUrl && (
-                                  <a href={a.resumeUrl} target="_blank" rel="noopener noreferrer"
-                                    style={{ fontSize: 10.5, padding: '3px 8px', borderRadius: 20, background: '#eff6ff', color: '#3b82f6', fontWeight: 600, textDecoration: 'none' }}>
-                                    CV
-                                  </a>
-                                )}
-                                {/* Stage advance buttons */}
-                                {PIPELINE_STAGES.filter(s => s.key !== stage.key).map(targetStage => (
-                                  <button key={targetStage.key}
-                                    onClick={() => handleUpdateApplicationStatus(a.id, targetStage.key)}
-                                    title={`Mover para ${targetStage.label}`}
-                                    style={{ fontSize: 10.5, padding: '3px 8px', borderRadius: 20, background: targetStage.bg, color: targetStage.color, border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                                    → {targetStage.label.split(' ')[0]}
-                                  </button>
-                                ))}
-                                <button
-                                  onClick={() => handleUpdateApplicationStatus(a.id, 'REJECTED')}
-                                  style={{ fontSize: 10.5, padding: '3px 8px', borderRadius: 20, background: '#fef2f2', color: '#ef4444', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                                  Reprovar
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )
@@ -1720,14 +1848,20 @@ export default function RecrutadorDashboard({ navigate }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                       {rejectedApps.map(a => (
                         <div key={a.id} style={{ background: 'white', borderRadius: 10, padding: '12px 16px', border: '1px solid #fee2e2', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                          <div>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: '#1e3a6e' }}>{a.name}</span>
-                            <span style={{ fontSize: 12, color: '#778899', marginLeft: 8 }}>{a.role} · {a.date}</span>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#1e3a6e', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                            <span style={{ fontSize: 12, color: '#778899' }}>{a.jobTitle} · {a.date}</span>
                           </div>
-                          <button onClick={() => handleUpdateApplicationStatus(a.id, 'APPLIED')}
-                            style={{ fontSize: 11.5, padding: '4px 12px', borderRadius: 20, background: '#eff6ff', color: '#3b82f6', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                            Reativar
-                          </button>
+                          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                            <button onClick={() => setSelectedCandidateApp(a)}
+                              style={{ fontSize: 11.5, padding: '4px 12px', borderRadius: 20, background: '#f8fafc', color: '#556677', border: '1px solid #e0eaf4', cursor: 'pointer', fontWeight: 600 }}>
+                              Detalhes
+                            </button>
+                            <button onClick={() => handleUpdateApplicationStatus(a.id, 'APPLIED')}
+                              style={{ fontSize: 11.5, padding: '4px 12px', borderRadius: 20, background: '#eff6ff', color: '#3b82f6', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                              Reativar
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
