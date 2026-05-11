@@ -38,6 +38,9 @@ export default function CandidatoDashboard({ navigate }) {
   const [cvUrl, setCvUrl] = useState('')
   const [cvSaving, setCvSaving] = useState(false)
   const [cvSaved, setCvSaved] = useState(false)
+  const [cvFileName, setCvFileName] = useState(null) // nome do PDF armazenado no banco
+  const [cvUploadProgress, setCvUploadProgress] = useState(0)
+  const [cvError, setCvError] = useState('')
   const [profile, setProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
@@ -78,6 +81,7 @@ export default function CandidatoDashboard({ navigate }) {
         setLinkedin(data.linkedinUrl || '')
         setBio(data.about || '')
         if (data.resumeUrl) setCvUrl(data.resumeUrl)
+        if (data.resumeFileName) setCvFileName(data.resumeFileName)
       } catch (err) {
         if (err?.message && !err.message.includes('404')) setLoadError(err.message)
       }
@@ -331,99 +335,162 @@ export default function CandidatoDashboard({ navigate }) {
         </div>
       )
 
-      case 'cv': return (
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Meu CV</h2>
-          <div style={{ background: 'white', borderRadius: 16, padding: '28px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
+      case 'cv': {
+        const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+        const token = localStorage.getItem('access_token')
+        const resumeViewUrl = `${apiBase}/candidate-profiles/me/resume`
 
-            {cvUrl ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px', background: '#f4f8ff', borderRadius: 12, marginBottom: 20 }}>
-                <span style={{ fontSize: 36 }}>📄</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e', marginBottom: 2 }}>Currículo vinculado</div>
-                  <a href={cvUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#1e4a8a', wordBreak: 'break-all' }}>{cvUrl}</a>
+        const handleUploadResume = async (file) => {
+          if (!file) return
+          setCvError('')
+          setCvSaving(true)
+          setCvUploadProgress(0)
+          try {
+            await new Promise((resolve, reject) => {
+              const xhr = new XMLHttpRequest()
+              const fd = new FormData()
+              fd.append('file', file)
+              xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) setCvUploadProgress(Math.round((e.loaded / e.total) * 100))
+              }
+              xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                  const res = JSON.parse(xhr.responseText)
+                  setCvFileName(res.fileName || file.name)
+                  setCvSaved(true)
+                  safeTimeout(() => setCvSaved(false), 3000)
+                  resolve()
+                } else {
+                  const err = JSON.parse(xhr.responseText || '{}')
+                  reject(new Error(err.message || `Erro ${xhr.status}`))
+                }
+              }
+              xhr.onerror = () => reject(new Error('Erro de conexão'))
+              xhr.open('POST', `${apiBase}/candidate-profiles/me/resume`)
+              xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+              xhr.send(fd)
+            })
+          } catch (err) {
+            setCvError(err.message || 'Erro ao enviar o arquivo')
+          } finally {
+            setCvSaving(false)
+            setCvUploadProgress(0)
+          }
+        }
+
+        const handleDeleteResume = async () => {
+          setCvSaving(true)
+          setCvError('')
+          try {
+            await fetch(`${apiBase}/candidate-profiles/me/resume`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            setCvFileName(null)
+          } catch (err) {
+            setCvError(err.message || 'Erro ao remover')
+          } finally {
+            setCvSaving(false)
+          }
+        }
+
+        return (
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Meu CV</h2>
+            <div style={{ background: 'white', borderRadius: 16, padding: '28px', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
+
+              {/* CV atual */}
+              {cvFileName ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px', background: '#f0fdf4', borderRadius: 12, marginBottom: 24, border: '1px solid #86efac' }}>
+                  <span style={{ fontSize: 36 }}>📄</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#15803d', marginBottom: 2 }}>Currículo enviado</div>
+                    <div style={{ fontSize: 12, color: '#556677', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cvFileName}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <button
+                      onClick={async (e) => {
+                        e.preventDefault()
+                        try {
+                          const res = await fetch(resumeViewUrl, { headers: { Authorization: `Bearer ${token}` } })
+                          if (!res.ok) throw new Error('Erro ao carregar CV')
+                          const blob = await res.blob()
+                          const url = URL.createObjectURL(blob)
+                          window.open(url, '_blank')
+                        } catch (err) {
+                          setCvError(err.message || 'Erro ao visualizar')
+                        }
+                      }}
+                      style={{ fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 20, background: '#eff6ff', color: '#1e4a8a', border: 'none', cursor: 'pointer' }}
+                    >
+                      Visualizar
+                    </button>
+                    <span style={{ fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 20, background: '#dcfce7', color: '#16a34a' }}>Ativo</span>
+                  </div>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 20, background: '#dcfce7', color: '#16a34a', flexShrink: 0 }}>Ativo</span>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '24px 0 20px' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e3a6e', marginBottom: 6 }}>Nenhum CV vinculado</h3>
-                <p style={{ fontSize: 13, color: '#778899', maxWidth: 400, margin: '0 auto' }}>
-                  Cole abaixo o link do seu currículo (Google Drive, Dropbox, LinkedIn, etc.)
-                </p>
-              </div>
-            )}
+              ) : (
+                <div style={{ textAlign: 'center', padding: '24px 0 20px' }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1e3a6e', marginBottom: 6 }}>Nenhum CV enviado</h3>
+                  <p style={{ fontSize: 13, color: '#778899', maxWidth: 380, margin: '0 auto' }}>
+                    Envie seu currículo em PDF (máx. 5MB). Ele fica salvo no seu perfil e é acessível pelos recrutadores.
+                  </p>
+                </div>
+              )}
 
-            <div style={{ marginTop: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: '#556677', display: 'block', marginBottom: 6 }}>Link do currículo</label>
-              <input
-                value={cvUrl}
-                onChange={e => setCvUrl(e.target.value)}
-                placeholder="https://drive.google.com/file/d/... ou outro link"
-                style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box', color: '#334' }}
-              />
-            </div>
+              {/* Upload */}
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, border: '2px dashed #c7d9f0', borderRadius: 12, padding: '20px', cursor: cvSaving ? 'default' : 'pointer', background: '#f8fafc', marginBottom: 16 }}>
+                <span style={{ fontSize: 22 }}>📎</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e4a8a' }}>{cvFileName ? 'Substituir PDF' : 'Selecionar PDF'}</div>
+                  <div style={{ fontSize: 12, color: '#778899' }}>Somente PDF · máx. 5MB</div>
+                </div>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  style={{ display: 'none' }}
+                  disabled={cvSaving}
+                  onChange={e => { if (e.target.files[0]) handleUploadResume(e.target.files[0]); e.target.value = '' }}
+                />
+              </label>
 
-            {cvSaved && (
-              <div style={{ background: '#dcfce7', border: '1px solid #b2e4c8', borderRadius: 8, padding: '10px 14px', color: '#16a34a', fontSize: 13, marginTop: 16 }}>
-                CV salvo com sucesso!
-              </div>
-            )}
+              {/* Progresso */}
+              {cvSaving && cvUploadProgress > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#556677', marginBottom: 4 }}>
+                    <span>Enviando...</span><span>{cvUploadProgress}%</span>
+                  </div>
+                  <div style={{ background: '#e0eaf4', borderRadius: 8, height: 8 }}>
+                    <div style={{ width: `${cvUploadProgress}%`, background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', height: 8, borderRadius: 8, transition: 'width 0.2s' }} />
+                  </div>
+                </div>
+              )}
 
-            <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-              <button
-                onClick={async () => {
-                  if (!cvUrl) return
-                  setCvSaving(true)
-                  setCvSaved(false)
-                  try {
-                    const formatUrl = (url) => {
-                      if (!url) return undefined
-                      if (url.startsWith('http://') || url.startsWith('https://')) return url
-                      return `https://${url}`
-                    }
-                    if (profile) {
-                      await profileApi.update({ resumeUrl: formatUrl(cvUrl) })
-                    } else {
-                      await profileApi.create({ fullName: user?.name || '', resumeUrl: formatUrl(cvUrl) })
-                    }
-                    setCvSaved(true)
-                    safeTimeout(() => setCvSaved(false), 3000)
-                  } catch (err) {
-                    console.error('Erro ao salvar CV:', err)
-                  } finally {
-                    setCvSaving(false)
-                  }
-                }}
-                disabled={cvSaving || !cvUrl}
-                style={{ background: cvSaving || !cvUrl ? '#ccc' : 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '12px 28px', cursor: cvSaving || !cvUrl ? 'default' : 'pointer', fontWeight: 700, fontSize: 14 }}
-              >
-                {cvSaving ? 'Salvando...' : 'Salvar CV'}
-              </button>
-              {cvUrl && (
+              {cvSaved && (
+                <div style={{ background: '#dcfce7', border: '1px solid #b2e4c8', borderRadius: 8, padding: '10px 14px', color: '#16a34a', fontSize: 13, marginBottom: 12 }}>
+                  CV enviado com sucesso!
+                </div>
+              )}
+
+              {cvError && (
+                <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: 8, padding: '10px 14px', color: '#dc2626', fontSize: 13, marginBottom: 12 }}>
+                  {cvError}
+                </div>
+              )}
+
+              {cvFileName && (
                 <button
-                  onClick={async () => {
-                    setCvSaving(true)
-                    try {
-                      if (profile) await profileApi.update({ resumeUrl: null })
-                      setCvUrl('')
-                      setCvSaved(false)
-                    } catch (err) {
-                      console.error('Erro ao remover CV:', err)
-                    } finally {
-                      setCvSaving(false)
-                    }
-                  }}
-                  style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 24, padding: '12px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
+                  onClick={handleDeleteResume}
+                  disabled={cvSaving}
+                  style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: cvSaving ? 'default' : 'pointer', fontWeight: 700, fontSize: 13 }}
                 >
-                  Remover
+                  Remover CV
                 </button>
               )}
             </div>
           </div>
-        </div>
-      )
+        )
+      }
 
       case 'vagas': return (
         <div>
