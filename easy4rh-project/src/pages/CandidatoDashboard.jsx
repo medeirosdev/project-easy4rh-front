@@ -35,7 +35,6 @@ export default function CandidatoDashboard({ navigate }) {
   useEffect(() => () => timersRef.current.forEach(clearTimeout), [])
   const [activeSection, setActiveSection] = useState('resumo')
   const [keyword, setKeyword] = useState('')
-  const [cvUrl, setCvUrl] = useState('')
   const [cvSaving, setCvSaving] = useState(false)
   const [cvSaved, setCvSaved] = useState(false)
   const [cvFileName, setCvFileName] = useState(null) // nome do PDF armazenado no banco
@@ -92,7 +91,6 @@ export default function CandidatoDashboard({ navigate }) {
         setDesiredRole(data.headline || '')
         setLinkedin(data.linkedinUrl || '')
         setBio(data.about || '')
-        if (data.resumeUrl) setCvUrl(data.resumeUrl)
         if (data.resumeFileName) setCvFileName(data.resumeFileName)
       } catch (err) {
         if (err?.message && !err.message.includes('404')) setLoadError(err.message)
@@ -877,7 +875,7 @@ export default function CandidatoDashboard({ navigate }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {myDocs.map(doc => (
                     <div key={doc.id} style={{ background: 'white', borderRadius: 12, padding: '16px 20px', boxShadow: '0 2px 8px rgba(30,74,138,0.06)', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 26, flexShrink: 0 }}>{doc.fileData !== undefined || doc.fileName ? '📄' : '🔗'}</span>
+                      <span style={{ fontSize: 26, flexShrink: 0 }}>{doc.fileName ? '📄' : '🔗'}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#1e3a6e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {doc.name || doc.fileName || 'Documento'}

@@ -296,11 +296,13 @@ export default function RecrutadorDashboard({ navigate }) {
                 candidateId: app.candidate?.id || app.candidateId || null,
                 name: profile.fullName || app.candidate?.email || 'Candidato',
                 email: app.candidate?.email || null,
-                phone: profile.phone || null,
-                location: profile.location || null,
-                currentRole: profile.currentRole || null,
-                photoUrl: profile.photoUrl || null,
-                linkedin: profile.linkedin || null,
+                phone: profile.phone || profile.whatsapp || null,
+                location: [profile.city, profile.state].filter(Boolean).join(', ') || null,
+                currentRole: profile.headline || null,
+                photoUrl: null,
+                linkedin: profile.linkedinUrl || null,
+                resumeFileName: profile.resumeFileName || null,
+                profileId: profile.id || null,
                 role: job.title,
                 jobId: job.id,
                 jobTitle: job.title,
@@ -308,7 +310,6 @@ export default function RecrutadorDashboard({ navigate }) {
                 stage,
                 status: getStageLabel(stage),
                 color: getStageColor(stage),
-                resumeUrl: profile.resumeUrl || null,
                 adherencePercent: app.adherencePercent ?? null,
                 answers: app.answers || [],
               }
@@ -1717,11 +1718,21 @@ export default function RecrutadorDashboard({ navigate }) {
 
                     {/* Ações */}
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {a.resumeUrl && (
-                        <a href={a.resumeUrl} target="_blank" rel="noopener noreferrer"
-                          style={{ flex: 1, textAlign: 'center', padding: '10px 16px', borderRadius: 10, background: '#eff6ff', color: '#3b82f6', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                      {a.profileId && a.resumeFileName && (
+                        <button
+                          onClick={async () => {
+                            const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+                            const token = localStorage.getItem('access_token')
+                            try {
+                              const res = await fetch(`${apiBase}/candidate-profiles/${a.profileId}/resume`, { headers: { Authorization: `Bearer ${token}` } })
+                              if (!res.ok) return
+                              const blob = await res.blob()
+                              window.open(URL.createObjectURL(blob), '_blank')
+                            } catch {}
+                          }}
+                          style={{ flex: 1, textAlign: 'center', padding: '10px 16px', borderRadius: 10, background: '#eff6ff', color: '#3b82f6', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>
                           Ver CV
-                        </a>
+                        </button>
                       )}
                       {PIPELINE_STAGES.filter(s => s.key !== normalizeStage(a.stage)).map(s => (
                         <button key={s.key}
