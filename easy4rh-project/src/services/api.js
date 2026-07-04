@@ -369,6 +369,8 @@ export const adminApi = {
     return requestAudit('GET', `/admin/courses${qs ? '?' + qs : ''}`)
   },
   deleteCourse: (id) => requestAudit('DELETE', `/admin/courses/${id}`),
+  publishCourse: (id) => requestAudit('POST', `/admin/courses/${id}/publish`),
+  unpublishCourse: (id) => requestAudit('POST', `/admin/courses/${id}/unpublish`),
 
   listUsers: (params = {}) => {
     const qs = buildQs(params)

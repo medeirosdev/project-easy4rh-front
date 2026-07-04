@@ -551,6 +551,7 @@ function CursosSection() {
   const [page, setPage]               = useState(1)
   const [confirm, setConfirm]         = useState(null)
   const [deleting, setDeleting]       = useState(null)
+  const [toggling, setToggling]       = useState(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -576,6 +577,24 @@ function CursosSection() {
       setError(err.message)
     } finally {
       setDeleting(null)
+    }
+  }
+
+  const handleTogglePublish = async (course) => {
+    setToggling(course.id)
+    setError('')
+    try {
+      if (course.status === 'PUBLISHED') {
+        await adminApi.unpublishCourse(course.id)
+        setData(prev => prev ? { ...prev, data: prev.data.map(c => c.id === course.id ? { ...c, status: 'DRAFT' } : c) } : prev)
+      } else {
+        await adminApi.publishCourse(course.id)
+        setData(prev => prev ? { ...prev, data: prev.data.map(c => c.id === course.id ? { ...c, status: 'PUBLISHED' } : c) } : prev)
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setToggling(null)
     }
   }
 
@@ -612,7 +631,13 @@ function CursosSection() {
                     <td style={{ padding: '10px 14px', color: D.textDim, fontFamily: 'monospace', fontSize: 11 }}>{course.instructor?.email || '—'}</td>
                     <td style={{ padding: '10px 14px', color: D.textMuted, textAlign: 'center' }}>{course._count?.enrollments ?? 0}</td>
                     <td style={{ padding: '10px 14px' }}><ColorBadge value={course.status} colorMap={STATUS_COLORS} /></td>
-                    <td style={{ padding: '10px 14px' }}>
+                    <td style={{ padding: '10px 14px', display: 'flex', gap: 6 }}>
+                      {course.status !== 'ARCHIVED' && (
+                        <button onClick={() => handleTogglePublish(course)} disabled={toggling === course.id}
+                          style={{ ...ghostBtn, padding: '4px 12px', fontSize: 12, opacity: toggling === course.id ? 0.5 : 1 }}>
+                          {course.status === 'PUBLISHED' ? 'Despublicar' : 'Publicar'}
+                        </button>
+                      )}
                       <button onClick={() => setConfirm({ id: course.id, title: course.title })} disabled={deleting === course.id}
                         style={{ ...dangerBtn, padding: '4px 12px', fontSize: 12, opacity: deleting === course.id ? 0.5 : 1 }}>
                         Excluir
