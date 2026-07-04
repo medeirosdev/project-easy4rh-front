@@ -141,18 +141,29 @@ export default function App() {
       ? `${data.name} — Easy4RH`
       : (pageTitles[pg] || (pg?.startsWith('curso-') ? 'Curso — Easy4RH' : 'Easy4RH'))
     document.title = title
-    // Atualiza URL sem recarregar: limpa ?job= quando sai da vaga
+    // Atualiza URL sem recarregar: /admin tem rota própria, o resto usa ?job= etc
     const url = new URL(window.location.href)
-    if (pg === 'job-detail' && data?.id) {
-      url.searchParams.set('job', data.id)
+    if (pg === 'admin' || pg === 'admin-dashboard') {
+      url.pathname = '/admin'
+      url.search = ''
     } else {
-      url.searchParams.delete('job')
+      if (url.pathname === '/admin') url.pathname = '/'
+      if (pg === 'job-detail' && data?.id) {
+        url.searchParams.set('job', data.id)
+      } else {
+        url.searchParams.delete('job')
+      }
     }
     window.history.replaceState(null, '', url.toString())
   }
 
-  // Lê ?page=<rota> na URL ao montar e navega diretamente (ex: ?page=admin)
+  // Lê a URL ao montar e navega direto: /admin tem rota própria; o resto usa ?page=<rota>
   useEffect(() => {
+    if (window.location.pathname.replace(/\/$/, '') === '/admin') {
+      setPage('admin')
+      document.title = pageTitles.admin
+      return
+    }
     const params = new URLSearchParams(window.location.search)
     const pg = params.get('page')
     if (pg && pg !== 'home') {

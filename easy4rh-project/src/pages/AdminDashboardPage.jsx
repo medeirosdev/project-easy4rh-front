@@ -258,6 +258,157 @@ function VagasSection() {
 
 // ── Section: Usuários ─────────────────────────────────────────
 
+function ChangePasswordModal({ user, onClose }) {
+  const [newPassword, setNewPassword]     = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState('')
+  const [success, setSuccess] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    if (newPassword.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return }
+    if (newPassword !== confirmPassword) { setError('As senhas não coincidem.'); return }
+    setLoading(true)
+    try {
+      await adminApi.changeUserPassword(user.id, newPassword)
+      setSuccess(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 16, padding: '32px 28px', maxWidth: 420, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, color: '#1e3a6e', marginTop: 0, marginBottom: 6 }}>Alterar senha</h3>
+        <p style={{ color: '#778899', fontSize: 13, marginBottom: 20 }}>{user.email}</p>
+
+        {success ? (
+          <div>
+            <div style={{ background: '#dcfce7', color: '#16a34a', borderRadius: 8, padding: '12px 14px', fontSize: 14, fontWeight: 600, marginBottom: 20 }}>
+              Senha alterada com sucesso!
+            </div>
+            <button onClick={onClose} style={{ width: '100%', background: '#1e3a6e', color: 'white', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
+              Fechar
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            {error && (
+              <div style={{ background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{error}</div>
+            )}
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#556677', marginBottom: 6 }}>Nova senha</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                required
+                style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 8, padding: '10px 12px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ marginBottom: 22 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#556677', marginBottom: 6 }}>Confirmar senha</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Repita a nova senha"
+                required
+                style={{ width: '100%', border: '1.5px solid #e0eaf4', borderRadius: 8, padding: '10px 12px', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" onClick={onClose} style={{ flex: 1, background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={loading} style={{ flex: 1, background: '#1e3a6e', color: 'white', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontWeight: 700, fontSize: 14, opacity: loading ? 0.7 : 1 }}>
+                {loading ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const ROLE_LABELS = {
+  CANDIDATE:            'Candidato',
+  RECRUITER:            'Recrutador',
+  INSTRUCTOR:           'Instrutor',
+  RECRUITER_INSTRUCTOR: 'Recrutador + Instrutor',
+  ADMIN:                'Administrador',
+}
+
+function ChangeRoleModal({ user, onClose, onSuccess }) {
+  const [selectedRole, setSelectedRole] = useState(user.role)
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (selectedRole === user.role) { onClose(); return }
+    setLoading(true)
+    setError('')
+    try {
+      await adminApi.changeUserRole(user.id, selectedRole)
+      onSuccess(user.id, selectedRole)
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 16, padding: '32px 28px', maxWidth: 420, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, color: '#1e3a6e', marginTop: 0, marginBottom: 6 }}>Alterar papel do usuário</h3>
+        <p style={{ color: '#778899', fontSize: 13, marginBottom: 20 }}>{user.email}</p>
+
+        {error && (
+          <div style={{ background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{error}</div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#556677', marginBottom: 8 }}>Papel da conta</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+            {Object.entries(ROLE_LABELS).map(([value, label]) => {
+              const c = ROLE_COLORS[value] || { bg: '#f3f4f6', text: '#6b7280' }
+              const selected = selectedRole === value
+              return (
+                <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 10, border: `2px solid ${selected ? c.text : '#e0eaf4'}`, background: selected ? c.bg : 'white', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  <input type="radio" name="role" value={value} checked={selected} onChange={() => setSelectedRole(value)} style={{ accentColor: c.text }} />
+                  <span style={{ fontSize: 13.5, fontWeight: selected ? 700 : 500, color: selected ? c.text : '#334' }}>{label}</span>
+                  {value === 'INSTRUCTOR' && (
+                    <span style={{ marginLeft: 'auto', fontSize: 11, background: '#fef3c7', color: '#92400e', borderRadius: 6, padding: '2px 8px', fontWeight: 600 }}>só via admin</span>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, background: '#f0f4f8', color: '#556677', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={loading} style={{ flex: 1, background: '#1e3a6e', color: 'white', border: 'none', borderRadius: 10, padding: '12px', cursor: 'pointer', fontWeight: 700, fontSize: 14, opacity: loading ? 0.7 : 1 }}>
+              {loading ? 'Salvando...' : 'Confirmar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 function UsuariosSection({ currentUserId }) {
   const [data, setData]         = useState(null)
   const [loading, setLoading]   = useState(true)
@@ -266,8 +417,10 @@ function UsuariosSection({ currentUserId }) {
   const [search, setSearch]     = useState('')
   const [role, setRole]         = useState('')
   const [page, setPage]         = useState(1)
-  const [confirm, setConfirm]   = useState(null)
-  const [deleting, setDeleting] = useState(null)
+  const [confirm, setConfirm]         = useState(null)
+  const [deleting, setDeleting]       = useState(null)
+  const [changingPassword, setChangingPassword] = useState(null)
+  const [changingRole, setChangingRole]         = useState(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -326,7 +479,7 @@ function UsuariosSection({ currentUserId }) {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e8edf2' }}>
-                  {['Nome', 'E-mail', 'Papel', 'Verificado', 'Cadastro', ''].map(h => (
+                  {['Nome', 'E-mail', 'Papel', 'Verificado', 'Cadastro', 'Ações'].map(h => (
                     <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#778899', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -344,17 +497,31 @@ function UsuariosSection({ currentUserId }) {
                       {u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : '—'}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      {u.id === currentUserId ? (
-                        <span style={{ fontSize: 12, color: '#778899' }}>Você</span>
-                      ) : (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button
-                          onClick={() => setConfirm({ id: u.id, label: u.email })}
-                          disabled={deleting === u.id}
-                          style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5, opacity: deleting === u.id ? 0.5 : 1 }}
+                          onClick={() => setChangingRole(u)}
+                          style={{ background: '#f5f3ff', color: '#7c3aed', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}
                         >
-                          Excluir
+                          Alterar papel
                         </button>
-                      )}
+                        <button
+                          onClick={() => setChangingPassword(u)}
+                          style={{ background: '#eff6ff', color: '#1d4ed8', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5 }}
+                        >
+                          Alterar senha
+                        </button>
+                        {u.id === currentUserId ? (
+                          <span style={{ fontSize: 12, color: '#778899', alignSelf: 'center' }}>Você</span>
+                        ) : (
+                          <button
+                            onClick={() => setConfirm({ id: u.id, label: u.email })}
+                            disabled={deleting === u.id}
+                            style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5, opacity: deleting === u.id ? 0.5 : 1 }}
+                          >
+                            Excluir
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -373,6 +540,26 @@ function UsuariosSection({ currentUserId }) {
           message={`Tem certeza que deseja excluir o usuário "${confirm.label}"? Todos os dados relacionados serão removidos permanentemente.`}
           onConfirm={handleDelete}
           onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {changingPassword && (
+        <ChangePasswordModal
+          user={changingPassword}
+          onClose={() => setChangingPassword(null)}
+        />
+      )}
+
+      {changingRole && (
+        <ChangeRoleModal
+          user={changingRole}
+          onClose={() => setChangingRole(null)}
+          onSuccess={(id, newRole) => {
+            setData(prev => prev ? {
+              ...prev,
+              data: prev.data.map(u => u.id === id ? { ...u, role: newRole } : u)
+            } : prev)
+          }}
         />
       )}
     </div>

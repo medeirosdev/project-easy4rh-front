@@ -1,13 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { auditApi, adminApi } from '../services/api'
 
-function getTodayPassword() {
-  const now = new Date()
-  const dd = String(now.getDate()).padStart(2, '0')
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const yyyy = now.getFullYear()
-  return `${dd}${mm}${yyyy}123`
-}
+const ACCESS_KEY = '1194'
 
 // ── Design tokens (dark theme) ────────────────────────────────
 
@@ -498,14 +492,13 @@ function CursosSection() {
 }
 
 // ── Login Gate ────────────────────────────────────────────────
-
 function LoginGate({ onAuth }) {
   const [pw, setPw] = useState('')
   const [error, setError] = useState('')
 
   const submit = (e) => {
     e.preventDefault()
-    if (pw === getTodayPassword()) {
+    if (pw === ACCESS_KEY) {
       sessionStorage.setItem('audit_authed', '1')
       onAuth()
     } else {
