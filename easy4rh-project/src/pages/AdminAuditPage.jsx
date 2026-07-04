@@ -128,6 +128,119 @@ function DarkConfirmModal({ message, onConfirm, onCancel }) {
   )
 }
 
+function DarkChangeRoleModal({ user, onConfirm, onCancel }) {
+  const [role, setRole] = useState(user.role)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const roleOptions = USER_ROLES.filter(r => r)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (role === user.role) { onCancel(); return }
+    setSaving(true)
+    setError('')
+    try {
+      await onConfirm(role)
+    } catch (err) {
+      setError(err.message)
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: D.surface, border: `1px solid ${D.border}`, borderRadius: 14, padding: '28px 26px', maxWidth: 380, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.6)' }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: D.text, marginTop: 0, marginBottom: 4 }}>Alterar papel</h3>
+        <p style={{ color: D.textMuted, fontSize: 13, marginBottom: 20, fontFamily: 'monospace' }}>{user.email}</p>
+
+        {error && <div style={{ background: LEVEL.ERROR.bg, border: `1px solid ${LEVEL.ERROR.border}`, color: LEVEL.ERROR.text, borderRadius: 8, padding: '9px 12px', fontSize: 12.5, marginBottom: 14 }}>{error}</div>}
+
+        <form onSubmit={submit}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 22 }}>
+            {roleOptions.map(r => {
+              const c = ROLE_COLORS[r] || { text: D.textMuted }
+              const selected = role === r
+              return (
+                <label key={r} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 12px', borderRadius: 8, border: `1px solid ${selected ? c : D.border}`, background: selected ? `${c}22` : 'transparent', cursor: 'pointer' }}>
+                  <input type="radio" name="role" value={r} checked={selected} onChange={() => setRole(r)} />
+                  <span style={{ fontSize: 13, fontWeight: selected ? 700 : 500, color: selected ? c : D.text }}>{r}</span>
+                </label>
+              )
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="button" onClick={onCancel} style={{ flex: 1, background: D.surface2, color: D.textMuted, border: `1px solid ${D.border}`, borderRadius: 8, padding: '10px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving} style={{ ...primaryBtn, flex: 1, opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Salvando...' : 'Confirmar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function DarkChangePasswordModal({ user, onConfirm, onCancel }) {
+  const [newPassword, setNewPassword]         = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError]   = useState('')
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setError('')
+    if (newPassword.length < 8) { setError('A senha deve ter pelo menos 8 caracteres.'); return }
+    if (newPassword !== confirmPassword) { setError('As senhas não coincidem.'); return }
+    setSaving(true)
+    try {
+      await onConfirm(newPassword)
+    } catch (err) {
+      setError(err.message)
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: D.surface, border: `1px solid ${D.border}`, borderRadius: 14, padding: '28px 26px', maxWidth: 380, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.6)' }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: D.text, marginTop: 0, marginBottom: 4 }}>Alterar senha</h3>
+        <p style={{ color: D.textMuted, fontSize: 13, marginBottom: 20, fontFamily: 'monospace' }}>{user.email}</p>
+
+        {error && <div style={{ background: LEVEL.ERROR.bg, border: `1px solid ${LEVEL.ERROR.border}`, color: LEVEL.ERROR.text, borderRadius: 8, padding: '9px 12px', fontSize: 12.5, marginBottom: 14 }}>{error}</div>}
+
+        <form onSubmit={submit}>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            placeholder="Nova senha (mín. 8 caracteres)"
+            autoFocus
+            style={{ ...darkInput, marginBottom: 8 }}
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            placeholder="Confirmar nova senha"
+            style={{ ...darkInput, marginBottom: 18 }}
+          />
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="button" onClick={onCancel} style={{ flex: 1, background: D.surface2, color: D.textMuted, border: `1px solid ${D.border}`, borderRadius: 8, padding: '10px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving} style={{ ...primaryBtn, flex: 1, opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Salvando...' : 'Confirmar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Management sections ───────────────────────────────────────
 
 function ResumoSection() {
@@ -296,6 +409,8 @@ function UsuariosSection() {
   const [page, setPage]               = useState(1)
   const [confirm, setConfirm]         = useState(null)
   const [deleting, setDeleting]       = useState(null)
+  const [changingRole, setChangingRole] = useState(null)
+  const [changingPassword, setChangingPassword] = useState(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -322,6 +437,17 @@ function UsuariosSection() {
     } finally {
       setDeleting(null)
     }
+  }
+
+  const handleChangeRole = async (newRole) => {
+    await adminApi.changeUserRole(changingRole.id, newRole)
+    setData(prev => prev ? { ...prev, data: prev.data.map(u => u.id === changingRole.id ? { ...u, role: newRole } : u) } : prev)
+    setChangingRole(null)
+  }
+
+  const handleChangePassword = async (newPassword) => {
+    await adminApi.changeUserPassword(changingPassword.id, newPassword)
+    setChangingPassword(null)
   }
 
   return (
@@ -362,7 +488,15 @@ function UsuariosSection() {
                     <td style={{ padding: '10px 14px', fontSize: 11, color: D.textDim }}>
                       {u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : '—'}
                     </td>
-                    <td style={{ padding: '10px 14px' }}>
+                    <td style={{ padding: '10px 14px', display: 'flex', gap: 6 }}>
+                      <button onClick={() => setChangingPassword({ id: u.id, email: u.email })}
+                        style={{ ...ghostBtn, padding: '4px 12px', fontSize: 12 }}>
+                        Alterar senha
+                      </button>
+                      <button onClick={() => setChangingRole({ id: u.id, email: u.email, role: u.role })}
+                        style={{ ...ghostBtn, padding: '4px 12px', fontSize: 12 }}>
+                        Alterar papel
+                      </button>
                       <button onClick={() => setConfirm({ id: u.id, label: u.email })} disabled={deleting === u.id}
                         style={{ ...dangerBtn, padding: '4px 12px', fontSize: 12, opacity: deleting === u.id ? 0.5 : 1 }}>
                         Excluir
@@ -385,6 +519,22 @@ function UsuariosSection() {
           message={`Excluir o usuário "${confirm.label}"? Todos os dados relacionados serão removidos permanentemente.`}
           onConfirm={handleDelete}
           onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {changingRole && (
+        <DarkChangeRoleModal
+          user={changingRole}
+          onConfirm={handleChangeRole}
+          onCancel={() => setChangingRole(null)}
+        />
+      )}
+
+      {changingPassword && (
+        <DarkChangePasswordModal
+          user={changingPassword}
+          onConfirm={handleChangePassword}
+          onCancel={() => setChangingPassword(null)}
         />
       )}
     </div>
