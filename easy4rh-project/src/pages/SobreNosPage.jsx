@@ -4,13 +4,7 @@ import iconMissao from '../assets/icon-missao.png'
 import iconVisao from '../assets/icon-visao.png'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
-const team = [
-  { id: 1, name: 'Nome', role: 'Cargo' },
-  { id: 2, name: 'Nome', role: 'Cargo' },
-  { id: 3, name: 'Nome', role: 'Cargo' },
-  { id: 4, name: 'Nome', role: 'Cargo' },
-  { id: 5, name: 'Nome', role: 'Cargo' },
-]
+const team = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }]
 
 export default function SobreNosPage({ navigate }) {
   const { isMobile } = useBreakpoint()
@@ -143,10 +137,6 @@ export default function SobreNosPage({ navigate }) {
                     {/* Placeholder — troque por <img> quando tiver a foto */}
                     <span style={{ fontSize: isMobile ? 32 : 48, color: 'rgba(255,255,255,0.5)' }}>👤</span>
                   </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1e3a6e' }}>{member.name}</div>
-                    <div style={{ fontSize: 12, color: '#778899', marginTop: 2 }}>{member.role}</div>
-                  </div>
                 </div>
               ))}
             </div>
@@ -168,13 +158,14 @@ export default function SobreNosPage({ navigate }) {
                   }}>
                     <span style={{ fontSize: isMobile ? 32 : 48, color: 'rgba(255,255,255,0.5)' }}>👤</span>
                   </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1e3a6e' }}>{member.name}</div>
-                    <div style={{ fontSize: 12, color: '#778899', marginTop: 2 }}>{member.role}</div>
-                  </div>
                 </div>
               ))}
             </div>
+
+            <p style={{ maxWidth: 560, textAlign: 'center', fontSize: 14, color: '#556677', lineHeight: 1.7, marginTop: 8 }}>
+              Profissionais especializados em Gestão de Pessoas, Recrutamento e Consultoria em RH,
+              prontos para apoiar o seu negócio.
+            </p>
 
           </div>
         </div>

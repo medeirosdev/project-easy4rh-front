@@ -111,6 +111,7 @@ async function requestFormData(method, path, formData) {
 export const authApi = {
   register: (data) => request('POST', '/users', data),
   login: (email, password) => request('POST', '/auth/login', { email, password }),
+  logout: () => request('POST', '/auth/logout'),
   getUser: (id) => request('GET', `/users/${id}`),
   updateUser: (id, data) => request('PATCH', `/users/${id}`, data),
   requestPasswordReset: (email) => request('POST', '/auth/password-reset/request', { email }),

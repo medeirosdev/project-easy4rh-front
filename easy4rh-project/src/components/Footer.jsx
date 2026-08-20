@@ -76,7 +76,7 @@ export default function Footer({ navigate }) {
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                   {socialIcons.map((s) => (
                     <div key={s.title} title={s.title}
-                      style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+                      style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
                       {s.label}
                     </div>
                   ))}
@@ -142,9 +142,7 @@ export default function Footer({ navigate }) {
                 <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
                   {socialIcons.map((s) => (
                     <div key={s.title} title={s.title}
-                      style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 12, fontWeight: 700, transition: 'background 0.2s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#4a9edd'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                      style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}
                     >{s.label}</div>
                   ))}
                 </div>

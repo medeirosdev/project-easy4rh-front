@@ -448,7 +448,13 @@ export default function VagasPage({ navigate, initialSearch }) {
                     fontSize: 13.5,
                   }}
                 >
-                  {loadingMore ? 'Carregando...' : `Carregar mais vagas (${jobsMeta.total - jobs.length} restantes)`}
+                  {loadingMore
+                    ? 'Carregando...'
+                    // "restantes" reflete o total não filtrado da API — com filtros locais ativos
+                    // esse número não corresponde ao que o usuário está vendo, então omitimos.
+                    : hasActiveFilters
+                      ? 'Carregar mais vagas'
+                      : `Carregar mais vagas (${jobsMeta.total - jobs.length} restantes)`}
                 </button>
               </div>
             )}

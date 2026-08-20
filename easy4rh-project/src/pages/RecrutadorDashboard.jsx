@@ -113,6 +113,7 @@ export default function RecrutadorDashboard({ navigate }) {
   const [myJobsLoading, setMyJobsLoading] = useState(false)
   const [allApplications, setAllApplications] = useState([])
   const [applicationsLoading, setApplicationsLoading] = useState(false)
+  const [applicationsLoadWarning, setApplicationsLoadWarning] = useState('') // BUG-fix: warns when some jobs' applications failed to load
   const [applicationsJobFilter, setApplicationsJobFilter] = useState(null) // jobId | null
   const [selectedCandidateApp, setSelectedCandidateApp] = useState(null) // modal
   const [draggedAppId, setDraggedAppId] = useState(null)
@@ -155,6 +156,7 @@ export default function RecrutadorDashboard({ navigate }) {
   const [courseView, setCourseView] = useState('list') // 'list' | 'create' | 'edit'
   const [novoCurso, setNovoCurso] = useState({ ...emptyCurso })
   const [editingCourseId, setEditingCourseId] = useState(null)
+  const [createdCourseId, setCreatedCourseId] = useState(null) // BUG-fix: guards against re-creating the course on a retry after a partial failure
   const [courseSections, setCourseSections] = useState([]) // [{ id?, title, lessons: [{ id?, title, description, videoUrl, duration, isFree, videoFile }] }]
   const [coursePublishing, setCoursePublishing] = useState(false)
   const [courseError, setCourseError] = useState('')
@@ -166,6 +168,7 @@ export default function RecrutadorDashboard({ navigate }) {
   const [lessonUploadProgress, setLessonUploadProgress] = useState({})
   const [courseStudents, setCourseStudents] = useState([])
   const [courseStatsLoading, setCourseStatsLoading] = useState(false)
+  const [courseStatsError, setCourseStatsError] = useState('')
 
   // Track pending timers to cancel on unmount (avoids setState on unmounted component)
   const timersRef = useRef([])
@@ -281,8 +284,10 @@ export default function RecrutadorDashboard({ navigate }) {
   // Fetch all applications across recruiter's jobs
   const fetchAllApplications = useCallback(async (jobs) => {
     setApplicationsLoading(true)
+    setApplicationsLoadWarning('')
     try {
       const jobList = jobs || myJobs
+      let failedJobCount = 0
       const results = await Promise.all(
         jobList.filter(j => j.id).map(async (job) => {
           try {
@@ -315,11 +320,16 @@ export default function RecrutadorDashboard({ navigate }) {
               }
             })
           } catch {
+            // BUG-fix: track this so the recruiter isn't misled into thinking the job has 0 candidates.
+            failedJobCount++
             return []
           }
         })
       )
       setAllApplications(results.flat())
+      if (failedJobCount > 0) {
+        setApplicationsLoadWarning('Não foi possível carregar candidatos de uma ou mais vagas. Alguns candidatos podem não estar sendo exibidos.')
+      }
     } catch {
       setAllApplications([])
     } finally {
@@ -423,6 +433,7 @@ export default function RecrutadorDashboard({ navigate }) {
   }
 
   const [jobActionError, setJobActionError] = useState('')
+  const [applicationActionError, setApplicationActionError] = useState('')
   const handlePauseJob = async (jobId) => {
     setJobActionError('')
     try {
@@ -445,13 +456,14 @@ export default function RecrutadorDashboard({ navigate }) {
   }
 
   const handleUpdateApplicationStatus = async (appId, stage) => {
+    setApplicationActionError('')
     try {
       await applicationsApi.updateStatus(appId, stage)
       setAllApplications(prev => prev.map(a =>
         a.id === appId ? { ...a, stage, status: getStageLabel(stage), color: getStageColor(stage) } : a
       ))
     } catch (err) {
-      console.error('Erro ao atualizar status:', err)
+      setApplicationActionError(err.message || 'Erro ao atualizar status da candidatura.')
     }
   }
 
@@ -577,24 +589,32 @@ export default function RecrutadorDashboard({ navigate }) {
     if (!novoCurso.title || !novoCurso.description) return
     setCoursePublishing(true)
     setCourseError('')
+    let hadVideoUploadError = false
     try {
-      const payload = {
-        title: novoCurso.title,
-        description: novoCurso.description,
-        thumbnailUrl: novoCurso.thumbnailUrl || undefined,
-        price: 0,
-        level: novoCurso.level || 'BEGINNER',
-        category: novoCurso.category || 'Geral',
-        certificateEnabled: novoCurso.certificateEnabled ?? false,
+      // BUG-fix: se o curso já foi criado numa tentativa anterior (que falhou depois),
+      // não criar de novo — apenas continua criando as seções/aulas restantes.
+      let courseId = createdCourseId
+      if (!courseId) {
+        const payload = {
+          title: novoCurso.title,
+          description: novoCurso.description,
+          thumbnailUrl: novoCurso.thumbnailUrl || undefined,
+          price: 0,
+          level: novoCurso.level || 'BEGINNER',
+          category: novoCurso.category || 'Geral',
+          certificateEnabled: novoCurso.certificateEnabled ?? false,
+        }
+        const created = await coursesApi.create(payload)
+        courseId = created.id
+        setCreatedCourseId(courseId)
+        setEditingCourseId(courseId)
       }
-      const created = await coursesApi.create(payload)
-      setEditingCourseId(created.id)
 
       // Create sections and lessons
       for (let si = 0; si < courseSections.length; si++) {
         const sec = courseSections[si]
         if (!sec.title.trim()) continue
-        const createdSec = await sectionsApi.create(created.id, { title: sec.title, order: si })
+        const createdSec = await sectionsApi.create(courseId, { title: sec.title, order: si })
         for (let li = 0; li < (sec.lessons || []).length; li++) {
           const les = sec.lessons[li]
           if (!les.title.trim()) continue
@@ -616,20 +636,26 @@ export default function RecrutadorDashboard({ navigate }) {
             } catch (err) {
               console.error('Erro ao enviar vídeo:', err)
               setCourseError(`Erro ao enviar vídeo da aula "${les.title}": ${err.message}`)
+              hadVideoUploadError = true
             }
           }
         }
       }
 
-      setCourseSuccess('Curso criado com sucesso!')
-      safeTimeout(() => {
-        setCourseSuccess('')
-        setNovoCurso({ ...emptyCurso })
-        setCourseSections([])
-        setEditingCourseId(null)
-        setCourseView('list')
-        fetchMyCourses()
-      }, 2000)
+      // BUG-fix: se algum vídeo falhou ao enviar, não mostrar a tela de sucesso
+      // nem redirecionar — o recrutador precisa ver o erro acima.
+      if (!hadVideoUploadError) {
+        setCourseSuccess('Curso criado com sucesso!')
+        safeTimeout(() => {
+          setCourseSuccess('')
+          setNovoCurso({ ...emptyCurso })
+          setCourseSections([])
+          setEditingCourseId(null)
+          setCreatedCourseId(null)
+          setCourseView('list')
+          fetchMyCourses()
+        }, 2000)
+      }
     } catch (err) {
       setCourseError(err.message || 'Erro ao criar curso')
     } finally {
@@ -678,6 +704,7 @@ export default function RecrutadorDashboard({ navigate }) {
     setEditingCourseId(course.id)
     setCourseView('stats')
     setCourseStatsLoading(true)
+    setCourseStatsError('')
     try {
       const [stats, students] = await Promise.all([
         coursesApi.stats(course.id),
@@ -690,6 +717,8 @@ export default function RecrutadorDashboard({ navigate }) {
       console.error('Erro ao carregar stats:', err)
       setCourseStats(null)
       setCourseStudents([])
+      // BUG-fix: sem isto, uma falha de carregamento ficava indistinguível de "0 alunos".
+      setCourseStatsError(err.message || 'Erro ao carregar dados do curso.')
     } finally {
       setCourseStatsLoading(false)
     }
@@ -743,6 +772,10 @@ export default function RecrutadorDashboard({ navigate }) {
     if (!novoCurso.title || !novoCurso.description) return
     setCoursePublishing(true)
     setCourseError('')
+    let hadVideoUploadError = false
+    // BUG-fix: exclusões/reordenação que falham silenciosamente (catch {}) deixavam
+    // o recrutador achando que tudo foi salvo — agora isso é rastreado e avisado.
+    let hadSilentSaveFailure = false
     try {
       await coursesApi.update(editingCourseId, {
         title: novoCurso.title,
@@ -753,12 +786,21 @@ export default function RecrutadorDashboard({ navigate }) {
         certificateEnabled: novoCurso.certificateEnabled ?? false,
       })
 
-      for (const id of deletedLessonIds) {
-        try { await lessonsApi.delete(id) } catch {}
+      // BUG-fix: deletes de itens independentes rodavam um de cada vez (N round-trips
+      // sequenciais); Promise.allSettled roda em paralelo sem mudar o tratamento de erro.
+      const [lessonDeleteResults, sectionDeleteResults] = await Promise.all([
+        Promise.allSettled(deletedLessonIds.map(id => lessonsApi.delete(id))),
+        Promise.allSettled(deletedSectionIds.map(id => sectionsApi.delete(id))),
+      ])
+      if (lessonDeleteResults.some(r => r.status === 'rejected') || sectionDeleteResults.some(r => r.status === 'rejected')) {
+        hadSilentSaveFailure = true
       }
-      for (const id of deletedSectionIds) {
-        try { await sectionsApi.delete(id) } catch {}
-      }
+      // BUG-fix: limpa as listas de exclusão pendente logo após a tentativa (sucesso ou falha).
+      // Sem isto, um segundo clique acidental em "Salvar alterações" reprocessava os mesmos ids
+      // já deletados, recebia 404 do backend, e mostrava um aviso de erro falso mesmo com tudo
+      // salvo corretamente da primeira vez.
+      setDeletedLessonIds([])
+      setDeletedSectionIds([])
 
       for (let si = 0; si < courseSections.length; si++) {
         const sec = courseSections[si]
@@ -769,6 +811,9 @@ export default function RecrutadorDashboard({ navigate }) {
         } else {
           const created = await sectionsApi.create(editingCourseId, { title: sec.title, order: si })
           sectionId = created.id
+          // BUG-fix: persiste o id da seção recém-criada no estado, para que um retry
+          // após uma falha posterior não a recrie duplicada.
+          setCourseSections(prev => prev.map((s, sIdx) => sIdx !== si ? s : { ...s, id: sectionId }))
         }
         for (let li = 0; li < (sec.lessons || []).length; li++) {
           const les = sec.lessons[li]
@@ -793,6 +838,13 @@ export default function RecrutadorDashboard({ navigate }) {
               order: li,
             })
             lessonId = created.id
+            // BUG-fix: mesma lógica acima, mas para a aula recém-criada.
+            setCourseSections(prev => prev.map((s, sIdx) =>
+              sIdx !== si ? s : {
+                ...s,
+                lessons: s.lessons.map((l, lIdx) => lIdx !== li ? l : { ...l, id: lessonId }),
+              }
+            ))
           }
           if (les.videoFile) {
             try {
@@ -816,6 +868,7 @@ export default function RecrutadorDashboard({ navigate }) {
             } catch (err) {
               console.error('Erro ao enviar vídeo:', err)
               setCourseError(`Erro ao enviar vídeo da aula "${les.title}": ${err.message}`)
+              hadVideoUploadError = true
             }
           }
         }
@@ -823,15 +876,25 @@ export default function RecrutadorDashboard({ navigate }) {
 
       const sectionIds = courseSections.filter(s => s.id && s.title.trim()).map(s => s.id)
       if (sectionIds.length > 1) {
-        try { await sectionsApi.reorder(editingCourseId, sectionIds) } catch {}
+        try { await sectionsApi.reorder(editingCourseId, sectionIds) } catch { hadSilentSaveFailure = true }
       }
 
-      setCourseSuccess('Curso atualizado com sucesso!')
-      safeTimeout(() => {
-        setCourseSuccess('')
-        setCourseView('list')
-        fetchMyCourses()
-      }, 2000)
+      // BUG-fix: avisa o recrutador se alguma exclusão/reordenação falhou, sem
+      // bloquear o restante do fluxo de salvamento.
+      if (hadSilentSaveFailure && !hadVideoUploadError) {
+        setCourseError('Algumas alterações não foram salvas: tente editar o curso novamente.')
+      }
+
+      // BUG-fix: se algum vídeo falhou ao enviar, não mostrar a tela de sucesso
+      // nem redirecionar — o recrutador precisa ver o erro acima.
+      if (!hadVideoUploadError) {
+        setCourseSuccess('Curso atualizado com sucesso!')
+        safeTimeout(() => {
+          setCourseSuccess('')
+          setCourseView('list')
+          fetchMyCourses()
+        }, 2000)
+      }
     } catch (err) {
       setCourseError(err.message || 'Erro ao atualizar curso')
     } finally {
@@ -1725,10 +1788,15 @@ export default function RecrutadorDashboard({ navigate }) {
                             const token = localStorage.getItem('access_token')
                             try {
                               const res = await fetch(`${apiBase}/candidate-profiles/${a.profileId}/resume`, { headers: { Authorization: `Bearer ${token}` } })
-                              if (!res.ok) return
+                              if (!res.ok) { alert('Não foi possível abrir o currículo. Tente novamente.'); return }
                               const blob = await res.blob()
-                              window.open(URL.createObjectURL(blob), '_blank')
-                            } catch {}
+                              const blobUrl = URL.createObjectURL(blob)
+                              window.open(blobUrl, '_blank')
+                              // Libera a memória do blob depois que a nova aba teve tempo de carregar
+                              safeTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+                            } catch {
+                              alert('Não foi possível abrir o currículo. Tente novamente.')
+                            }
                           }}
                           style={{ flex: 1, textAlign: 'center', padding: '10px 16px', borderRadius: 10, background: '#eff6ff', color: '#3b82f6', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>
                           Ver CV
@@ -1753,6 +1821,20 @@ export default function RecrutadorDashboard({ navigate }) {
                 </div>
               )
             })()}
+
+            {applicationActionError && (
+              <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '10px 16px', color: '#c00', fontSize: 13, marginBottom: 16 }}>
+                {applicationActionError}
+                <button onClick={() => setApplicationActionError('')} style={{ float: 'right', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#c00' }}>×</button>
+              </div>
+            )}
+
+            {applicationsLoadWarning && (
+              <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '10px 16px', color: '#c00', fontSize: 13, marginBottom: 16 }}>
+                {applicationsLoadWarning}
+                <button onClick={() => setApplicationsLoadWarning('')} style={{ float: 'right', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#c00' }}>×</button>
+              </div>
+            )}
 
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -2142,6 +2224,13 @@ export default function RecrutadorDashboard({ navigate }) {
                 <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>{selectedCourse?.title || 'Curso'}</h2>
               </div>
 
+              {courseStatsError && (
+                <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 10, padding: '10px 16px', color: '#c00', fontSize: 13, marginBottom: 16 }}>
+                  {courseStatsError}
+                  <button onClick={() => setCourseStatsError('')} style={{ float: 'right', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, color: '#c00' }}>×</button>
+                </div>
+              )}
+
               {courseStatsLoading ? (
                 <div style={{ background: 'white', borderRadius: 14, padding: '32px', textAlign: 'center', color: '#778899', fontSize: 13 }}>Carregando dados...</div>
               ) : (
@@ -2361,7 +2450,7 @@ export default function RecrutadorDashboard({ navigate }) {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
               <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', margin: 0 }}>Meus Cursos</h2>
-              <button onClick={() => { setCourseView('create'); setNovoCurso({ ...emptyCurso }); setCourseSections([]); setCourseError(''); setCourseSuccess(''); setDeletedSectionIds([]); setDeletedLessonIds([]) }}
+              <button onClick={() => { setCourseView('create'); setNovoCurso({ ...emptyCurso }); setCourseSections([]); setCourseError(''); setCourseSuccess(''); setDeletedSectionIds([]); setDeletedLessonIds([]); setCreatedCourseId(null); setEditingCourseId(null) }}
                 style={{ background: 'linear-gradient(135deg, #1a4f8a, #2a7ec8)', color: 'white', border: 'none', borderRadius: 24, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                 + Novo curso
               </button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useJobs } from "../context/JobsContext";
 import { useBreakpoint } from "../hooks/useBreakpoint";
@@ -21,6 +21,22 @@ export default function JobDetailPage({ job, navigate }) {
   // Hero search state
   const [heroKeyword, setHeroKeyword] = useState('');
   const [heroLocation, setHeroLocation] = useState('');
+
+  // Sidebar quick-filters — acumula seleções por categoria (mesmo padrão aditivo
+  // do toggleFilter em VagasPage) para não descartar outros filtros já marcados
+  // ao clicar em uma nova opção. Usa ref em vez de state: cada clique navega
+  // imediatamente para 'vagas' (o componente desmonta), então não há UI aqui
+  // que precise re-renderizar com esse valor.
+  const sidebarFiltersRef = useRef({ types: [], levels: [], locations: [] });
+  const toggleSidebarFilter = (key, val) => {
+    const current = sidebarFiltersRef.current[key] || [];
+    const next = {
+      ...sidebarFiltersRef.current,
+      [key]: current.includes(val) ? current.filter(v => v !== val) : [...current, val],
+    };
+    sidebarFiltersRef.current = next;
+    navigate('vagas', { filters: next });
+  };
 
   // Application flow state
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -292,7 +308,7 @@ export default function JobDetailPage({ job, navigate }) {
                   {section.options.map(opt => (
                     <label
                       key={opt}
-                      onClick={() => navigate('vagas', { filters: { [section.key]: [opt] } })}
+                      onClick={() => toggleSidebarFilter(section.key, opt)}
                       style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 8, fontSize: 13 }}
                     >
                       <input type="checkbox" style={{ cursor: "pointer", pointerEvents: 'none' }} readOnly />

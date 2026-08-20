@@ -100,9 +100,9 @@ export default function ConsultoriaLoginPage({ navigate }) {
 
                 <p style={{ textAlign: 'center', fontSize: 12, color: '#555', marginTop: 32 }}>
                   Ao continuar, você concorda com os{' '}
-                  <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Termos de Serviço</span>
+                  <span style={{ color: '#4a9edd' }}>Termos de Serviço</span>
                   {' '}e a{' '}
-                  <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Política de Privacidade</span>
+                  <span style={{ color: '#4a9edd' }}>Política de Privacidade</span>
                 </p>
               </>
             ) : (
@@ -141,11 +141,6 @@ export default function ConsultoriaLoginPage({ navigate }) {
                   </div>
                 )}
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#556677', marginBottom: 28, cursor: 'pointer' }}>
-                  <input type="checkbox" style={{ cursor: 'pointer', accentColor: '#1e4a8a' }} />
-                  Me lembrar
-                </label>
-
                 <button onClick={handleRegister} disabled={regLoading} style={{ width: '100%', background: 'linear-gradient(135deg, #1e3a6e, #2a5298)', opacity: regLoading ? 0.6 : 1, color: 'white', border: 'none', borderRadius: 10, padding: '13px', cursor: regLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: 15, marginBottom: 16, transition: 'opacity 0.2s' }}>
                   {regLoading ? 'Criando conta...' : regRole === 'RECRUITER' ? 'Criar conta da empresa' : 'Criar conta'}
                 </button>
@@ -157,9 +152,9 @@ export default function ConsultoriaLoginPage({ navigate }) {
 
                 <p style={{ textAlign: 'center', fontSize: 12, color: '#555', marginTop: 24 }}>
                   Ao continuar, você concorda com os{' '}
-                  <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Termos de Serviço</span>
+                  <span style={{ color: '#4a9edd' }}>Termos de Serviço</span>
                   {' '}e a{' '}
-                  <span style={{ color: '#4a9edd', cursor: 'pointer' }}>Política de Privacidade.</span>
+                  <span style={{ color: '#4a9edd' }}>Política de Privacidade.</span>
                 </p>
               </>
             )}

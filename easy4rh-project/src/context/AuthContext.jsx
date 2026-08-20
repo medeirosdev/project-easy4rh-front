@@ -148,6 +148,8 @@ export function AuthProvider({ children }) {
 
   // ── Logout ──
   const logout = () => {
+    // Revoga o token no backend (best-effort — se falhar, o token expira sozinho no prazo natural)
+    authApi.logout().catch(() => {})
     clearToken()
     localStorage.removeItem('easy4rh_saved_jobs')
     // Remove user-scoped company cache keys

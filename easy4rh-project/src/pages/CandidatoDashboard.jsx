@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { useJobs } from '../context/JobsContext'
+import { useJobs, normalizeJob } from '../context/JobsContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { profileApi, applicationsApi, coursesApi, documentsApi, certificatesApi } from '../services/api'
+import { profileApi, applicationsApi, coursesApi, documentsApi, certificatesApi, jobsApi } from '../services/api'
 import { getStageLabel, getStageColor, getStageBackground, getStageProgress, pipelineSteps, getStageStepIndex, PIPELINE_STAGES, normalizeStage } from '../utils/applicationStages'
 
 const menuItems = [
@@ -126,28 +126,64 @@ export default function CandidatoDashboard({ navigate }) {
   }, [])
 
   // Carregar cursos matriculados
-  useEffect(() => {
-    const loadEnrollments = async () => {
-      setEnrollmentsLoading(true)
-      try {
-        const data = await coursesApi.myEnrollments()
-        const list = Array.isArray(data) ? data : (data.data || [])
-        setEnrollments(list)
-      } catch (err) {
-        setEnrollments([])
-        setLoadError(err?.message || 'Erro ao carregar cursos')
-      } finally {
-        setEnrollmentsLoading(false)
-      }
+  const loadEnrollments = useCallback(async () => {
+    setEnrollmentsLoading(true)
+    try {
+      const data = await coursesApi.myEnrollments()
+      const list = Array.isArray(data) ? data : (data.data || [])
+      setEnrollments(list)
+    } catch (err) {
+      setEnrollments([])
+      setLoadError(err?.message || 'Erro ao carregar cursos')
+    } finally {
+      setEnrollmentsLoading(false)
     }
-    loadEnrollments()
   }, [])
 
-  // Vagas salvas — cruzar IDs do localStorage com jobs do contexto
-  const savedJobsList = useMemo(() =>
-    jobs.filter(j => savedJobs.includes(j.id)),
-    [jobs, savedJobs]
-  )
+  useEffect(() => {
+    loadEnrollments()
+  }, [loadEnrollments])
+
+  // Recarrega o progresso dos cursos sempre que a seção "Meus Cursos" é visitada,
+  // já que o progresso pode ter mudado em CursoDetailPage enquanto este componente
+  // permanecia montado (mesmo padrão de lazy-load-ao-visitar-seção usado para documentos).
+  useEffect(() => {
+    if (activeSection === 'cursos') loadEnrollments()
+  }, [activeSection, loadEnrollments])
+
+  // Vagas salvas que não estão na página atualmente carregada pelo JobsContext
+  // (que só traz a primeira página de vagas). Buscamos essas vagas individualmente
+  // para que "Vagas Salvas" não pareça vazio só porque a vaga salva ficou fora
+  // da primeira página.
+  const [extraSavedJobs, setExtraSavedJobs] = useState([])
+  const [extraSavedJobsLoading, setExtraSavedJobsLoading] = useState(false)
+  const fetchedSavedJobIdsRef = useRef(new Set())
+
+  useEffect(() => {
+    const loadedIds = new Set(jobs.map(j => j.id))
+    const missingIds = savedJobs.filter(id => !loadedIds.has(id) && !fetchedSavedJobIdsRef.current.has(id))
+    if (missingIds.length === 0) return
+    missingIds.forEach(id => fetchedSavedJobIdsRef.current.add(id))
+    let cancelled = false
+    setExtraSavedJobsLoading(true)
+    Promise.all(missingIds.map(id => jobsApi.get(id).catch(() => null)))
+      .then(results => {
+        if (cancelled) return
+        const fetched = results.filter(Boolean).map(j => normalizeJob(j))
+        setExtraSavedJobs(prev => [...prev, ...fetched])
+      })
+      .finally(() => { if (!cancelled) setExtraSavedJobsLoading(false) })
+    return () => { cancelled = true }
+  }, [savedJobs, jobs])
+
+  // Vagas salvas — cruzar IDs do localStorage com jobs do contexto, complementando
+  // com as vagas buscadas individualmente acima quando não estavam na página carregada
+  const savedJobsList = useMemo(() => {
+    const fromContext = jobs.filter(j => savedJobs.includes(j.id))
+    const contextIds = new Set(fromContext.map(j => j.id))
+    const extra = extraSavedJobs.filter(j => savedJobs.includes(j.id) && !contextIds.has(j.id))
+    return [...fromContext, ...extra]
+  }, [jobs, savedJobs, extraSavedJobs])
 
   // Declarado antes do useEffect que o usa para evitar Temporal Dead Zone com const
   const loadReceivedDocs = useCallback(async () => {
@@ -214,7 +250,7 @@ export default function CandidatoDashboard({ navigate }) {
       setProfileSaved(true)
       safeTimeout(() => setProfileSaved(false), 3000)
     } catch (err) {
-      console.error('Erro ao salvar perfil:', err)
+      alert(err.message || 'Erro ao salvar perfil. Tente novamente.')
     } finally {
       setProfileLoading(false)
     }
@@ -227,7 +263,7 @@ export default function CandidatoDashboard({ navigate }) {
       await applicationsApi.withdraw(appId)
       setApplications(prev => prev.filter(a => a.id !== appId))
     } catch (err) {
-      console.error('Erro ao desistir:', err)
+      alert(err.message || 'Erro ao desistir da candidatura. Tente novamente.')
     }
   }
 
@@ -236,7 +272,7 @@ export default function CandidatoDashboard({ navigate }) {
       await documentsApi.respond(sentDocumentId, status)
       setReceivedDocs(prev => prev.map(d => d.id === sentDocumentId ? { ...d, status } : d))
     } catch (err) {
-      console.error('Erro ao responder documento:', err)
+      alert(err.message || 'Erro ao responder documento. Tente novamente.')
     }
   }
 
@@ -562,7 +598,7 @@ export default function CandidatoDashboard({ navigate }) {
       case 'salvas': return (
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 24 }}>Vagas Salvas</h2>
-          {jobsLoading ? (
+          {jobsLoading || extraSavedJobsLoading ? (
             <div style={{ background: 'white', borderRadius: 16, padding: 40, textAlign: 'center', color: '#778899', fontSize: 13 }}>
               Carregando vagas...
             </div>

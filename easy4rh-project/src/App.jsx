@@ -19,6 +19,10 @@ import PlataformaPage from './pages/PlataformaPage'
 import CursoDetailPage from './pages/CursoDetailPage'
 import AdminAuditPage from './pages/AdminAuditPage'
 import EmpresaPage from './pages/EmpresaPage'
+import PessoasPage from './pages/PessoasPage'
+import ProcessosPage from './pages/ProcessosPage'
+import PerformancePage from './pages/PerformancePage'
+import PrevencaoPage from './pages/PrevencaoPage'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -69,10 +73,10 @@ function AppContent({ page, navigate, selectedJob, selectedCompany, vagasInitSea
       case 'treinamentos':     return <TreinamentosPage navigate={navigate} />
       case 'sobre':            return <SobreNosPage navigate={navigate} />
       case 'faq':              return <FAQPage navigate={navigate} />
-      case 'pessoas':          return <EmConstrucaoPage navigate={navigate} />
-      case 'processos':        return <EmConstrucaoPage navigate={navigate} />
-      case 'performance':      return <EmConstrucaoPage navigate={navigate} />
-      case 'prevencao':        return <EmConstrucaoPage navigate={navigate} />
+      case 'pessoas':          return <PessoasPage navigate={navigate} />
+      case 'processos':        return <ProcessosPage navigate={navigate} />
+      case 'performance':      return <PerformancePage navigate={navigate} />
+      case 'prevencao':        return <PrevencaoPage navigate={navigate} />
       case 'dashboard-candidato':  return <CandidatoDashboard navigate={navigate} />
       case 'dashboard-recrutador': return <RecrutadorDashboard navigate={navigate} />
       case 'consultoria-login':    return <ConsultoriaLoginPage navigate={navigate} />
