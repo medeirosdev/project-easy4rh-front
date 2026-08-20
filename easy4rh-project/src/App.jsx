@@ -18,6 +18,7 @@ import EmConstrucaoPage from './pages/EmConstrucaoPage'
 import PlataformaPage from './pages/PlataformaPage'
 import CursoDetailPage from './pages/CursoDetailPage'
 import AdminAuditPage from './pages/AdminAuditPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
 import EmpresaPage from './pages/EmpresaPage'
 import PessoasPage from './pages/PessoasPage'
 import ProcessosPage from './pages/ProcessosPage'
@@ -83,7 +84,7 @@ function AppContent({ page, navigate, selectedJob, selectedCompany, vagasInitSea
       case 'em-construcao':        return <EmConstrucaoPage navigate={navigate} />
       case 'plataforma':           return <PlataformaPage navigate={navigate} />
       case 'admin':                return <AdminAuditPage navigate={navigate} />
-      case 'admin-dashboard':      return <AdminAuditPage navigate={navigate} />
+      case 'admin-dashboard':      return <AdminDashboardPage navigate={navigate} />
       case 'empresa':              return <EmpresaPage company={selectedCompany} navigate={navigate} />
       default:
         if (page?.startsWith('curso-')) {
@@ -145,13 +146,13 @@ export default function App() {
       ? `${data.name} — Easy4RH`
       : (pageTitles[pg] || (pg?.startsWith('curso-') ? 'Curso — Easy4RH' : 'Easy4RH'))
     document.title = title
-    // Atualiza URL sem recarregar: /admin tem rota própria, o resto usa ?job= etc
+    // Atualiza URL sem recarregar: /admin e /admin-dashboard têm rota própria, o resto usa ?job= etc
     const url = new URL(window.location.href)
     if (pg === 'admin' || pg === 'admin-dashboard') {
-      url.pathname = '/admin'
+      url.pathname = pg === 'admin-dashboard' ? '/admin-dashboard' : '/admin'
       url.search = ''
     } else {
-      if (url.pathname === '/admin') url.pathname = '/'
+      if (url.pathname === '/admin' || url.pathname === '/admin-dashboard') url.pathname = '/'
       if (pg === 'job-detail' && data?.id) {
         url.searchParams.set('job', data.id)
       } else {
@@ -161,11 +162,17 @@ export default function App() {
     window.history.replaceState(null, '', url.toString())
   }
 
-  // Lê a URL ao montar e navega direto: /admin tem rota própria; o resto usa ?page=<rota>
+  // Lê a URL ao montar e navega direto: /admin e /admin-dashboard têm rota própria; o resto usa ?page=<rota>
   useEffect(() => {
-    if (window.location.pathname.replace(/\/$/, '') === '/admin') {
+    const path = window.location.pathname.replace(/\/$/, '')
+    if (path === '/admin') {
       setPage('admin')
       document.title = pageTitles.admin
+      return
+    }
+    if (path === '/admin-dashboard') {
+      setPage('admin-dashboard')
+      document.title = pageTitles['admin-dashboard']
       return
     }
     const params = new URLSearchParams(window.location.search)

@@ -279,7 +279,7 @@ export default function JobDetailPage({ job, navigate }) {
           <button
             onClick={() => {
               if (user && ['RECRUITER', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(user.role)) {
-                navigate(user.role === 'ADMIN' ? 'admin' : 'dashboard-recrutador');
+                navigate(user.role === 'ADMIN' ? 'admin-dashboard' : 'dashboard-recrutador');
               } else {
                 navigate('login');
               }

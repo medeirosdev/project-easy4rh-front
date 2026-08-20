@@ -97,6 +97,7 @@ export default function RecrutadorDashboard({ navigate }) {
   const { user, logout } = useAuth()
   const { isMobile, isDesktop } = useBreakpoint()
   const isInstructor = user?.role === 'INSTRUCTOR'
+  const isPendingApproval = ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR'].includes(user?.role) && user?.approved === false
   // RECRUITER_INSTRUCTOR usa o mesmo menu completo do RECRUITER (já tem cursos)
   const menuItems = isInstructor ? instructorMenuItems : recruiterMenuItems
   const [activeSection, setActiveSection] = useState(isInstructor ? 'cursos' : 'resumo')
@@ -2599,6 +2600,14 @@ export default function RecrutadorDashboard({ navigate }) {
         )}
 
         <div style={{ padding: isMobile ? '20px 16px' : '28px 24px', maxWidth: isDesktop ? 'none' : 900, margin: isDesktop ? 0 : '0 auto' }}>
+          {isPendingApproval && (
+            <div style={{ background: '#fef9c3', border: '1px solid #fde68a', borderRadius: 12, padding: '14px 18px', color: '#854d0e', fontSize: 13.5, marginBottom: 20, lineHeight: 1.5 }}>
+              <strong>Sua conta está pendente de aprovação.</strong> Você já pode preparar tudo por
+              aqui (perfil da empresa, rascunho de vaga, rascunho de curso), mas publicar vaga,
+              gerenciar candidatura e criar/publicar curso só ficam liberados depois que um
+              administrador aprovar sua conta.
+            </div>
+          )}
           {renderSection()}
         </div>
       </div>

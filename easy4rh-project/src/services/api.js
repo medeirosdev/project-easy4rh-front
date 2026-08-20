@@ -399,6 +399,17 @@ export const certificatesApi = {
   my: () => request('GET', '/certificates/my'),
 }
 
+// ── Aprovação de contas pendentes (admin, autenticação JWT normal — não o X-Audit-Key) ──
+
+export const pendingApprovalsApi = {
+  list: (params = {}) => {
+    const qs = buildQs(params)
+    return request('GET', `/admin/pending-users${qs ? '?' + qs : ''}`)
+  },
+  approve: (id) => request('PATCH', `/admin/pending-users/${id}/approve`),
+  reject: (id) => request('DELETE', `/admin/pending-users/${id}`),
+}
+
 // ── Token helpers (usados no AuthContext) ──────────────────────
 
 export function saveToken(token) {

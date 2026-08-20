@@ -33,8 +33,12 @@ export default function ConsultoriaLoginPage({ navigate }) {
     setLoading(false)
     if (result.success) {
       const r = result.user?.role
-      const isDashRecrutador = ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(r)
-      navigate(isDashRecrutador ? 'dashboard-recrutador' : 'dashboard-candidato')
+      if (r === 'ADMIN') {
+        navigate('admin-dashboard')
+      } else {
+        const isDashRecrutador = ['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR'].includes(r)
+        navigate(isDashRecrutador ? 'dashboard-recrutador' : 'dashboard-candidato')
+      }
     } else setError('Email ou senha inválidos.')
   }
 
@@ -48,7 +52,11 @@ export default function ConsultoriaLoginPage({ navigate }) {
     setRegLoading(false)
     if (result.success) {
       const r = result.user?.role
-      navigate(['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR', 'ADMIN'].includes(r) ? 'dashboard-recrutador' : 'dashboard-candidato')
+      if (r === 'ADMIN') {
+        navigate('admin-dashboard')
+      } else {
+        navigate(['RECRUITER', 'INSTRUCTOR', 'RECRUITER_INSTRUCTOR'].includes(r) ? 'dashboard-recrutador' : 'dashboard-candidato')
+      }
     } else {
       const msg = result.message || ''
       setRegError(

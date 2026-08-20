@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { adminApi } from '../services/api'
+import { adminApi, pendingApprovalsApi } from '../services/api'
 
 const menuItems = [
-  { id: 'resumo',   label: 'Resumo' },
-  { id: 'vagas',    label: 'Vagas' },
-  { id: 'usuarios', label: 'Usuários' },
-  { id: 'cursos',   label: 'Cursos' },
+  { id: 'resumo',      label: 'Resumo' },
+  { id: 'vagas',       label: 'Vagas' },
+  { id: 'usuarios',    label: 'Usuários' },
+  { id: 'aprovacoes',  label: 'Aprovações' },
+  { id: 'cursos',      label: 'Cursos' },
 ]
 
 const JOB_STATUSES   = ['', 'DRAFT', 'PUBLISHED', 'PAUSED', 'CLOSED']
@@ -566,6 +567,147 @@ function UsuariosSection({ currentUserId }) {
   )
 }
 
+// ── Section: Aprovações ───────────────────────────────────────
+
+function AprovacoesSection() {
+  const [data, setData]         = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch]     = useState('')
+  const [page, setPage]         = useState(1)
+  const [confirm, setConfirm]   = useState(null) // { id, label }
+  const [approving, setApproving] = useState(null)
+  const [rejecting, setRejecting] = useState(null)
+
+  const load = useCallback(() => {
+    setLoading(true)
+    setError('')
+    pendingApprovalsApi.list({ search: search || undefined, page, limit: 20 })
+      .then(setData)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [search, page])
+
+  useEffect(() => { load() }, [load])
+
+  const handleSearch = (e) => { e.preventDefault(); setSearch(searchInput); setPage(1) }
+
+  const removeFromList = (id) => {
+    setData(prev => prev ? { ...prev, data: prev.data.filter(u => u.id !== id), meta: { ...prev.meta, total: prev.meta.total - 1 } } : prev)
+  }
+
+  const handleApprove = async (id) => {
+    setApproving(id)
+    try {
+      await pendingApprovalsApi.approve(id)
+      removeFromList(id)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setApproving(null)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!confirm) return
+    setRejecting(confirm.id)
+    setConfirm(null)
+    try {
+      await pendingApprovalsApi.reject(confirm.id)
+      removeFromList(confirm.id)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setRejecting(null)
+    }
+  }
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1e3a6e', marginBottom: 8 }}>Contas pendentes de aprovação</h2>
+      <p style={{ color: '#778899', fontSize: 13.5, marginBottom: 20 }}>
+        Contas de Recrutador/Instrutor não podem publicar vaga, gerenciar candidatura nem criar/publicar
+        curso até serem aprovadas aqui.
+      </p>
+
+      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <input
+          value={searchInput} onChange={e => setSearchInput(e.target.value)}
+          placeholder="Buscar por e-mail..."
+          style={{ flex: 1, minWidth: 200, border: '1.5px solid #e0eaf4', borderRadius: 10, padding: '10px 14px', fontSize: 13.5, outline: 'none' }}
+        />
+        <button type="submit" style={{ background: '#1e3a6e', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontWeight: 700, fontSize: 13.5 }}>
+          Buscar
+        </button>
+      </form>
+
+      {error && <div style={{ background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 16 }}>{error}</div>}
+
+      {loading ? (
+        <p style={{ color: '#778899' }}>Carregando...</p>
+      ) : (
+        <>
+          <div style={{ fontSize: 12, color: '#778899', marginBottom: 12 }}>{data?.meta?.total ?? 0} conta(s) pendente(s)</div>
+          <div style={{ background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 12px rgba(30,74,138,0.07)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e8edf2' }}>
+                  {['E-mail', 'Papel', 'Empresa', 'Cadastro', 'Ações'].map(h => (
+                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: '#778899', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(data?.data || []).map(u => (
+                  <tr key={u.id} style={{ borderBottom: '1px solid #f0f4f8' }}>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#334' }}>{u.email}</td>
+                    <td style={{ padding: '12px 16px' }}><Badge value={u.role} map={ROLE_COLORS} /></td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#334' }}>{u.company?.name || '—'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#778899' }}>
+                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : '—'}
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => handleApprove(u.id)}
+                          disabled={approving === u.id || rejecting === u.id}
+                          style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 12.5, opacity: approving === u.id ? 0.5 : 1 }}
+                        >
+                          {approving === u.id ? 'Aprovando...' : 'Aprovar'}
+                        </button>
+                        <button
+                          onClick={() => setConfirm({ id: u.id, label: u.email })}
+                          disabled={approving === u.id || rejecting === u.id}
+                          style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 12.5, opacity: rejecting === u.id ? 0.5 : 1 }}
+                        >
+                          Rejeitar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {(data?.data || []).length === 0 && (
+                  <tr><td colSpan={5} style={{ padding: 32, textAlign: 'center', color: '#778899', fontSize: 14 }}>Nenhuma conta pendente.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <Pagination meta={data?.meta} onPage={setPage} />
+        </>
+      )}
+
+      {confirm && (
+        <ConfirmModal
+          message={`Tem certeza que deseja rejeitar a conta "${confirm.label}"? A conta será excluída permanentemente.`}
+          onConfirm={handleReject}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+    </div>
+  )
+}
+
 // ── Section: Cursos ───────────────────────────────────────────
 
 function CursosSection() {
@@ -702,11 +844,12 @@ export default function AdminDashboardPage({ navigate }) {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'resumo':   return <ResumoSection />
-      case 'vagas':    return <VagasSection />
-      case 'usuarios': return <UsuariosSection currentUserId={user.id} />
-      case 'cursos':   return <CursosSection />
-      default:         return null
+      case 'resumo':     return <ResumoSection />
+      case 'vagas':      return <VagasSection />
+      case 'usuarios':   return <UsuariosSection currentUserId={user.id} />
+      case 'aprovacoes': return <AprovacoesSection />
+      case 'cursos':     return <CursosSection />
+      default:           return null
     }
   }
 
